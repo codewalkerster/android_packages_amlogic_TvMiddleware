@@ -104,11 +104,11 @@ public class TVSubtitleView extends View {
 		 * @param page_no 要显示页号
 		 * @param sub_page_no 要显示的子页号
 		 */
-		public DTVTTParams(int dmx_id, int pid, int page, int sub_page){
+		public DTVTTParams(int dmx_id, int pid, int page_no, int sub_page_no){
 			this.dmx_id      = dmx_id;
 			this.pid         = pid;
-			this.page_no     = page;
-			this.sub_page_no = sub_page;
+			this.page_no     = page_no;
+			this.sub_page_no = sub_page_no;
 		}
 	}
 
@@ -421,7 +421,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 搜索下一页
 	 */
-	public void searhNext(){
+	public void searchNext(){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -431,7 +431,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 搜索上一页
 	 */
-	public void searchPrev(){
+	public void searchPrevious(){
 		if(play_mode!=PLAY_TT)
 			return;
 
