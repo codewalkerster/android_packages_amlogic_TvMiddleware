@@ -338,7 +338,7 @@ abstract public class TVActivity extends Activity{
 	/**
 	 *设定布尔类型配置选项
 	 *@param name 配置选项名
-	 *@param value 设定值
+	 *@param b 设定值
 	 */
 	public void setConfig(String name, boolean b){
 		client.setConfig(name, new Boolean(b).toString());
@@ -347,7 +347,7 @@ abstract public class TVActivity extends Activity{
 	/**
 	 *设定整形配置选项
 	 *@param name 配置选项名
-	 *@param value 设定值
+	 *@param i 设定值
 	 */
 	public void setConfig(String name, int i){
 		client.setConfig(name, new Integer(i).toString());
@@ -356,7 +356,7 @@ abstract public class TVActivity extends Activity{
 	/**
 	 *设定整形数组配置选项
 	 *@param name 配置选项名
-	 *@param value 设定值
+	 *@param i 设定值
 	 */
 	public void setConfig(String name, int i[]){
 		String value;

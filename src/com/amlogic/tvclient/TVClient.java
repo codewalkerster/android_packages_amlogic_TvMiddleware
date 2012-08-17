@@ -155,7 +155,7 @@ abstract public class TVClient{
 
 	/**
 	 *开始录制节目
-	 *@param 预约记录ID，-1表示录制当前节目
+	 *@param bookingID 预约记录ID，-1表示录制当前节目
 	 */
 	public synchronized void startRecording(int bookingID){
 		if(service != null){
