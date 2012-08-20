@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Looper;
 import android.os.Bundle;
+import android.widget.VideoView;
 import java.lang.StringBuilder;
 import com.amlogic.tvclient.TVClient;
 import com.amlogic.tvutil.TVStatus;
@@ -22,6 +23,7 @@ abstract public class TVActivity extends Activity{
 	private static final int MSG_DISCONNECTED = 1950;
 	private static final int MSG_MESSAGE      = 1951;
 
+	private VideoView videoView;
 	private TVSubtitleView subtitleView;
 	
 	private TVClient client = new TVClient(){
@@ -82,6 +84,17 @@ abstract public class TVActivity extends Activity{
 	 *@param msg TVService 发送的消息
 	 */
 	abstract public void onMessage(TVMessage msg);
+
+	/**
+	 *在Activity上创建VideoView和SubtitleView
+	 */
+	public void openVideo(){
+		if(subtitleView != null){
+			
+		}
+		if(videoView != null){
+		}
+	}
 
 	/**
 	 *取得TV当前时间
