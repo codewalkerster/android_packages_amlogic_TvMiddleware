@@ -31,8 +31,13 @@ public class TVService extends Service{
 	private static final int MSG_FAST_BACKWARD   = 1961;
 	private static final int MSG_SEEK_TO         = 1962;
 
+	private int inputSource;
 	private TVTime time = new TVTime();
 	private TVConfig config = new TVConfig();
+	private TVDevice device = new TVDevice();
+	private TVScanner scanner;
+	private TVEpgScanner epgScanner;
+	private TVVbi vbi;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 	                        = new RemoteCallbackList<ITVCallback>();
@@ -192,6 +197,20 @@ public class TVService extends Service{
 	};
 
 	private void setInputSource(int src){
+		if(intputSource == src)
+			return;
+
+		switch(inputSource){
+			case TVStatus.SOURCE_TV:
+				break;
+		}
+
+		device.setInputSource(src);
+
+		switch(src){
+		}
+
+		inputSource = src;
 	}
 
 	private void playProgram(TVPlayParams tp){
