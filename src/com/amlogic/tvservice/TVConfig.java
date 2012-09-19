@@ -4,31 +4,100 @@ import java.util.HashMap;
 import java.lang.StringBuilder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.util.Log;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVMessage;
+import com.amlogic.tvutil.TVConfigValue;
 
 /**
  *TV 配置管理
  */
 public class TVConfig{
-	private class TVConfigEntry{
-		private String value;
-		private RemoteCallbackList<ITVCallback> callbacks;
+	private static final String TAG="TVConfig";
+
+	/**配置项不存在异常*/
+	public class NotExistException extends Exception{
 	}
 
-	private HashMap<String, TVConfigEntry> entries = new HashMap<String, TVConfigEntry>();
+	/**配置项类型不匹配*/
+	public class TypeException extends Exception{
+	}
+
+	/**配置项目值更新接口*/
+	public interface Update{
+		public void onUpdate(String name, TVConfigValue value);
+	}
+
+	/**配置项目值读取接口*/
+	public interface Read{
+		public TVConfigValue read(String name);
+	}
+
+	/**配置项*/
+	private class TVConfigEntry{
+		private TVConfigValue value;
+		private Update update;
+		private Read read;
+		private RemoteCallbackList<ITVCallback> callbacks;
+		private HashMap<String, TVConfigEntry> children;
+		private TVConfigEntry parent;
+	}
+
+	/**根配置项*/
+	private TVConfigEntry root;
 
 	/**
-	 *增加一个配置项
-	 *@param name 配置项的名字
+	 *构造函数
 	 */
-	public synchronized void add(String name){
-		if(entries.get(name) != null)
-			return;
+	public TVConfig(){
+		root = new TVConfigEntry();
+	}
 
-		TVConfigEntry ent = new TVConfigEntry();
+	private TVConfigEntry getEntry(String name) throws Exception{
+		String names[] = name.split(":");
+		TVConfigEntry ent, curr = root, parent;
+		TVConfigValue value = null;
+		int i;
 
-		entries.put(name, ent);
+		for(i = 0; i < names.length; i++){
+			if(curr.children != null)
+				curr.children = new HashMap<String, TVConfigEntry>();
+
+			ent = curr.children.get(names[i]);
+			if(ent != null)
+				curr = ent;
+			else
+				break;
+		}
+
+		if(i >= names.length)
+			return curr;
+
+		parent = curr;
+		while(parent != null){
+			if(parent.read != null){
+				value = parent.read.read(name);
+				if(value != null)
+					break;
+			}
+			parent = parent.parent;
+		}
+
+		for(; i < names.length; i++){
+			ent = new TVConfigEntry();
+			if(i == names.length - 1){
+				ent.value = value;
+				Log.d(TAG, "create new config entry "+name);
+			}
+			
+			if(curr.children == null){
+				curr.children = new HashMap<String, TVConfigEntry>();
+			}
+			curr.children.put(name, ent);
+			curr = ent;
+		}
+
+		return curr;
 	}
 
 	/**
@@ -36,149 +105,93 @@ public class TVConfig{
 	 *@param name 配置项的名字
 	 *@return 返回配置项的值
 	 */
-	public synchronized String get(String name){
-		TVConfigEntry ent = entries.get(name);
+	public synchronized TVConfigValue get(String name) throws Exception{
+		TVConfigEntry ent = getEntry(name);
 
-		if(ent == null)
-			return null;
-
-		return ent.value;
+		return new TVConfigValue(ent.value);
 	}
+
+	/**
+	 *获取boolean型配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
+	 */
+	public boolean getBoolean(String name) throws Exception{
+		TVConfigValue v = get(name);
+
+		if(v.getType() != TVConfigValue.TYPE_BOOL)
+			throw new TypeException();
+
+		return v.getBoolean();
+	}
+
+	/**
+	 *获取int型配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
+	 */
+	public int getInt(String name) throws Exception{
+		TVConfigValue v = get(name);
+
+		if(v.getType() != TVConfigValue.TYPE_INT)
+			throw new TypeException();
+
+		return v.getInt();
+	}
+
+	/**
+	 *获取String型配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
+	 */
+	public String getString(String name) throws Exception{
+		TVConfigValue v = get(name);
+
+		if(v.getType() != TVConfigValue.TYPE_STRING)
+			throw new TypeException();
+
+		return v.getString();
+	}
+
 
 	/**
 	 *设定配置项的值
 	 *@param name 配置项的名字
 	 *@param value 新设定值
 	 */
-	public synchronized void set(String name, String value){
-		TVConfigEntry ent = entries.get(name);
+	public synchronized void set(String name, TVConfigValue value) throws Exception{
+		TVConfigEntry ent = getEntry(name);
 
-		if(ent != null){
-			if(!ent.value.equals(value) && (ent.callbacks != null)){
-				final int n = ent.callbacks.beginBroadcast();
-				int i;
+		if((ent.children == null) ||
+				((ent.value != null) && (ent.value.getType() != TVConfigValue.TYPE_UNKNOWN) && (ent.value.getType() != value.getType())))
+			throw new TypeException();
 
-				for(i=0; i<n; i++){
-					try{
-						ent.callbacks.getBroadcastItem(i).onMessage(
-								TVMessage.configChanged(name, value));
-					}catch(RemoteException e){
-					}
+		ent.value = value;
+
+		do{
+			if(ent.update != null){
+				ent.update.onUpdate(name, value);
+			}
+			if(ent.callbacks != null){
+				final int N = ent.callbacks.beginBroadcast();
+				TVMessage msg = TVMessage.configChanged(name, value);
+				for (int i = 0; i < N; i++){
+					ent.callbacks.getBroadcastItem(i).onMessage(msg);
 				}
-
 				ent.callbacks.finishBroadcast();
 			}
-			ent.value = value;
-		}
+			ent = ent.parent;
+		}while(ent !=null);
 	}
 
-	/**
-	 *设定配置项的值(boolean类型)
-	 *@param name 配置项的名字
-	 *@param b 新设定值
-	 */
-	public void set(String name, boolean b){
-		set(name, new Boolean(b).toString());
-	}
 
 	/**
-	 *设定配置项的值(整形值)
-	 *@param name 配置项的名字
-	 *@param i 新设定值
-	 */
-	public void set(String name, int i){
-		set(name, new Integer(i).toString());
-	}
-
-	/**
-	 *设定配置项的值(整形数组值)
-	 *@param name 配置项的名字
-	 *@param i 新设定值
-	 */
-	public void set(String name, int i[]){
-		String value;
-		StringBuilder sb;
-
-		if(i.length == 0){
-			value = "";
-		}else{
-			sb = new StringBuilder();
-
-			int c;
-			for(c=0; c<i.length; c++){
-				sb.append(i[c]);
-				if((c != 0) && (c != i.length-1))
-					sb.append(",");
-			}
-
-			value = sb.toString();
-		}
-
-		set(name, value);
-	}
-
-	/**
-	 *获取布尔型配置项的值
-	 *@param name 配置项的名字
-	 *@return 返回配置项的值
-	 */
-	public boolean getBoolean(String name){
-		String value = get(name);
-		if(value == null)
-			return false;
-
-		return Boolean.valueOf(value);
-	}
-
-	/**
-	 *获取整形配置项的值
-	 *@param name 配置项的名字
-	 *@return 返回配置项的值
-	 */
-	public int getInt(String name){
-		String value = get(name);
-		if(value == null)
-			return 0;
-
-		return Integer.valueOf(value);
-	}
-
-	/**
-	 *获取整形数组配置项的值
-	 *@param name 配置项的名字
-	 *@return 返回配置项的值
-	 */
-	public int[] getIntArrary(String name){
-		String value = get(name);
-		String strs[];
-		int array[];
-		int i;
-
-		if(value == null)
-			return null;
-
-		strs = value.split(",");
-		array = new int[strs.length];
-		for(i=0; i<strs.length; i++){
-			array[i] = Integer.valueOf(strs[i]);
-		}
-
-		return array;
-	}
-
-	/**
-	 *注册配置项回调，当配置项的值被修改时被调用
+	 *注册远程配置项回调
 	 *@param name 配置项名称
 	 *@param cb 回调
 	 */
-	public synchronized void registerCallback(String name, ITVCallback cb){
-		if(cb == null)
-			return;
-
-		TVConfigEntry ent = entries.get(name);
-
-		if(ent == null)
-			return;
+	public synchronized void registerRemoteCallback(String name, ITVCallback cb) throws Exception{
+		TVConfigEntry ent = getEntry(name);
 
 		if(ent.callbacks == null)
 			ent.callbacks = new RemoteCallbackList<ITVCallback>();
@@ -187,20 +200,32 @@ public class TVConfig{
 	}
 
 	/**
-	 *释放配置项回调
+	 *释放远程配置项回调
 	 *@param name 配置项名称
 	 *@param cb 回调
 	 */
-	public synchronized void unregisterCallback(String name, ITVCallback cb){
+	public synchronized void unregisterRemoteCallback(String name, ITVCallback cb) throws Exception{
 		if(cb == null)
 			return;
 
-		TVConfigEntry ent = entries.get(name);
+		TVConfigEntry ent = getEntry(name);
 
-		if((ent == null) || (ent.callbacks == null))
+		if(ent.callbacks == null)
 			return;
 
 		ent.callbacks.unregister(cb);
+	}
+
+	synchronized void registerUpdate(String name, Update update) throws Exception{
+		TVConfigEntry ent = getEntry(name);
+
+		ent.update = update;
+	}
+
+	synchronized void registerRead(String name, Read read) throws Exception{
+		TVConfigEntry ent = getEntry(name);
+
+		ent.read = read;
 	}
 }
 

@@ -6,24 +6,28 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import com.amlogic.tvservice.ITVService;
-import com.amlogic.tvutil.TVStatus;
+import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVProgramNumber;
 import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
+import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.ITVCallback;
 
 /**
  *TV客户端
  */
 abstract public class TVClient{
+	private static final String TAG="TVClient";
 	private static final String SERVICE_NAME="com.amlogic.tvservice.TVService";
 
 	private ITVService service;
 
 	private ServiceConnection conn = new ServiceConnection(){
 		public void onServiceConnected(ComponentName className, IBinder service){
+			Log.d(TAG, "onServiceConnected");
 			synchronized(TVClient.this){
 				TVClient.this.service = ITVService.Stub.asInterface(service);
 			}
@@ -35,6 +39,7 @@ abstract public class TVClient{
 		}
 
 		public void onServiceDisconnected(ComponentName className){
+			Log.d(TAG, "onServiceDisconnected");
 			try{
 				TVClient.this.service.unregisterCallback(TVClient.this.callback);
 			}catch(RemoteException e){
@@ -59,6 +64,7 @@ abstract public class TVClient{
 	 *@param context client运行的Context
 	 */
 	public void connect(Context context){
+		Log.d(TAG, "connect");
 		context.bindService(new Intent(SERVICE_NAME), conn, Context.BIND_AUTO_CREATE);
 	}
 
@@ -67,6 +73,7 @@ abstract public class TVClient{
 	 *@param context client运行的Context
 	 */
 	public void disconnect(Context context){
+		Log.d(TAG, "disconnect");
 		context.unbindService(conn);
 	}
 
@@ -285,7 +292,7 @@ abstract public class TVClient{
 	 *@param name 配置选项名
 	 *@param value 设定值
 	 */
-	public synchronized void setConfig(String name, String value){
+	public synchronized void setConfig(String name, TVConfigValue value){
 		if(service != null){
 			try{
 				service.setConfig(name, value);
@@ -299,8 +306,8 @@ abstract public class TVClient{
 	 *@param name 配置选项名
 	 *@return 返回配置选项值
 	 */
-	public synchronized String getConfig(String name){
-		String value = null;
+	public synchronized TVConfigValue getConfig(String name){
+		TVConfigValue value = null;
 
 		if(service != null){
 			try{

@@ -108,5 +108,34 @@ public class TVPlayParams implements Parcelable {
 	public static Parcelable.Creator<TVPlayParams> getCreator() {
 		return CREATOR;
 	}
+
+	/**
+	 *取得播放类型
+	 *@return 返回播放类型
+	 */
+	public int getType(){
+		return type;
+	}
+
+	/**
+	 *对按ID播放的参数，取得节目ID
+	 *@return 返回节目ID
+	 */
+	public int getProgramID() throws Exception {
+		if(type != PLAY_PROGRAM_ID)
+			throw new Exception();
+		return id;
+	}
+
+	/**
+	 *对按节目号播放的参数，取得节目号
+	 *@return 返回节目号
+	 */
+	public TVProgramNumber getProgramNumber() throws Exception{
+		if(type != PLAY_PROGRAM_NUMBER)
+			throw new Exception();
+
+		return number;
+	}
 }
 

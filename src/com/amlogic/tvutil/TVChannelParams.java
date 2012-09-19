@@ -8,6 +8,16 @@ import android.os.Parcelable;
  *频道参数
  */
 public class TVChannelParams  implements Parcelable {
+	public static final int FE_HAS_SIGNAL   = 0x01;
+	public static final int FE_HAS_CARRIER  = 0x02;
+	public static final int FE_HAS_VITERBI  = 0x04;
+	public static final int FE_HAS_SYNC     = 0x08;
+	/**锁定*/
+	public static final int FE_HAS_LOCK     = 0x10;
+	/**超时*/
+	public static final int FE_TIMEDOUT     = 0x20;
+	public static final int FE_REINIT       = 0x40;
+
 	/**QPSK模式*/
 	public static final int MODE_QPSK = 0;
 	/**QAM模式*/
@@ -398,6 +408,21 @@ public class TVChannelParams  implements Parcelable {
 			throw new UnsupportedOperationException();
 
 		return symbolRate;
+	}
+
+	/**
+	 *检测前端参数和当前参数是否相等
+	 *@param params 前端参数
+	 *@return 如果相等返回true，不等返回false
+	 */
+	public boolean equals(TVChannelParams params){
+		if(this.mode != params.mode)
+			return false;
+
+		if(this.frequency != params.frequency)
+			return false;
+
+		return true;
 	}
 
 	public int describeContents(){

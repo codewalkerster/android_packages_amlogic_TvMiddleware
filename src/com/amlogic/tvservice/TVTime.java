@@ -17,23 +17,22 @@ public class TVTime{
 
 	/**
 	 *设定当前时间
-	 *@param date 当前时间
+	 *@param time 当前时间（毫米单位）
 	 */
-	synchronized void setTime(Date date){
+	synchronized void setTime(long time){
 		Date sys = new Date();
 
-		diff = date.getTime() - sys.getTime();
+		diff = time - sys.getTime();
 	}
 
 	/**
 	 *取得当前时间
 	 *@return 返回当前时间
 	 */
-	synchronized Date getTime(){
+	synchronized long getTime(){
 		Date sys = new Date();
-		long time = sys.getTime() + diff;
 
-		return new Date(time);
+		return sys.getTime() + diff;
 	}
 }
 

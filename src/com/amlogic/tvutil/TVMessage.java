@@ -32,7 +32,7 @@ public class TVMessage implements Parcelable{
 	private int channelID;
 	private int bookingID;
 	private String cfgName;
-	private String cfgValue;
+	private TVConfigValue cfgValue;
 
 	private int flags;
 	private static final int FLAG_SERVICE_ID = 1;
@@ -61,7 +61,7 @@ public class TVMessage implements Parcelable{
 			bookingID = in.readInt();
 		if((flags & FLAG_CONFIG) != 0){
 			cfgName  = in.readString();
-			cfgValue = in.readString();
+			cfgValue = new TVConfigValue(in);
 		}
 	}
 
@@ -77,7 +77,7 @@ public class TVMessage implements Parcelable{
 			dest.writeInt(bookingID);
 		if((flags & FLAG_CONFIG) != 0){
 			dest.writeString(cfgName);
-			dest.writeString(cfgValue);
+			cfgValue.writeToParcel(dest, flags);
 		}
 	}
 
@@ -241,7 +241,7 @@ public class TVMessage implements Parcelable{
 		return msg;
 	}
 
-	public static TVMessage configChanged(String name, String value){
+	public static TVMessage configChanged(String name, TVConfigValue value){
 		TVMessage msg = new TVMessage();
 
 		msg.flags = FLAG_CONFIG;

@@ -6,19 +6,27 @@ import android.os.Message;
 import android.os.Looper;
 import android.os.Bundle;
 import android.widget.VideoView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.SurfaceHolder;
+import android.graphics.Canvas;
+import android.graphics.PixelFormat;
+import android.util.Log;
 import java.lang.StringBuilder;
 import com.amlogic.tvclient.TVClient;
-import com.amlogic.tvutil.TVStatus;
+import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVProgramNumber;
 import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
+import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvsubtitle.TVSubtitleView;
 
 /**
  *TV Activity
  */
 abstract public class TVActivity extends Activity{
+	private static final String TAG = "TVActivity";
 	private static final int MSG_CONNECTED    = 1949;
 	private static final int MSG_DISCONNECTED = 1950;
 	private static final int MSG_MESSAGE      = 1951;
@@ -45,6 +53,7 @@ abstract public class TVActivity extends Activity{
 
 	private Handler handler = new Handler(){
 		public void handleMessage(Message msg){
+			Log.d(TAG, "handle message "+msg.what);
 			switch(msg.what){
 				case MSG_CONNECTED:
 					onConnected();
@@ -60,13 +69,16 @@ abstract public class TVActivity extends Activity{
 	};
 
 	public void onCreate(Bundle savedInstanceState){
+		Log.d(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
 		client.connect(this);
 	}
 
 	@Override
 	protected void onDestroy(){
+		Log.d(TAG, "onDestroy");
 		client.disconnect(this);
+		super.onDestroy();
 	}
 
 	/**
@@ -85,14 +97,52 @@ abstract public class TVActivity extends Activity{
 	 */
 	abstract public void onMessage(TVMessage msg);
 
+	SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback(){
+		public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
+			Log.d(TAG, "surfaceChanged");
+			//initSurface(holder);
+		}
+		public void surfaceCreated(SurfaceHolder holder){
+			Log.d(TAG, "surfaceCreated");
+			try{
+				initSurface(holder);
+			}catch(Exception e){
+			}
+		}
+		public void surfaceDestroyed(SurfaceHolder holder) {
+			Log.d(TAG, "surfaceDestroyed");
+		}
+		private void initSurface(SurfaceHolder h) {
+			Canvas c = null;
+			try {
+				Log.d(TAG, "initSurface");
+				c = h.lockCanvas();
+			} finally {
+				if (c != null)
+					h.unlockCanvasAndPost(c);
+			}
+		}
+	};
+
 	/**
 	 *在Activity上创建VideoView和SubtitleView
 	 */
 	public void openVideo(){
-		if(subtitleView != null){
-			
+		Log.d(TAG, "openVideo");
+
+		ViewGroup root = (ViewGroup)getWindow().getDecorView().findViewById(android.R.id.content);
+
+		if(subtitleView == null){
+			Log.d(TAG, "create subtitle view");
+			subtitleView = new TVSubtitleView(this);
+			root.addView(subtitleView, 0);
 		}
-		if(videoView != null){
+		if(videoView == null){
+			Log.d(TAG, "create video view");
+			videoView = new VideoView(this);
+			root.addView(videoView, 0);
+			videoView.getHolder().addCallback(surfaceHolderCallback);
+			videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE);
 		}
 	}
 
@@ -344,113 +394,17 @@ abstract public class TVActivity extends Activity{
 	 *@param name 配置选项名
 	 *@param value 设定值
 	 */
-	public void setConfig(String name, String value){
+	public void setConfig(String name, TVConfigValue value){
 		client.setConfig(name, value);
 	}
-
-	/**
-	 *设定布尔类型配置选项
-	 *@param name 配置选项名
-	 *@param b 设定值
-	 */
-	public void setConfig(String name, boolean b){
-		client.setConfig(name, new Boolean(b).toString());
-	}
-
-	/**
-	 *设定整形配置选项
-	 *@param name 配置选项名
-	 *@param i 设定值
-	 */
-	public void setConfig(String name, int i){
-		client.setConfig(name, new Integer(i).toString());
-	}
-
-	/**
-	 *设定整形数组配置选项
-	 *@param name 配置选项名
-	 *@param i 设定值
-	 */
-	public void setConfig(String name, int i[]){
-		String value;
-		StringBuilder sb;
-
-		if(i.length == 0){
-			value = "";
-		}else{
-			sb = new StringBuilder();
-
-			int c;
-			for(c=0; c<i.length; c++){
-				sb.append(i[c]);
-				if((c != 0) && (c != i.length-1))
-					sb.append(",");
-			}
-
-			value = sb.toString();
-		}
-
-		client.setConfig(name, value);
-	}
-
 
 	/**
 	 *读取配置选项
 	 *@param name 配置选项名
 	 *@return 返回配置选项值
 	 */
-	public String getConfig(String name){
+	public TVConfigValue getConfig(String name){
 		return client.getConfig(name);
-	}
-
-	/**
-	 *读取布尔型配置选项
-	 *@param name 配置选项名
-	 *@return 返回配置选项值
-	 */
-	public boolean getBooleanConfig(String name){
-		String value = client.getConfig(name);
-
-		if(value == null)
-			return false;
-
-		return Boolean.valueOf(value);
-	}
-
-	/**
-	 *获取整形配置项的值
-	 *@param name 配置项的名字
-	 *@return 返回配置项的值
-	 */
-	public int getIntConfig(String name){
-		String value = getConfig(name);
-		if(value == null)
-			return 0;
-
-		return Integer.valueOf(value);
-	}
-
-	/**
-	 *获取整形数组配置项的值
-	 *@param name 配置项的名字
-	 *@return 返回配置项的值
-	 */
-	public int[] getIntArraryConfig(String name){
-		String value = getConfig(name);
-		String strs[];
-		int array[];
-		int i;
-
-		if(value == null)
-			return null;
-
-		strs = value.split(",");
-		array = new int[strs.length];
-		for(i=0; i<strs.length; i++){
-			array[i] = Integer.valueOf(strs[i]);
-		}
-
-		return array;
 	}
 
 	/**

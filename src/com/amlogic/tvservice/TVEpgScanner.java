@@ -1,6 +1,6 @@
 package com.amlogic.tvservice;
 
-public class TVEpgScanner{
+abstract public class TVEpgScanner{
 	public static final int SCAN_ACT_PF_EIT  = 1;
 	public static final int SCAN_ACT_SCH_EIT = 2;
 	public static final int SCAN_OTH_PF_EIT  = 4;
@@ -16,24 +16,50 @@ public class TVEpgScanner{
 	public static final int SCAN_ALL         = 0xFFFFFFFF;
 
 	public class Event{
-		public static final int EVENT_ACT_PF_EIT  = 1;
-		public static final int EVENT_ACT_SCH_EIT = 2;
-		public static final int EVENT_OTH_PF_EIT  = 3;
-		public static final int EVENT_OTH_SCH_EIT = 4;
-		public static final int EVENT_PMT         = 5;
-		public static final int EVENT_ACT_SDT     = 6;
-		public static final int EVENT_OTH_SDT     = 6;
-		public static final int EVENT_BAT         = 7;
-		public static final int EVENT_NIT         = 8;
+		public static final int EVENT_PF_EIT_END  = 1;
+		public static final int EVENT_SCH_EIT_END = 2;
+		public static final int EVENT_PMT_END     = 3;
+		public static final int EVENT_SDT_END     = 4;
+		public static final int EVENT_TDT_END     = 5;
+		public static final int EVENT_NIT_END     = 6;
 
 		public int type;
+		public int channelID;
+		public int dvbOrigNetID;
+		public int dvbTSID;
 		public int dvbServiceID;
+		public long time;
+		public int dvbVersion;
 	}
 
-	public void startScan(int mask){
+	public int channelID;
+
+	public synchronized void setChannelID(int id){
+		channelID = id;
 	}
 
-	public void stopScan(int mask){
+	private void startTable(int mask){
 	}
+
+	private void stopTable(int mask){
+	}
+
+	public void start(int channelID){
+		synchronized(this){
+			this.channelID = channelID;
+		}
+
+		startTable(SCAN_ALL);
+	}
+
+	public void stop(){
+		stopTable(SCAN_ALL);
+
+		synchronized(this){
+			this.channelID = -1;
+		}
+	}
+
+	abstract void onEvent(Event event);
 }
 

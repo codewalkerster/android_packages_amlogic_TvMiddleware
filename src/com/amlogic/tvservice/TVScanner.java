@@ -3,9 +3,12 @@ package com.amlogic.tvservice;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVChannelParams;
 
-
-public class TVScanner{
+abstract public class TVScanner{
 	public class Event{
+		public static final int EVENT_SCAN_PROGRESS = 0;
+		public static final int EVENT_STORE_BEGIN   = 1;
+		public static final int EVENT_STORE_END     = 2;
+
 		public int type;
 		public int percent;
 		public int channelNumber;
@@ -20,7 +23,6 @@ public class TVScanner{
 	public void stop(boolean store){
 	}
 
-	public void onEvent(Event evt){
-	}
+	abstract public void onEvent(Event evt);
 }
 

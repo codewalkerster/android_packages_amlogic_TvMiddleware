@@ -1,21 +1,35 @@
 package com.amlogic.tvutil;
 
+import android.database.Cursor;
+import android.content.Context;
+import com.amlogic.tvdataprovider.TVDataProvider;
+
 /**
  *TV program相关信息.
  *Program对应ATV中的一个频道，DTV中的一个service
  */
 public class TVProgram{
+	/**未定义类型*/
+	public static final int TYPE_UNKNOWN = 0;
 	/**电视节目*/
 	public static final int TYPE_TV    = 1;
 	/**广播节目*/
 	public static final int TYPE_RADIO = 2;
+	/**模拟节目*/
+	public static final int TYPE_ATV   = 3;
+	/**数据节目*/
+	public static final int TYPE_DATA  = 4;
 
+	private Context context;
 	private int id;
 	private int dvbServiceID;
 	private int type;
 	private String name;
 	private TVProgramNumber number;
+	private int channelID;
 	private TVChannel channel;
+	private boolean skip;
+	private boolean lock;
 
 	/**
 	 *Service中的基础元素信息
@@ -35,7 +49,7 @@ public class TVProgram{
 	/**
 	 *多语言基础元素信息
 	 */
-	public class MultiLangElement{
+	public class MultiLangElement extends Element{
 		private String lang;
 
 		/**
@@ -234,6 +248,178 @@ public class TVProgram{
 	private Subtitle subtitles[];
 	private Teletext teletexts[];
 
+	private TVProgram(Context context, Cursor c){
+		int col;
+		int num, type;
+
+		this.context = context;
+
+		col = c.getColumnIndex("db_id");
+		this.id = c.getInt(col);
+
+		col = c.getColumnIndex("service_id");
+		this.dvbServiceID = c.getInt(col);
+
+		col = c.getColumnIndex("db_ts_id");
+		this.channelID = c.getInt(col);
+
+		col = c.getColumnIndex("name");
+		this.name = c.getString(col);
+
+		col = c.getColumnIndex("chan_num");
+		num = c.getInt(col);
+		this.number = new TVProgramNumber(num);
+
+
+		col = c.getColumnIndex("service_type");
+		type = c.getInt(col);
+
+		if(type == 1)
+			this.type = TYPE_TV;
+		else if(type == 2)
+			this.type = TYPE_RADIO;
+		else
+			this.type = TYPE_DATA;
+
+		col = c.getColumnIndex("skip");
+		this.skip = (c.getInt(col)!=0);
+
+		col = c.getColumnIndex("lock");
+		this.lock = (c.getInt(col)!=0);
+	}
+
+	/**
+	 *根据记录ID查找指定TVProgram
+	 *@param context 当前Context
+	 *@param id 记录ID
+	 *@return 返回对应的TVProgram对象，null表示不存在该id所对应的对象
+	 */
+	public static TVProgram selectByID(Context context, int id){
+		TVProgram p = null;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from srv_table where srv_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+				c.close();
+			}
+		}
+
+		return p;
+	}
+
+	/**
+	 *根据节目类型和节目号查找指定TVProgram
+	 *@param context 当前Context
+	 *@param type 节目类型
+	 *@param num 节目号
+	 *@return 返回对应的TVProgram对象，null表示不存在该id所对应的对象
+	 */
+	public static TVProgram selectByNumber(Context context, int type, TVProgramNumber num){
+		TVProgram p = null;
+		String cmd;
+
+		cmd = "select * from srv_table where";
+		if(type != TYPE_UNKNOWN)
+			cmd += " service_type = "+type+" and";
+
+		cmd += " chan_num = "+num.getNumber();
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+				c.close();
+			}
+		}
+
+		return p;
+
+	}
+
+	/**
+	 *列出全部TVProgram
+	 *@param context 当前Context
+	 *@param no_skip 不列出设为skip的节目
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectAll(Context context, boolean no_skip){
+		TVProgram p[] = null;
+		String cmd = "select * from srv_table";
+
+		if(no_skip){
+			cmd += " where skip = 0 ";
+		}
+
+		cmd += " order by chan_order";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+				c.close();
+			}
+		}
+
+		return p;
+	}
+
+	/**
+	 *列出全部TVProgram
+	 *@param context 当前Context
+	 *@param type 节目类型
+	 *@param no_skip 不列出设为skip的节目
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectByType(Context context, int type, boolean no_skip){
+		TVProgram p[] = null;
+		int tval = TYPE_DATA;
+
+		if(type == TYPE_TV)
+			tval = TYPE_TV;
+		else if(type == TYPE_RADIO)
+			tval = TYPE_RADIO;
+
+		String cmd = "select * from srv_table where type = "+ tval;
+
+		if(no_skip){
+			cmd += " and skip = 0 ";
+		}
+
+		cmd += " order by chan_order";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+				c.close();
+			}
+		}
+
+		return p;
+	}
+
+
 	/**
 	 *取得Program的ID
 	 *@return 返回ID值
@@ -374,6 +560,10 @@ public class TVProgram{
 	 *@return 返回service所在的channel
 	 */
 	public TVChannel getChannel(){
+		if(channel == null){
+			channel = TVChannel.selectByID(context, channelID);
+		}
+
 		return channel;
 	}
 }

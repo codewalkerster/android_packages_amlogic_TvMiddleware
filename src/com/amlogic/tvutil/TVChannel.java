@@ -1,17 +1,80 @@
 package com.amlogic.tvutil;
 
 import java.lang.UnsupportedOperationException;
+import android.database.Cursor;
+import android.content.Context;
+import com.amlogic.tvdataprovider.TVDataProvider;
 
 /**
  *TV Channel对应模拟电视中的一个频点，数字电视中的一个频点调制的TS流
  */
 public class TVChannel{
+	private Context context;
 	private int id;
 	private int dvbTSID;
 	private int dvbOrigNetID;
 	private int fendID;
 	private int tsSourceID;
 	private TVChannelParams params;
+
+	private TVChannel(Context context, Cursor c){
+		int col;
+		int src, freq, mod, symb, bw;
+
+		this.context = context;
+
+		col = c.getColumnIndex("db_id");
+		this.id = c.getInt(col);
+
+		col = c.getColumnIndex("ts_id");
+		this.dvbTSID = c.getInt(col);
+
+		col = c.getColumnIndex("src");
+		src = c.getInt(col);
+
+		col = c.getColumnIndex("freq");
+		freq = c.getInt(col);
+
+		if(src == 0){
+			col = c.getColumnIndex("mod");
+			mod = c.getInt(col);
+
+			col = c.getColumnIndex("symb");
+			symb = c.getInt(col);
+
+			this.params = TVChannelParams.dvbcParams(freq, mod, symb);
+		}else if(src == 1){
+			col = c.getColumnIndex("bw");
+			bw = c.getInt(col);
+
+			this.params = TVChannelParams.dvbtParams(freq, bw);
+		}
+
+		this.fendID = 0;
+	}
+
+	/**
+	 *根据记录ID查找对应的TVChannel
+	 *@param context 当前Context
+	 *@param id 记录ID
+	 *@return 返回对应的TVChannel对像，null表示不存在该id所对应的对象
+	 */
+	public static TVChannel selectByID(Context context, int id){
+		TVChannel chan = null;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from ts_table where ts_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				chan = new TVChannel(context, c);
+				c.close();
+			}
+		}
+
+		return chan;
+	}
 
 	/**
 	 *取得Channel ID

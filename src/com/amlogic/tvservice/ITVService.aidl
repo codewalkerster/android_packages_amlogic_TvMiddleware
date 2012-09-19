@@ -3,6 +3,7 @@ package com.amlogic.tvservice;
 import com.amlogic.tvutil.TVProgramNumber;
 import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
+import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.ITVCallback;
 
 //TV Service接口
@@ -14,10 +15,10 @@ interface ITVService{
 	void unregisterCallback(ITVCallback cb);
 
 	//设定配置项
-	void setConfig(String name, String value);
+	void setConfig(String name, in TVConfigValue value);
 
 	//读取配置项
-	String getConfig(String name);
+	TVConfigValue getConfig(String name);
 
 	//注册配置项回调
 	void registerConfigCallback(String name, ITVCallback cb);
