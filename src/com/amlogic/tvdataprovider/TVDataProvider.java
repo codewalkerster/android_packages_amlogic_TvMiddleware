@@ -72,7 +72,7 @@ public class TVDataProvider extends ContentProvider{
 		openCount++;
 	}
 
-	public synchronized void syncToFile(){
+	public static synchronized void syncToFile(){
 		if(db == null)
 			return;
 

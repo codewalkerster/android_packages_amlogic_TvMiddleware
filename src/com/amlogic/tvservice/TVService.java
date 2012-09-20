@@ -234,7 +234,7 @@ public class TVService extends Service{
 	};
 
 	private TVTime time = new TVTime();
-	private TVConfig config = new TVConfig();
+	private TVConfig config = new TVConfig(this);
 	private TVDevice device = new TVDevice(){
 		/*Device event handler*/
 		public void onEvent(TVDevice.Event event){
@@ -304,6 +304,8 @@ public class TVService extends Service{
 	private void stopScan(boolean store){
 		if(status == TVStatus.STATUS_SCAN){
 			scanner.stop(store);
+			TVDataProvider.syncToFile();
+
 			status = TVStatus.STATUS_STOPPED;
 		}
 	}

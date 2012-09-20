@@ -1,9 +1,23 @@
 package com.amlogic.tvservice;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.lang.StringBuilder;
+import java.io.File;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.content.Context;
 import android.util.Log;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVMessage;
@@ -14,6 +28,9 @@ import com.amlogic.tvutil.TVConfigValue;
  */
 public class TVConfig{
 	private static final String TAG="TVConfig";
+	private static final String CFG_FILE_NAME="tv.cfg";
+	private static final String CFG_END_FLAG="config:end:flag";
+	private static final String CFG_FILE_DEFAULT_NAME="tv_default.cfg";
 
 	/**配置项不存在异常*/
 	public class NotExistException extends Exception{
@@ -21,6 +38,10 @@ public class TVConfig{
 
 	/**配置项类型不匹配*/
 	public class TypeException extends Exception{
+	}
+
+	/**配置文件错误*/
+	public class FileException extends Exception{
 	}
 
 	/**配置项目值更新接口*/
@@ -46,11 +67,232 @@ public class TVConfig{
 	/**根配置项*/
 	private TVConfigEntry root;
 
+	private void loadConfigFile(InputStream is) throws Exception{
+		InputStreamReader isr = null;
+		BufferedReader br = null;
+		String line;
+		boolean flag = false;
+
+		isr = new InputStreamReader(is);
+		br  = new BufferedReader(isr);
+
+		while((line = br.readLine()) != null){
+			if(line.matches("[ \\t\\n]*"))
+				continue;
+
+			String sub[] = line.split("=");
+			String name  = sub[0];
+			String vstr  = sub[1];
+			TVConfigValue value;
+
+			name = name.replaceAll("[ \\t\\n]*([\\w:]+)[ \\t\\n]*", "$1");
+
+			if(vstr.matches("[ \\t\\n]*\".*\"[ \\t\\n]*")){
+				String sv = vstr.replaceAll("[ \\t\\n]*\"(.*)\"[ \\t\\n]*", "$1");
+
+				value = new TVConfigValue(sv);
+
+				Log.d(TAG, name+"=\""+sv+"\"");
+			}else if(vstr.matches("[ \\t\\n]*true[ \\t\\n]*")){
+				value = new TVConfigValue(true);
+
+				Log.d(TAG, name+"=true");
+			}else if(vstr.matches("[ \\t\\n]*false[ \\t\\n]*")){
+				value = new TVConfigValue(false);
+
+				Log.d(TAG, name+"=false");
+			}else{
+				String istrs[] = vstr.split(",");
+
+				if(istrs.length == 1){
+					String istr = istrs[0].replaceAll("[ \\t\\n]*([+-]?\\d*)", "$1");
+
+					value = new TVConfigValue(Integer.parseInt(istr));
+
+					Log.d(TAG, name+"="+Integer.parseInt(istr));
+				}else{
+					int v[] = new int[istrs.length];
+					int i;
+
+					for(i = 0; i < istrs.length; i++){
+						String istr = istrs[i].replaceAll("[ \\t\\n]*([+-]?\\d*)", "$1");
+
+						v[i] = Integer.parseInt(istr);
+					}
+
+					value = new TVConfigValue(v);
+
+					Log.d(TAG, name+"="+vstr);
+				}
+			}
+
+			if(name.equals(CFG_END_FLAG)){
+				flag = true;
+			}else{
+				set(name, value);
+			}
+		}
+
+		if(!flag){
+			Log.e(TAG, "cannot get config end flag");
+			throw new FileException();
+		}
+	}
+
+	private class ConfigString{
+		private String name;
+		private String value;
+
+		private ConfigString(String name, String value){
+			this.name  = name;
+			this.value = value;
+		}
+	}
+
+	private class ConfigStringComparator implements Comparator{
+		public int compare(Object lhs, Object rhs){
+			ConfigString l = (ConfigString)lhs;
+			ConfigString r = (ConfigString)rhs;
+			return l.name.compareTo(r.name);
+		}
+	}
+
+	private void getConfigStrings(ArrayList<ConfigString> list, String pname, TVConfigEntry ent){
+		if(ent.value != null){
+			String val = "";
+
+			try{
+				switch(ent.value.getType()){
+					case TVConfigValue.TYPE_STRING:
+						val = "\""+ent.value.getString()+"\"";
+						break;
+					case TVConfigValue.TYPE_BOOL:
+						val = ent.value.getBoolean()?"true":"false";
+						break;
+					case TVConfigValue.TYPE_INT:
+						val = new Integer(ent.value.getInt()).toString();
+						break;
+					case TVConfigValue.TYPE_INT_ARRAY:
+						StringBuilder sb = new StringBuilder();
+						int v[] = ent.value.getIntArray();
+						int i;
+						for(i = 0; i < v.length; i++){
+							if(i != 0)
+								sb.append("\'");
+							sb.append(new Integer(v[i]).toString());
+						}
+						val = sb.toString();
+						break;
+				}
+
+				ConfigString cstr = new ConfigString(pname, val);
+				list.add(cstr);
+			}catch(Exception e){
+			}
+		}
+
+		if(ent.children != null){
+			Iterator iter = ent.children.entrySet().iterator();
+			while(iter.hasNext()){
+				Map.Entry map_entry = (Map.Entry) iter.next();
+
+				String name = (String)map_entry.getKey();
+				TVConfigEntry child = (TVConfigEntry)map_entry.getValue();
+
+				String cname;
+
+				if(pname == null)
+					cname = name;
+				else
+					cname = pname+":"+name;
+
+				getConfigStrings(list, cname, child);
+			}
+		}
+	}
+
+	/**
+	 *将配置保存到文件
+	 */
+	public synchronized void save(Context context){
+		ArrayList<ConfigString> list = new ArrayList<ConfigString>();
+
+		getConfigStrings(list, null, root);
+
+		Collections.sort(list, new ConfigStringComparator());
+
+		FileOutputStream fos = null;
+		OutputStreamWriter osw;
+
+		try{
+			fos = context.openFileOutput(CFG_FILE_NAME, 0);
+			osw = new OutputStreamWriter(fos);
+
+			int i;
+			for(i = 0; i < list.size(); i++){
+				ConfigString cstr = list.get(i);
+
+				osw.write(cstr.name);
+				osw.write('=');
+				osw.write(cstr.value);
+				osw.write('\n');
+
+				Log.d(TAG, "save "+cstr.name+"="+cstr.value);
+			}
+
+			osw.write(CFG_END_FLAG+"=true");
+		}catch(Exception e){
+			Log.d(TAG, "write config file failed");
+		}finally{
+			try{
+				if(fos != null)
+					fos.close();
+			}catch(Exception e){
+			}
+		}
+	}
+
 	/**
 	 *构造函数
 	 */
-	public TVConfig(){
+	public TVConfig(Context context){
 		root = new TVConfigEntry();
+
+		InputStream is = null;
+		boolean loaded = false;
+		try{
+			Log.d(TAG, "try to load "+CFG_FILE_NAME);
+			is = context.openFileInput(CFG_FILE_NAME);
+			loadConfigFile(is);
+			loaded = true;
+		}catch(Exception e){
+			Log.d(TAG, "load config failed");
+		}finally{
+			try{
+				if(is != null)
+					is.close();
+			}catch(Exception e){
+			}
+		}
+
+		if(!loaded){
+			is = null;
+			try{
+				File file = new File("/system/etc/"+CFG_FILE_DEFAULT_NAME);
+
+				Log.d(TAG, "try to load "+file.toString());
+				is = new FileInputStream(file);
+				loadConfigFile(is);
+			}catch(Exception e){
+				Log.d(TAG, "load config failed");
+			}finally{
+				try{
+					if(is != null)
+						is.close();
+				}catch(Exception e){
+				}
+			}
+		}
 	}
 
 	private TVConfigEntry getEntry(String name) throws Exception{
@@ -60,7 +302,7 @@ public class TVConfig{
 		int i;
 
 		for(i = 0; i < names.length; i++){
-			if(curr.children != null)
+			if(curr.children == null)
 				curr.children = new HashMap<String, TVConfigEntry>();
 
 			ent = curr.children.get(names[i]);
@@ -73,28 +315,32 @@ public class TVConfig{
 		if(i >= names.length)
 			return curr;
 
-		parent = curr;
-		while(parent != null){
-			if(parent.read != null){
-				value = parent.read.read(name);
-				if(value != null)
-					break;
-			}
-			parent = parent.parent;
-		}
-
+		boolean new_ent = false;
 		for(; i < names.length; i++){
 			ent = new TVConfigEntry();
-			if(i == names.length - 1){
-				ent.value = value;
-				Log.d(TAG, "create new config entry "+name);
-			}
-			
+			ent.parent = curr;
 			if(curr.children == null){
 				curr.children = new HashMap<String, TVConfigEntry>();
 			}
 			curr.children.put(name, ent);
 			curr = ent;
+			new_ent = true;
+		}
+
+		if(new_ent){
+			parent = curr;
+			while(parent != null){
+				if(parent.read != null){
+					value = parent.read.read(name);
+					if(value != null)
+						break;
+				}
+				parent = parent.parent;
+			}
+
+			if(value != null){
+				curr.value = value;
+			}
 		}
 
 		return curr;
@@ -162,8 +408,7 @@ public class TVConfig{
 	public synchronized void set(String name, TVConfigValue value) throws Exception{
 		TVConfigEntry ent = getEntry(name);
 
-		if((ent.children == null) ||
-				((ent.value != null) && (ent.value.getType() != TVConfigValue.TYPE_UNKNOWN) && (ent.value.getType() != value.getType())))
+		if((ent.value != null) && (ent.value.getType() != TVConfigValue.TYPE_UNKNOWN) && (ent.value.getType() != value.getType()))
 			throw new TypeException();
 
 		ent.value = value;
