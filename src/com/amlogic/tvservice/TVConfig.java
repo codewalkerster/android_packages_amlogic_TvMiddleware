@@ -178,7 +178,7 @@ public class TVConfig{
 						int i;
 						for(i = 0; i < v.length; i++){
 							if(i != 0)
-								sb.append("\'");
+								sb.append(",");
 							sb.append(new Integer(v[i]).toString());
 						}
 						val = sb.toString();
@@ -222,14 +222,15 @@ public class TVConfig{
 		Collections.sort(list, new ConfigStringComparator());
 
 		FileOutputStream fos = null;
-		OutputStreamWriter osw;
+		OutputStreamWriter osw = null;
 
 		try{
-			fos = context.openFileOutput(CFG_FILE_NAME, 0);
+			fos = context.openFileOutput(CFG_FILE_NAME, context.MODE_PRIVATE);
 			osw = new OutputStreamWriter(fos);
 
 			int i;
 			for(i = 0; i < list.size(); i++){
+
 				ConfigString cstr = list.get(i);
 
 				osw.write(cstr.name);
@@ -242,9 +243,11 @@ public class TVConfig{
 
 			osw.write(CFG_END_FLAG+"=true");
 		}catch(Exception e){
-			Log.d(TAG, "write config file failed");
+			Log.d(TAG, "write config file failed "+e.getMessage());
 		}finally{
 			try{
+				if(osw != null)
+					osw.close();
 				if(fos != null)
 					fos.close();
 			}catch(Exception e){
@@ -276,6 +279,8 @@ public class TVConfig{
 		}
 
 		if(!loaded){
+			root = new TVConfigEntry();
+
 			is = null;
 			try{
 				File file = new File("/system/etc/"+CFG_FILE_DEFAULT_NAME);
@@ -322,7 +327,7 @@ public class TVConfig{
 			if(curr.children == null){
 				curr.children = new HashMap<String, TVConfigEntry>();
 			}
-			curr.children.put(name, ent);
+			curr.children.put(names[i], ent);
 			curr = ent;
 			new_ent = true;
 		}

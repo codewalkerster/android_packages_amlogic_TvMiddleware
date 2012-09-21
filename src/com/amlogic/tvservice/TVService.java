@@ -234,7 +234,7 @@ public class TVService extends Service{
 	};
 
 	private TVTime time = new TVTime();
-	private TVConfig config = new TVConfig(this);
+	private TVConfig config;
 	private TVDevice device = new TVDevice(){
 		/*Device event handler*/
 		public void onEvent(TVDevice.Event event){
@@ -580,6 +580,7 @@ public class TVService extends Service{
 	public void onCreate(){
 		super.onCreate();
 		TVDataProvider.openDatabase(this);
+		config = new TVConfig(this);
 	}
 
 	public void onDestroy(){
