@@ -43,7 +43,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := libjnidevice
+LOCAL_MODULE    := libjnitvdevice
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := TVDevice.cpp
 LOCAL_ARM_MODE := arm

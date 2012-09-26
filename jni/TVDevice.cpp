@@ -56,9 +56,9 @@ static TVDevice* get_dev(JNIEnv *env, jobject obj)
 	return dev;
 }
 
-static jobject create_event(JNIEnv *env, jint type)
+static jobject create_event(JNIEnv *env, jobject dev, jint type)
 {
-	jobject obj = env->NewObject(gEventClass, gEventInitID, type);
+	jobject obj = env->NewObject(gEventClass, gEventInitID, dev, type);
 
 	return obj;
 }
@@ -152,7 +152,7 @@ static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 		attached = 1;
 	}
 
-	event = create_event(env, EVENT_FRONTEND);
+	event = create_event(env, dev->dev_obj, EVENT_FRONTEND);
 	chan  = fpara_to_chan(env, dev->fend_mode, &evt->parameters);
 
 	env->SetIntField(event, gEventFEStatusID, evt->status);
@@ -203,7 +203,7 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, int src)
 {
 	jobject evt;
 
-	evt = create_event(env, EVENT_SET_INPUT_SOURCE_OK);
+	evt = create_event(env, obj, EVENT_SET_INPUT_SOURCE_OK);
 
 	on_event(obj, evt);
 }
@@ -392,11 +392,11 @@ static JNINativeMethod gMethods[] = {
 	{"native_stop_atv", "()V", (void*)dev_stop_atv},
 	{"native_play_dtv", "(IIII)V", (void*)dev_play_dtv},
 	{"native_stop_dtv", "()V", (void*)dev_stop_dtv},
-	{"native_start_recording", "(Lcom/amlogic/tvservice/TVDevice/DTVRecordParams;)V", (void*)dev_start_recording},
-	{"native_stop_recording", "()Lcom/amlogic/tvservice/TVDevice/DTVRecordParams;", (void*)dev_stop_recording},
-	{"native_start_timeshifting", "(Lcom/amlogic/tvservice/TVDevice/DTVRecordParams;)V", (void*)dev_start_timeshifting},
-	{"native_stop_timeshifting", "()Lcom/amlogic/tvservice/TVDevice/DTVRecordParams;", (void*)dev_stop_timeshifting},
-	{"native_start_playback", "(Lcom/amlogic/tvservice/TVDevice/DTVRecordParams;)V", (void*)dev_start_playback},
+	{"native_start_recording", "(Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;)V", (void*)dev_start_recording},
+	{"native_stop_recording", "()Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;", (void*)dev_stop_recording},
+	{"native_start_timeshifting", "(Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;)V", (void*)dev_start_timeshifting},
+	{"native_stop_timeshifting", "()Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;", (void*)dev_stop_timeshifting},
+	{"native_start_playback", "(Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;)V", (void*)dev_start_playback},
 	{"native_stop_playback", "()V", (void*)dev_stop_playback},
 	{"native_fast_forward", "(I)V", (void*)dev_fast_forward},
 	{"native_fast_backward", "(I)V", (void*)dev_fast_backward},
@@ -431,11 +431,11 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 		return -1;
 	}
 
-	gOnEventID = env->GetMethodID(clazz, "onEvent", "(Lcom/amlogic/tvservice/TVDevice/Event;)V");
+	gOnEventID = env->GetMethodID(clazz, "onEvent", "(Lcom/amlogic/tvservice/TVDevice$Event;)V");
 	gHandleID  = env->GetFieldID(clazz, "native_handle", "I");
-	gEventClass       = env->FindClass("com/amlogic/tvservice/TVDevice/Event");
-	gEventInitID      = env->GetMethodID(gEventClass, "<init>", "(I)V");
-	gEventFEParamsID  = env->GetFieldID(gEventClass, "feParams", "com/amlogic/tvutil/TVChannelParams");
+	gEventClass       = env->FindClass("com/amlogic/tvservice/TVDevice$Event");
+	gEventInitID      = env->GetMethodID(gEventClass, "<init>", "(Lcom/amlogic/tvservice/TVDevice;I)V");
+	gEventFEParamsID  = env->GetFieldID(gEventClass, "feParams", "Lcom/amlogic/tvutil/TVChannelParams;");
 	gEventFEStatusID  = env->GetFieldID(gEventClass, "feStatus", "I");
 	gChanParamsClass  = env->FindClass("com/amlogic/tvutil/TVChannelParams");
 	gChanParamsModeID = env->GetFieldID(gChanParamsClass, "mode", "I");
