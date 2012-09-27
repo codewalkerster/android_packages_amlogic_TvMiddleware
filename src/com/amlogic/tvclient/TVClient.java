@@ -117,6 +117,7 @@ abstract public class TVClient{
 	public synchronized void setInputSource(int source){
 		if(service != null){
 			try{
+				Log.d(TAG, "setInputSource "+source);
 				service.setInputSource(source);
 			}catch(RemoteException e){
 			}
@@ -203,8 +204,10 @@ abstract public class TVClient{
 	 *@param sp 搜索参数
 	 */
 	public synchronized void startScan(TVScanParams sp){
+		Log.d(TAG, "startScan");
 		if(service != null){
 			try{
+				Log.d(TAG, "service.startScan");
 				service.startScan(sp);
 			}catch(RemoteException e){
 			}

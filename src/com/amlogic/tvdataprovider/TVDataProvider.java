@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import java.io.File;
+import com.amlogic.tvutil.TVChannelParams;
 
 public class TVDataProvider extends ContentProvider{
 	private static final String TAG = "TVDataProvider";
@@ -33,18 +34,34 @@ public class TVDataProvider extends ContentProvider{
 		URI_MATCHER.addURI(TVDataProvider.AUTHORITY, "wr_db", WR_SQL);
 	}
 
+	private static class TVRegion {
+		private String name;
+		private int source;
+		private String freqList;
+
+		public TVRegion(String rn, int src, String fl) {
+			name = rn;
+			source = src;
+			freqList = fl;
+		}
+	};
+
+	private static final TVRegion tvRegions[] = {
+		new TVRegion("Default Allband", TVChannelParams.MODE_QAM, "474000000 490000000"),
+	};
+
 	public synchronized static void openDatabase(Context context){
 		if(openCount == 0){
 			Log.d(TAG, "open database");
 			String path;
 			SharedPreferences pref;
-
+			Log.d(TAG, "111");
 			db = new TVDatabase(context, null);
-
+			Log.d(TAG, "2222");
 			TVDatabase fileDB = new TVDatabase(context, DB_NAME);
 			path = new String(fileDB.getReadableDatabase().getPath());
 			fileDB.close();
-
+			Log.d(TAG, "33333");
 			/*Check the database version.*/
 			pref = PreferenceManager.getDefaultSharedPreferences(context);
 			int curVer = pref.getInt(DB_VERSION_FIELD, -1);
@@ -55,7 +72,7 @@ public class TVDataProvider extends ContentProvider{
 				fileDB = new TVDatabase(context, DB_NAME);
 				fileDB.close();
 			}
-
+			Log.d(TAG, "4444");
 			db.getWritableDatabase().execSQL("attach database '"+path+"' as filedb");
 			db.getWritableDatabase().execSQL("insert into net_table select * from filedb.net_table");
 			db.getWritableDatabase().execSQL("insert into ts_table select  * from filedb.ts_table");
@@ -67,6 +84,19 @@ public class TVDataProvider extends ContentProvider{
 			db.getWritableDatabase().execSQL("insert into teletext_table select * from filedb.teletext_table");
 			db.getWritableDatabase().execSQL("insert into dimension_table select * from filedb.dimension_table");
 			db.getWritableDatabase().execSQL("insert into sat_para_table select * from filedb.sat_para_table");
+			Log.d(TAG, "5555");
+			/** load the frequency lists from code*/
+			ContentValues cv = new ContentValues();
+			for (int i=0; i<tvRegions.length; i++) {
+				Log.d(TAG, "Loading region "+tvRegions[i].name+", source "+tvRegions[i].source);
+				cv.put("name", tvRegions[i].name);
+				cv.put("source", tvRegions[i].source);
+				cv.put("frequencies", tvRegions[i].freqList);
+				db.getWritableDatabase().insert("region_table", "", cv);
+				Log.d(TAG, tvRegions[i].name + "done !");
+				cv.clear();
+			}
+			Log.d(TAG, "provider open database done");
 		}
 
 		openCount++;
@@ -112,6 +142,13 @@ public class TVDataProvider extends ContentProvider{
 			db.close();
 			db = null;
 		}
+	}
+
+	public synchronized static int getDatabaseNativeHandle() {
+		if (db == null) {
+			return 0;
+		}
+		return db.getNativeHandle();
 	}
 
 	@Override

@@ -16,11 +16,45 @@ abstract public class TVScanner{
 		public String programName;
 		public int programType;
 	}
+	
+	private int hScan;
+	
+	private native int native_tv_scan_start(TVScannerParams scan_para);
+	private native int native_tv_scan_destroy(int hscan, boolean store);
+	/** Load native library*/
+	static{
+		System.loadLibrary("jnitvscanner");
+	}
 
-	public void scan(TVScanParams params){
+	public TVScanner(){
+		hScan = 0;
+	}
+
+	//This param is invisible to Clients, our service will load this from provider/config
+	public static class TVScannerParams extends TVScanParams{
+		/** Atv set */
+		public int minFreq;
+		public int maxFreq;
+		public int videoStd;
+		public int audioStd;
+		/** Dtv set */
+		public int dbNativeHandle;
+		public int demuxId;
+		public int frequencyList[];	
+
+		public TVScannerParams(TVScanParams sp) {
+			super(sp);
+		}
+	};
+
+	public void scan(TVScannerParams params){
+		hScan = native_tv_scan_start(params);
 	}
 
 	public void stop(boolean store){
+		if (hScan != 0) {
+			native_tv_scan_destroy(hScan, store);
+		}
 	}
 
 	abstract public void onEvent(Event evt);

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.os.Message;
 import android.os.Looper;
 import android.os.Handler;
+import android.database.Cursor;
 import java.util.Date;
 import android.os.RemoteCallbackList;
 import android.util.Log;
@@ -20,6 +21,7 @@ import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVChannel;
 import com.amlogic.tvdataprovider.TVDataProvider;
+//import com.amlogic.tvservice.TVScanner.TVScannerParams;
 
 public class TVService extends Service{
 	private static final String TAG = "TVService";
@@ -276,6 +278,10 @@ public class TVService extends Service{
 		STATUS_SCAN
 	}
 
+	public TVService(){
+		Log.d(TAG, "XXXXXXXXXXXXXXXXXX");
+	}
+
 	private TVStatus status;
 	private TVConst.SourceType inputSource;
 	private TVConst.SourceType reqInputSource;
@@ -435,7 +441,7 @@ public class TVService extends Service{
 			stopScan(false);
 		}
 
-		device.setInputSource(src);
+		//device.setInputSource(src);
 
 		status = TVStatus.STATUS_SET_INPUT_SOURCE;
 	}
@@ -468,16 +474,63 @@ public class TVService extends Service{
 
 	/*Start channel scanning.*/
 	private void resolveStartScan(TVScanParams sp){
-		if(!isInTVMode())
-			return;
-
+		Log.d(TAG, "resolveStart");
+		/*if(!isInTVMode())
+			return;*/
+		Log.d(TAG, "resolveStart 1111");
 		stopPlaying();
 		stopRecording();
 		stopScan(false);
 
 		channelParams = null;
-
-		scanner.scan(sp);
+		Log.d(TAG, "resolveStart 222222");
+		/** Configure scan */
+		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
+		Log.d(TAG, "resolveStart sdsdsdssdssds");
+		/*tsp.minFreq = config.getInt("scan:atv:minfreq");
+		tsp.maxFreq = config.getInt("scan:atv:maxfreq");
+		tsp.startFreq = config.getInt("scan:atv:startfreq");
+		tsp.direction = config.getInt("scan:atv:direction");
+		tsp.videoStd = config.getInt("scan:atv:vidstd");
+		tsp.audioStd = config.getInt("scan:atv:audstd");*/
+		tsp.minFreq = 100000000;
+		tsp.maxFreq = 200000000;
+		tsp.videoStd = 0;
+		tsp.audioStd = 0;
+		tsp.dbNativeHandle = TVDataProvider.getDatabaseNativeHandle();
+		tsp.demuxId = 0;
+		/** use the frequency given by startParams in sp */
+		tsp.frequencyList = null;
+		if (sp.dtvMode == TVScanParams.DTV_MODE_ALLBAND) {
+			Log.d(TAG, "resolveStart 333333");
+			/** load the frequency list */
+			String region = "Default Allband";//config.getString("scan:dtv:region");
+			Cursor c = getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					"select * from region_table where name=" + region + " and source=" + sp.tsSourceID,
+					null, null);
+			Log.d(TAG, "resolveStart 44444");
+			if(c != null){
+				if(c.moveToFirst()){
+					int col = c.getColumnIndex("frequencies");
+					String freqs = c.getString(col);
+					if (freqs != null && freqs.length() > 0) {
+						String[] flist = freqs.split(" ");
+						if (flist !=null && flist.length > 0) {
+							tsp.frequencyList = new int[flist.length];
+							/** get each frequency */
+							for (int i=0; i<tsp.frequencyList.length; i++) {
+								tsp.frequencyList[i] = Integer.parseInt(flist[i]);
+								Log.d(TAG, ""+tsp.frequencyList[i]);
+							}
+						}
+					}
+				}
+				c.close();
+			}
+		} 
+		Log.d(TAG, "resolveStart 5555555");
+		scanner.scan(tsp);
 
 		status = TVStatus.STATUS_SCAN;
 	}
@@ -571,6 +624,24 @@ public class TVService extends Service{
 
 	/*Solve the events from the channel scanner.*/
 	private void resolveScanEvent(TVScanner.Event event){
+		Log.d(TAG, "Channel scan event: " + event.type);
+		switch (event.type) {
+			case TVScanner.Event.EVENT_SCAN_PROGRESS:
+				Log.d(TAG, "Progress: " + event.percent + "%" + ", channel no. "+event.channelNumber);
+				if (event.programName != null) {
+					Log.d(TAG, "New Program : "+ event.programName + ", type "+ event.programType);
+				}
+				break;
+			case TVScanner.Event.EVENT_STORE_BEGIN:
+				Log.d(TAG, "Store begin...");
+				break;
+			case TVScanner.Event.EVENT_STORE_END:
+				Log.d(TAG, "Store end");
+				break;
+			default:
+				break;
+				
+		}
 	}
 
 	public IBinder onBind (Intent intent){
@@ -578,9 +649,13 @@ public class TVService extends Service{
 	}
 
 	public void onCreate(){
+		Log.d(TAG, "onCreate");
 		super.onCreate();
+		Log.d(TAG, "openDatabase");
 		TVDataProvider.openDatabase(this);
+		Log.d(TAG, "TVConfig");
 		config = new TVConfig(this);
+		Log.d(TAG, "OK");
 	}
 
 	public void onDestroy(){

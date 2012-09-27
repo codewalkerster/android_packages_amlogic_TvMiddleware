@@ -4,6 +4,7 @@ import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
 import java.io.File;
+import android.util.Log;
 
 abstract public class TVDevice{
 
@@ -81,7 +82,9 @@ abstract public class TVDevice{
 
 	public TVDevice(){
 		destroy = false;
+		Log.d("TVDevice", "11111111111111111111111111111111");
 		native_device_init();
+		Log.d("TVDevice", "22222222222222222222222222222222");
 	}
 
 	public void setInputSource(TVConst.SourceType source){
