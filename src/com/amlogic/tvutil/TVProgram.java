@@ -37,6 +37,10 @@ public class TVProgram{
 	public class Element{
 		private int pid;
 
+		public Element(int pid){
+			this.pid = pid;
+		}
+
 		/**
 		 *取得基础元素的PID
 		 *@return 返回PID
@@ -51,6 +55,11 @@ public class TVProgram{
 	 */
 	public class MultiLangElement extends Element{
 		private String lang;
+
+		public MultiLangElement(int pid, String lang){
+			super(pid);
+			this.lang = lang;
+		}
 
 		/**
 		 *取得元素对应的语言
@@ -89,6 +98,11 @@ public class TVProgram{
 		public static final int FORMAT_QJPEG  = 10;
 
 		private int format;
+
+		public Video(int pid, int fmt){
+			super(pid);
+			this.format = fmt;
+		}
 
 		/**
 		 *取得视频编码格式
@@ -148,6 +162,11 @@ public class TVProgram{
 
 		private int format;
 
+		public Audio(int pid, String lang, int fmt){
+			super(pid, lang);
+			this.format = fmt;
+		}
+
 		/**
 		 *取得音频编码格式
 		 *@return 返回音频编码格式
@@ -177,6 +196,19 @@ public class TVProgram{
 		private int magazineNo;
 		private int pageNo;
 		private int type;
+
+		public Subtitle(int pid, String lang, int type, int num1, int num2){
+			super(pid, lang);
+
+			this.type = type;
+			if(type == TYPE_DVB_SUBTITLE){
+				compositionPage = num1;
+				ancillaryPage   = num2;
+			}else if(type == TYPE_DTV_TELETEXT){
+				magazineNo = num1;
+				pageNo = num2;
+			}
+		}
 
 		/**
 		 *取得字幕类型
@@ -225,6 +257,12 @@ public class TVProgram{
 	public class Teletext extends MultiLangElement{
 		private int magazineNo;
 		private int pageNo;
+
+		public Teletext(int pid, String lang, int mag, int page){
+			super(pid, lang);
+			magazineNo = mag;
+			pageNo = page;
+		}
 
 		/**
 		 *取得teletext的magazine number
@@ -286,6 +324,43 @@ public class TVProgram{
 
 		col = c.getColumnIndex("lock");
 		this.lock = (c.getInt(col)!=0);
+
+		int pid, fmt;
+
+		col = c.getColumnIndex("vid_pid");
+		pid = c.getInt(col);
+
+		col = c.getColumnIndex("vid_fmt");
+		fmt = c.getInt(col);
+
+		this.video = new Video(pid, fmt);
+
+		String pids[], fmts[], langs[], str;
+		int i, count;
+
+		col = c.getColumnIndex("aud_pids");
+		str = c.getString(col);
+		pids = str.split(",");
+
+		col = c.getColumnIndex("aud_fmts");
+		str = c.getString(col);
+		fmts = str.split(",");
+
+		col = c.getColumnIndex("aud_langs");
+		str = c.getString(col);
+		langs = str.split(",");
+
+		count = pids.length;
+		this.audioes = new Audio[count];
+
+		for(i=0; i<count; i++){
+			String lang;
+
+			pid = Integer.parseInt(pids[i]);
+			fmt = Integer.parseInt(fmts[i]);
+			lang = langs[i];
+			this.audioes[i] = new Audio(pid, lang, fmt);
+		}
 	}
 
 	/**

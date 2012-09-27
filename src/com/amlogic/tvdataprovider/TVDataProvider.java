@@ -16,7 +16,7 @@ import com.amlogic.tvutil.TVChannelParams;
 public class TVDataProvider extends ContentProvider{
 	private static final String TAG = "TVDataProvider";
 	private static final String DB_NAME = "dvb.db";
-	private static final String AUTHORITY = "com.amlogic.tvdataprovider.TVDataProvider";
+	private static final String AUTHORITY = "com.amlogic.tv.tvdataprovider";
 	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
 	private static final int RD_SQL = 1;
 	private static final int WR_SQL = 2;
@@ -97,7 +97,6 @@ public class TVDataProvider extends ContentProvider{
 				cv.clear();
 			}
 			Log.d(TAG, "provider open database done");
-
 		}
 
 		openCount++;
