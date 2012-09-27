@@ -434,12 +434,12 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gOnEventID = env->GetMethodID(clazz, "onEvent", "(Lcom/amlogic/tvservice/TVDevice$Event;)V");
 	gHandleID  = env->GetFieldID(clazz, "native_handle", "I");
 	gEventClass       = env->FindClass("com/amlogic/tvservice/TVDevice$Event");
-	gEventClass       = env->NewGlobalRef(gEventClass);
+	gEventClass       = (jclass)env->NewGlobalRef((jobject)gEventClass);
 	gEventInitID      = env->GetMethodID(gEventClass, "<init>", "(Lcom/amlogic/tvservice/TVDevice;I)V");
 	gEventFEParamsID  = env->GetFieldID(gEventClass, "feParams", "Lcom/amlogic/tvutil/TVChannelParams;");
 	gEventFEStatusID  = env->GetFieldID(gEventClass, "feStatus", "I");
 	gChanParamsClass  = env->FindClass("com/amlogic/tvutil/TVChannelParams");
-	gChanParamsClass  = env->NewGlobalRef(gChanParamsClass);
+	gChanParamsClass  = (jclass)env->NewGlobalRef((jobject)gChanParamsClass);
 	gChanParamsModeID = env->GetFieldID(gChanParamsClass, "mode", "I");
 	gChanParamsFreqID = env->GetFieldID(gChanParamsClass, "frequency", "I");
 	gChanParamsModID  = env->GetFieldID(gChanParamsClass, "modulation", "I");
@@ -456,8 +456,8 @@ JNI_OnUnload(JavaVM* vm, void* reserved)
 {
 	JNIEnv* env = NULL;
 
-	env->DeleteGlobalRef(gEventClass);
-	env->DeleteGlobalRef(gChanParamsClass);
+	env->DeleteGlobalRef((jobject)gEventClass);
+	env->DeleteGlobalRef((jobject)gChanParamsClass);
 
 	if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
 		return;
