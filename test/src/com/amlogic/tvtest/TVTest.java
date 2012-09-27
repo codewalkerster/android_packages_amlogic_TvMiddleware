@@ -3,6 +3,7 @@ package com.amlogic.tvtest;
 import android.util.Log;
 import android.os.Bundle;
 import com.amlogic.tvutil.TVMessage;
+import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvactivity.TVActivity;
 
 public class TVTest extends TVActivity{
@@ -20,6 +21,7 @@ public class TVTest extends TVActivity{
 
 	public void onConnected(){
 		Log.d(TAG, "connected");
+		setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV);
 	}
 
 	public void onDisconnected(){

@@ -67,6 +67,9 @@ public class TVDataProvider extends ContentProvider{
 			db.getWritableDatabase().execSQL("insert into teletext_table select * from filedb.teletext_table");
 			db.getWritableDatabase().execSQL("insert into dimension_table select * from filedb.dimension_table");
 			db.getWritableDatabase().execSQL("insert into sat_para_table select * from filedb.sat_para_table");
+
+			/*Test*/
+			//db.getWriteDatabase().execSQL("insert into");
 		}
 
 		openCount++;
