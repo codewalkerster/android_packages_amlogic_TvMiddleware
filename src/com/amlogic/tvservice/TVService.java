@@ -553,13 +553,14 @@ public class TVService extends Service{
 	private void resolveDeviceEvent(TVDevice.Event event){
 		switch(event.type){
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_OK:
+				Log.e(TAG, "set input source to "+reqInputSource.name()+" ok");
 				inputSource = reqInputSource;
 				if(isInTVMode()){
 					playCurrentProgram();
 				}
 				break;
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_FAILED:
-				Log.e(TAG, "set input source to "+status.name()+" failed");
+				Log.e(TAG, "set input source to "+reqInputSource.name()+" failed");
 				break;
 			case TVDevice.Event.EVENT_FRONTEND:
 				if(isInTVMode()){

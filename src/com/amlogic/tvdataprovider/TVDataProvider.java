@@ -15,7 +15,7 @@ import java.io.File;
 public class TVDataProvider extends ContentProvider{
 	private static final String TAG = "TVDataProvider";
 	private static final String DB_NAME = "dvb.db";
-	private static final String AUTHORITY = "com.amlogic.tvdataprovider.TVDataProvider";
+	private static final String AUTHORITY = "com.amlogic.tv.tvdataprovider";
 	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
 	private static final int RD_SQL = 1;
 	private static final int WR_SQL = 2;
@@ -69,7 +69,8 @@ public class TVDataProvider extends ContentProvider{
 			db.getWritableDatabase().execSQL("insert into sat_para_table select * from filedb.sat_para_table");
 
 			/*Test*/
-			//db.getWriteDatabase().execSQL("insert into");
+			//db.getWritableDatabase().execSQL("insert into ts_table(src,freq,bw) values(2,474000000,0)");
+			//db.getWritableDatabase().execSQL("insert into srv_table(src,db_ts_id,name,service_type,vid_pid,vid_fmt,aud_pids,aud_fmts,aud_langs,chan_num) values(2,0,\"TV1\",1,512,0,650,0,\"eng\",1)");
 		}
 
 		openCount++;
