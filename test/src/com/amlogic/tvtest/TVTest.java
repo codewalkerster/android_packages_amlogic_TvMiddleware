@@ -3,6 +3,7 @@ package com.amlogic.tvtest;
 import android.util.Log;
 import android.os.Bundle;
 import com.amlogic.tvutil.TVMessage;
+import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvactivity.TVActivity;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVScanParams;
@@ -23,10 +24,12 @@ public class TVTest extends TVActivity{
 
 	public void onConnected(){
 		Log.d(TAG, "connected");
+
 		TVScanParams sp = TVScanParams.dtvAllbandScanParams(0, TVChannelParams.MODE_QAM);
-		setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV.ordinal());
+		setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV);
 		Log.d(TAG, "Start Scan...");
 		startScan(sp);
+		
 	}
 
 	public void onDisconnected(){

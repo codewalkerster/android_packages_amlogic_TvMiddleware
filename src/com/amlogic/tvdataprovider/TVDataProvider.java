@@ -97,6 +97,7 @@ public class TVDataProvider extends ContentProvider{
 				cv.clear();
 			}
 			Log.d(TAG, "provider open database done");
+
 		}
 
 		openCount++;

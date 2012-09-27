@@ -410,8 +410,16 @@ public class TVService extends Service{
 		TVChannelParams fe_params;
 
 		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
+			if(atvPlayParams == null){
+				status = TVStatus.STATUS_STOPPED;
+				return;
+			}
 			p = playParamsToProgram(atvPlayParams);
 		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+			if(dtvPlayParams == null){
+				status = TVStatus.STATUS_STOPPED;
+				return;
+			}
 			p = playParamsToProgram(dtvPlayParams);
 		}
 
