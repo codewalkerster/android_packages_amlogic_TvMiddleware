@@ -432,6 +432,8 @@ public class TVService extends Service{
 
 	/*Reset the input source.*/
 	private void resolveSetInputSource(TVConst.SourceType src){
+		Log.d(TAG, "try to set input source to "+src.name());
+
 		if(src == reqInputSource)
 			return;
 
@@ -450,8 +452,28 @@ public class TVService extends Service{
 
 	/*Play a program.*/
 	private void resolvePlayProgram(TVPlayParams tp){
-		if(!isInTVMode())
+		Log.d(TAG, "try to play program");
+
+		TVProgram prog = playParamsToProgram(tp);
+		if(prog == null)
 			return;
+
+		TVChannel chan = prog.getChannel();
+		if(chan == null)
+			return;
+
+		if(chan.isAnalogMode() && (inputSource == TVConst.SourceType.SOURCE_TYPE_ATV)){
+			atvPlayParams = tp;
+			playCurrentProgram();
+		}else if(!chan.isAnalogMode() && (inputSource == TVConst.SourceType.SOURCE_TYPE_DTV)){
+			dtvPlayParams = tp;
+			playCurrentProgram();
+		}else{
+			if(chan.isAnalogMode())
+				atvPlayParams = tp;
+			else
+				dtvPlayParams = tp;
+		}
 	}
 
 	/*Stop playing.*/

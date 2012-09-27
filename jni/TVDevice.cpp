@@ -183,7 +183,7 @@ static void dev_init(JNIEnv *env, jobject obj)
 
 	env->SetIntField(obj, gHandleID, (jint)dev);
 
-	dev->dev_obj = obj;
+	dev->dev_obj = env->NewWeakGlobalRef(obj);
 }
 
 static void dev_destroy(JNIEnv *env, jobject obj)
@@ -195,6 +195,8 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	if(dev->fend_open){
 		AM_FEND_Close(FEND_DEV_NO);
 	}
+
+	env->DeleteWeakGlobalRef(dev->dev_obj);
 
 	free(dev);
 }

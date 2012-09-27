@@ -35,7 +35,7 @@ public class TVChannel{
 		col = c.getColumnIndex("freq");
 		freq = c.getInt(col);
 
-		if(src == 0){
+		if(src == TVChannelParams.MODE_QAM){
 			col = c.getColumnIndex("mod");
 			mod = c.getInt(col);
 
@@ -43,7 +43,7 @@ public class TVChannel{
 			symb = c.getInt(col);
 
 			this.params = TVChannelParams.dvbcParams(freq, mod, symb);
-		}else if(src == 1){
+		}else if(src == TVChannelParams.MODE_OFDM){
 			col = c.getColumnIndex("bw");
 			bw = c.getInt(col);
 
