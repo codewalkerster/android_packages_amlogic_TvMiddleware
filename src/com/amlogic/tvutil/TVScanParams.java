@@ -25,8 +25,8 @@ public class TVScanParams implements Parcelable {
 	private int mode;
 	private int fendID;
 	/** DTV parameters */
-	public int dtvMode;
-	public int tsSourceID;
+	private int dtvMode;
+	private int tsSourceID;
 	private TVChannelParams startParams;
 	/** ATV parameters */
 	private int atvMode;
@@ -86,39 +86,49 @@ public class TVScanParams implements Parcelable {
 		this.mode = mode;
 	}
 
+	
+	public int getTvMode() {
+		return mode;
+	}
+
+	public int getDtvMode() {
+		return dtvMode;
+	}
+
+	public int getAtvMode() {
+		return atvMode;
+	}
+
+	public int getTsSourceID() {
+		return tsSourceID;
+	}
+
 	/**
 	 *创建新的搜索参数
 	 *@param sp 原始参数
 	 */
 	public TVScanParams(TVScanParams sp){
-		Log.d("TVScanParams", "TVScanParams");
 		mode = sp.mode;
-		Log.d("TVScanParams", "dtvMode");
 		dtvMode = sp.dtvMode;
-		Log.d("TVScanParams", "fendID");
 		fendID = sp.fendID;
-		Log.d("TVScanParams", "tsSourceID");
 		tsSourceID = sp.tsSourceID;
-		//startParams = sp.startParams;
+		startParams = sp.startParams;
 		atvMode = sp.atvMode;
 		startFreq = sp.startFreq;
 		direction = sp.direction;
-		Log.d("TVScanParams", "END");
 	}
 
 	/**
 	 *创建手动搜索参数
 	 *@param fendID 前端设备参数
-	 *@param tsSourceID TS输入源ID
 	 *@param params 要搜索的频点参数
 	 *@return 返回新创建的搜索参数
 	 */
-	public static TVScanParams dtvManualScanParams(int fendID, int tsSourceID, TVChannelParams params){
+	public static TVScanParams dtvManualScanParams(int fendID, TVChannelParams params){
 		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
 
 		sp.dtvMode = DTV_MODE_MANUAL;
 		sp.fendID = fendID;
-		sp.tsSourceID  = tsSourceID;
 		sp.startParams = params;
 
 		return sp;
@@ -127,15 +137,15 @@ public class TVScanParams implements Parcelable {
 	/**
 	 *创建自动搜索参数
 	 *@param fendID 前端设备参数
-	 *@param tsSourceID TS输入源ID
+	 *@param mainParams main frequency contains NIT
 	 *@return 返回新创建的搜索参数
 	 */
-	public static TVScanParams dtvAutoScanParams(int fendID, int tsSourceID){
+	public static TVScanParams dtvAutoScanParams(int fendID, TVChannelParams mainParams){
 		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
 
 		sp.dtvMode = DTV_MODE_AUTO;
 		sp.fendID = fendID;
-		sp.tsSourceID  = tsSourceID;
+		sp.startParams = mainParams;
 
 		return sp;
 	}
@@ -156,6 +166,12 @@ public class TVScanParams implements Parcelable {
 		return sp;
 	}
 
+	/**
+	 * Get DTV allband scan mode params
+	 *@param fendID frontend device number
+	 *@param tsSourceID frontend type
+	 *@return the new TVScanParams object
+	 */
 	public static TVScanParams dtvAllbandScanParams(int fendID, int tsSourceID){
 		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
 
@@ -166,6 +182,13 @@ public class TVScanParams implements Parcelable {
 		return sp;
 	}
 
+	/**
+	 * Get ATV manual scan mode params
+	 *@param fendID frontend device number
+	 *@param startFreq the start frequency 
+	 *@param direction direction to search
+	 *@return the new TVScanParams object
+	 */
 	public static TVScanParams atvManualScanParams(int fendID, int startFreq, int direction){
 		TVScanParams sp = new TVScanParams(TV_MODE_ATV);
 
@@ -177,6 +200,11 @@ public class TVScanParams implements Parcelable {
 		return sp;
 	}
 
+	/**
+	 * Get ATV auto scan mode params
+	 *@param fendID frontend device number
+	 *@return the new TVScanParams object
+	 */
 	public static TVScanParams atvAutoScanParams(int fendID){
 		TVScanParams sp = new TVScanParams(TV_MODE_ATV);
 

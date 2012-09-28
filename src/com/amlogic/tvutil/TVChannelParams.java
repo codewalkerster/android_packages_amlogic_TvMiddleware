@@ -210,7 +210,7 @@ public class TVChannelParams  implements Parcelable {
 	 *@param symbolRate 符号率
 	 *@return 返回新创建的参数
 	 */
-	static TVChannelParams dvbcParams(int frequency, int modulation, int symbolRate){
+	public static TVChannelParams dvbcParams(int frequency, int modulation, int symbolRate){
 		TVChannelParams tp = new TVChannelParams(MODE_QAM);
 
 		tp.frequency  = frequency;
@@ -226,7 +226,7 @@ public class TVChannelParams  implements Parcelable {
 	 *@param bandwidth 带宽
 	 *@return 返回新创建的参数
 	 */
-	static TVChannelParams dvbtParams(int frequency, int bandwidth){
+	public static TVChannelParams dvbtParams(int frequency, int bandwidth){
 		TVChannelParams tp = new TVChannelParams(MODE_OFDM);
 
 		tp.frequency = frequency;
@@ -241,7 +241,7 @@ public class TVChannelParams  implements Parcelable {
 	 *@param symbolRate 符号率
 	 *@return 返回新创建的参数
 	 */
-	static TVChannelParams dvbsParams(int frequency, int symbolRate){
+	public static TVChannelParams dvbsParams(int frequency, int symbolRate){
 		TVChannelParams tp = new TVChannelParams(MODE_QPSK);
 
 		tp.frequency  = frequency;
@@ -257,7 +257,7 @@ public class TVChannelParams  implements Parcelable {
 	 *@param audio 伴音选择
 	 *@return 返回新创建的参数
 	 */
-	static TVChannelParams analogParams(int frequency, int std, int audio){
+	public static TVChannelParams analogParams(int frequency, int std, int audio){
 		TVChannelParams tp = new TVChannelParams(MODE_ANALOG);
 
 		tp.frequency = frequency;

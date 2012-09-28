@@ -56,6 +56,7 @@ public class TVService extends Service{
 			try{
 				callbacks.getBroadcastItem(i).onMessage(msg);
 			}catch(Exception e){
+				e.printStackTrace();
 			}
 		}
 		callbacks.finishBroadcast();
@@ -318,8 +319,6 @@ public class TVService extends Service{
 	private void stopScan(boolean store){
 		if(status == TVStatus.STATUS_SCAN){
 			scanner.stop(store);
-			TVDataProvider.syncToFile();
-
 			status = TVStatus.STATUS_STOPPED;
 		}
 	}
@@ -513,15 +512,16 @@ public class TVService extends Service{
 
 	/*Start channel scanning.*/
 	private void resolveStartScan(TVScanParams sp){
-		if(!isInTVMode())
+		/*if(!isInTVMode())
 			return;
+		*/
 		
 		/** Configure scan */
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
 		/** Set params from config */
 		try {
-			tsp.setAtvParams(config.getInt("scan:atv:minfreq") , config.getInt("scan:atv:maxfreq"),
-				config.getInt("scan:atv:vidstd"), config.getInt("scan:atv:audstd"));
+			tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"),
+				config.getInt("tv:scan:atv:vidstd"), config.getInt("tv:scan:atv:audstd"));
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG, "Cannot read atv config !!!");
@@ -534,7 +534,7 @@ public class TVService extends Service{
 			String region;
 			/** load the frequency list */
 			try {
-				region = config.getString("scan:dtv:region");
+				region = config.getString("tv:scan:dtv:region");
 			} catch (Exception e) {
 				e.printStackTrace();
 				Log.d(TAG, "Cannot read dtv region !!!");
@@ -581,8 +581,9 @@ public class TVService extends Service{
 
 	/*Stop scanning process.*/
 	private void resolveStopScan(boolean store){
-		if(!isInTVMode())
+		/*if(!isInTVMode())
 			return;
+			*/
 
 		stopScan(store);
 
@@ -645,7 +646,9 @@ public class TVService extends Service{
 				Log.e(TAG, "set input source to "+reqInputSource.name()+" ok");
 				inputSource = reqInputSource;
 				if(isInTVMode()){
-					playCurrentProgram();
+					if (status == TVStatus.STATUS_SET_INPUT_SOURCE) {
+						playCurrentProgram();
+					}
 				}
 				break;
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_FAILED:
@@ -676,15 +679,17 @@ public class TVService extends Service{
 				if (event.programName != null) {
 					Log.d(TAG, "New Program : "+ event.programName + ", type "+ event.programType);
 				}
-				if (event.percent >= 100)
-					scanner.stop(true);
-				TVDataProvider.syncToFile();
+				sendMessage(TVMessage.scanUpdate(event.percent, event.channelNumber, event.totalChannelCount, 
+					event.channelParams, event.lockedStatus, event.programName, event.programType));
 				break;
 			case TVScanner.Event.EVENT_STORE_BEGIN:
 				Log.d(TAG, "Store begin...");
+				sendMessage(TVMessage.scanStoreBegin());
 				break;
 			case TVScanner.Event.EVENT_STORE_END:
+				TVDataProvider.syncToFile();
 				Log.d(TAG, "Store end");
+				sendMessage(TVMessage.scanStoreEnd());
 				break;
 			default:
 				break;
@@ -697,13 +702,9 @@ public class TVService extends Service{
 	}
 
 	public void onCreate(){
-		Log.d(TAG, "onCreate");
 		super.onCreate();
-		Log.d(TAG, "openDatabase");
 		TVDataProvider.openDatabase(this);
-		Log.d(TAG, "TVConfig");
 		config = new TVConfig(this);
-		Log.d(TAG, "OK");
 	}
 
 	public void onDestroy(){

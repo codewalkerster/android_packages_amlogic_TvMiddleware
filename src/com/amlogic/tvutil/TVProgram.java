@@ -340,15 +340,15 @@ public class TVProgram{
 
 		col = c.getColumnIndex("aud_pids");
 		str = c.getString(col);
-		pids = str.split(",");
+		pids = str.split(" ");
 
 		col = c.getColumnIndex("aud_fmts");
 		str = c.getString(col);
-		fmts = str.split(",");
+		fmts = str.split(" ");
 
 		col = c.getColumnIndex("aud_langs");
 		str = c.getString(col);
-		langs = str.split(",");
+		langs = str.split(" ");
 
 		count = pids.length;
 		this.audioes = new Audio[count];

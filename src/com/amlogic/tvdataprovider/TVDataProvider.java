@@ -88,7 +88,7 @@ public class TVDataProvider extends ContentProvider{
 				cv.put("source", tvRegions[i].source);
 				cv.put("frequencies", tvRegions[i].freqList);
 				db.getWritableDatabase().insert("region_table", "", cv);
-				Log.d(TAG, tvRegions[i].name + "done !");
+				Log.d(TAG, tvRegions[i].name + " done !");
 				cv.clear();
 			}
 		}
@@ -166,9 +166,7 @@ public class TVDataProvider extends ContentProvider{
 		Cursor c = null;
 
 		if(id == RD_SQL){
-			Log.d(TAG, "RD_SQL: "+selection);
 			c = db.getReadableDatabase().rawQuery(selection, null);
-			Log.d(TAG, "return cursor:" + c);
 		}else if(id == WR_SQL){
 			db.getWritableDatabase().execSQL(selection);
 		}

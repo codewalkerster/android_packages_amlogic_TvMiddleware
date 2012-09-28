@@ -3,6 +3,7 @@ package com.amlogic.tvutil;
 import java.lang.UnsupportedOperationException;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 /**
  *TV 消息
@@ -26,19 +27,34 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_BOOKING_START     = 8;
 	/**配置项被修改*/
 	public static final int TYPE_CONFIG_CHANGED    = 9;
+	/**TV Scan progress message*/
+	public static final int TYPE_SCAN_PROGRESS     = 10;
+	/**TV scan end, start storing */
+	public static final int TYPE_SCAN_STORE_BEGIN  = 11;
+	/**Store end*/
+	public static final int TYPE_SCAN_STORE_END    = 12;
 
+	private static final String TAG="TVMessage";
 	private int type;
 	private int serviceID;
 	private int channelID;
 	private int bookingID;
 	private String cfgName;
 	private TVConfigValue cfgValue;
+	private int scanProgress; // 0-100
+	private int scanTotalChanCount;
+	private int scanCurChanNo;
+	private TVChannelParams scanCurChanParams;
+	private int scanCurChanLocked;	// 0 unlocked, 1 locked
+	private String scanProgramName; // Maybe null to indicate that no new program in this update
+	private int scanProgramType;
 
 	private int flags;
 	private static final int FLAG_SERVICE_ID = 1;
 	private static final int FLAG_CHANNEL_ID = 2;
 	private static final int FLAG_BOOKING_ID = 4;
 	private static final int FLAG_CONFIG     = 8;
+	private static final int FLAG_SCAN       = 16;
 
 	public static final Parcelable.Creator<TVMessage> CREATOR = new Parcelable.Creator<TVMessage>(){
 		public TVMessage createFromParcel(Parcel in) {
@@ -63,9 +79,18 @@ public class TVMessage implements Parcelable{
 			cfgName  = in.readString();
 			cfgValue = new TVConfigValue(in);
 		}
+		if ((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS) {
+			scanProgress = in.readInt();
+			scanTotalChanCount = in.readInt();
+			scanCurChanNo = in.readInt();
+			scanCurChanParams = new TVChannelParams(in);
+			scanCurChanLocked = in.readInt();
+			scanProgramName = in.readString();
+			scanProgramType = in.readInt();
+		}
 	}
 
-	public void writeToParcel(Parcel dest, int flags){
+	public void writeToParcel(Parcel dest, int flag){
 		dest.writeInt(type);
 		dest.writeInt(flags);
 
@@ -77,7 +102,16 @@ public class TVMessage implements Parcelable{
 			dest.writeInt(bookingID);
 		if((flags & FLAG_CONFIG) != 0){
 			dest.writeString(cfgName);
-			cfgValue.writeToParcel(dest, flags);
+			cfgValue.writeToParcel(dest, flag);
+		}
+		if((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS){
+			dest.writeInt(scanProgress);
+			dest.writeInt(scanTotalChanCount);
+			dest.writeInt(scanCurChanNo);
+			scanCurChanParams.writeToParcel(dest, flag);
+			dest.writeInt(scanCurChanLocked);
+			dest.writeString(scanProgramName);
+			dest.writeInt(scanProgramType);
 		}
 	}
 
@@ -127,6 +161,55 @@ public class TVMessage implements Parcelable{
 			throw new UnsupportedOperationException();
 
 		return bookingID;
+	}
+
+	public int getScanProgress() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanProgress;
+	}
+
+	public int getScanTotalChanCount() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanTotalChanCount;
+	}
+
+	public int getScanCurChanNo() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanCurChanNo;
+	}
+
+	public TVChannelParams getScanCurChanParams() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanCurChanParams;
+	}
+
+	public int getScanCurChanLockStatus() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanCurChanLocked;
+	}
+
+	public String getScanProgramName() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanProgramName;
+	}
+
+	public int getScanProgramType() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanProgramType;
 	}
 
 	/**
@@ -248,6 +331,41 @@ public class TVMessage implements Parcelable{
 		msg.type  = TYPE_CONFIG_CHANGED;
 		msg.cfgName  = name;
 		msg.cfgValue = value;
+
+		return msg;
+	}
+
+	public static TVMessage scanUpdate(int progressVal, int curChan, int totalChan, TVChannelParams curChanParam, 
+		int lockStatus, String programName, int programType) {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_SCAN_PROGRESS;
+		msg.scanProgress = progressVal;
+		msg.scanCurChanNo = curChan;
+		msg.scanTotalChanCount = totalChan;
+		msg.scanCurChanParams = curChanParam;
+		msg.scanCurChanLocked = lockStatus;
+		msg.scanProgramName = programName;
+		msg.scanProgramType = programType;
+		
+		return msg;
+	}
+
+	public static TVMessage scanStoreBegin() {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_SCAN_STORE_BEGIN;
+
+		return msg;
+	}
+
+	public static TVMessage scanStoreEnd() {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_SCAN_STORE_END;
 
 		return msg;
 	}
