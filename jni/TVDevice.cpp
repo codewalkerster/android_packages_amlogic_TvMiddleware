@@ -15,7 +15,7 @@ extern "C" {
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
 typedef struct{
-	AM_Bool_t fend_open;
+	AM_Bool_t dev_open;
 	int       fend_mode;
 	jobject   dev_obj;
 	AM_DMX_Source_t ts_src;
@@ -202,8 +202,10 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	AM_DMX_Close(DMX_DEV_NO);
 	AM_AV_Close(AV_DEV_NO);
 
-	if(dev->fend_open){
+	if(dev->dev_open){
 		AM_FEND_Close(FEND_DEV_NO);
+		AM_DMX_Close(DMX_DEV_NO);
+		AM_AV_Close(DMX_DEV_NO);
 	}
 
 	env->DeleteWeakGlobalRef(dev->dev_obj);
@@ -227,15 +229,24 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 
 	TVDevice *dev = get_dev(env, obj);
 
-	if(!dev->fend_open){
-		AM_FEND_OpenPara_t para;
+	if(!dev->dev_open){
+		AM_FEND_OpenPara_t fend_para;
+		AM_AV_OpenPara_t av_para;
+		AM_DMX_OpenPara_t dmx_para;
 
-		memset(&para, 0, sizeof(para));
-		para.mode = FEND_DEF_MODE;
+		memset(&fend_para, 0, sizeof(fend_para));
+		fend_para.mode = FEND_DEF_MODE;
 
-		AM_FEND_Open(FEND_DEV_NO, &para);
+		AM_FEND_Open(FEND_DEV_NO, &fend_para);
 		AM_FEND_SetCallback(FEND_DEV_NO, fend_cb, dev);
-		dev->fend_open = AM_TRUE;
+
+		memset(&dmx_para, 0, sizeof(dmx_para));
+		AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+
+		memset(&av_para, 0, sizeof(av_para));
+		AM_AV_Open(AV_DEV_NO, &av_para);
+
+		dev->dev_open = AM_TRUE;
 	}
 
 	chan_to_fpara(env, params, &fpara);
@@ -260,7 +271,7 @@ static jobject dev_get_frontend(JNIEnv *env, jobject obj)
 	jobject params;
 
 	TVDevice *dev = get_dev(env, obj);
-	if(!dev->fend_open)
+	if(!dev->dev_open)
 		return NULL;
 	
 	AM_FEND_GetPara(FEND_DEV_NO, &fpara);
@@ -274,7 +285,7 @@ static jint dev_get_frontend_status(JNIEnv *env, jobject obj)
 {
 	fe_status_t status;
 	TVDevice *dev = get_dev(env, obj);
-	if(!dev->fend_open)
+	if(!dev->dev_open)
 		return 0;
 	
 	AM_FEND_GetStatus(FEND_DEV_NO, &status);
@@ -286,7 +297,7 @@ static jint dev_get_frontend_signal_strength(JNIEnv *env, jobject obj)
 {
 	int strength;
 	TVDevice *dev = get_dev(env, obj);
-	if(!dev->fend_open)
+	if(!dev->dev_open)
 		return 0;
 	
 	AM_FEND_GetStrength(FEND_DEV_NO, &strength);
@@ -297,7 +308,7 @@ static jint dev_get_frontend_snr(JNIEnv *env, jobject obj)
 {
 	int snr;
 	TVDevice *dev = get_dev(env, obj);
-	if(!dev->fend_open)
+	if(!dev->dev_open)
 		return 0;
 	
 	AM_FEND_GetSNR(FEND_DEV_NO, &snr);
@@ -308,7 +319,7 @@ static jint dev_get_frontend_ber(JNIEnv *env, jobject obj)
 {
 	int ber;
 	TVDevice *dev = get_dev(env, obj);
-	if(!dev->fend_open)
+	if(!dev->dev_open)
 		return 0;
 	
 	AM_FEND_GetBER(FEND_DEV_NO, &ber);
@@ -318,11 +329,14 @@ static jint dev_get_frontend_ber(JNIEnv *env, jobject obj)
 static void dev_free_frontend(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev = get_dev(env, obj);
-	if(!dev->fend_open)
+	if(!dev->dev_open)
 		return;
 	
 	AM_FEND_Close(FEND_DEV_NO);
-	dev->fend_open = AM_FALSE;
+	AM_DMX_Close(DMX_DEV_NO);
+	AM_AV_Close(AV_DEV_NO);
+
+	dev->dev_open = AM_FALSE;
 }
 
 static void dev_start_vbi(JNIEnv *env, jobject obj, jint flags)
