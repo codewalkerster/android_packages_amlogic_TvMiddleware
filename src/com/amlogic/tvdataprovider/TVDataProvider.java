@@ -47,21 +47,18 @@ public class TVDataProvider extends ContentProvider{
 	};
 
 	private static final TVRegion tvRegions[] = {
-		new TVRegion("Default Allband", TVChannelParams.MODE_QAM, "474000000 490000000"),
+		new TVRegion("Default", TVChannelParams.MODE_QAM, "474000000 490000000"),
 	};
 
 	public synchronized static void openDatabase(Context context){
 		if(openCount == 0){
-			Log.d(TAG, "open database");
 			String path;
 			SharedPreferences pref;
-			Log.d(TAG, "111");
+			
 			db = new TVDatabase(context, null);
-			Log.d(TAG, "2222");
 			TVDatabase fileDB = new TVDatabase(context, DB_NAME);
 			path = new String(fileDB.getReadableDatabase().getPath());
 			fileDB.close();
-			Log.d(TAG, "33333");
 			/*Check the database version.*/
 			pref = PreferenceManager.getDefaultSharedPreferences(context);
 			int curVer = pref.getInt(DB_VERSION_FIELD, -1);
@@ -72,7 +69,6 @@ public class TVDataProvider extends ContentProvider{
 				fileDB = new TVDatabase(context, DB_NAME);
 				fileDB.close();
 			}
-			Log.d(TAG, "4444");
 			db.getWritableDatabase().execSQL("attach database '"+path+"' as filedb");
 			db.getWritableDatabase().execSQL("insert into net_table select * from filedb.net_table");
 			db.getWritableDatabase().execSQL("insert into ts_table select  * from filedb.ts_table");
@@ -84,7 +80,6 @@ public class TVDataProvider extends ContentProvider{
 			db.getWritableDatabase().execSQL("insert into teletext_table select * from filedb.teletext_table");
 			db.getWritableDatabase().execSQL("insert into dimension_table select * from filedb.dimension_table");
 			db.getWritableDatabase().execSQL("insert into sat_para_table select * from filedb.sat_para_table");
-			Log.d(TAG, "5555");
 			/** load the frequency lists from code*/
 			ContentValues cv = new ContentValues();
 			for (int i=0; i<tvRegions.length; i++) {
@@ -96,7 +91,6 @@ public class TVDataProvider extends ContentProvider{
 				Log.d(TAG, tvRegions[i].name + "done !");
 				cv.clear();
 			}
-			Log.d(TAG, "provider open database done");
 		}
 
 		openCount++;
@@ -172,7 +166,9 @@ public class TVDataProvider extends ContentProvider{
 		Cursor c = null;
 
 		if(id == RD_SQL){
+			Log.d(TAG, "RD_SQL: "+selection);
 			c = db.getReadableDatabase().rawQuery(selection, null);
+			Log.d(TAG, "return cursor:" + c);
 		}else if(id == WR_SQL){
 			db.getWritableDatabase().execSQL(selection);
 		}

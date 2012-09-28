@@ -1,9 +1,11 @@
 package com.amlogic.tvservice;
 
+import android.util.Log;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVChannelParams;
 
 abstract public class TVScanner{
+	private static final String TAG = "TVScanner";
 	public class Event{
 		public static final int EVENT_SCAN_PROGRESS = 0;
 		public static final int EVENT_STORE_BEGIN   = 1;
@@ -39,11 +41,12 @@ abstract public class TVScanner{
 		public int audioStd;
 		/** Dtv set */
 		public int dbNativeHandle;
-		public int demuxId;
+		public int demuxID;
 		public int frequencyList[];	
 
 		public TVScannerParams(TVScanParams sp) {
 			super(sp);
+			Log.d(TAG, "TVScannerParams end");
 		}
 	};
 

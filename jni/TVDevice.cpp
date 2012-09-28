@@ -203,9 +203,12 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, int src)
 {
 	jobject evt;
 
+	LOGE("dev_set_input_source %d", src);
 	evt = create_event(env, obj, EVENT_SET_INPUT_SOURCE_OK);
 
+	LOGE("dev_set_input_source on_event start");
 	on_event(obj, evt);
+	LOGE("dev_set_input_source on_event end");
 }
 
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)

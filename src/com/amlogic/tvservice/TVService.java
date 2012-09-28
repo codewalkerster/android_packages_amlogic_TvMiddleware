@@ -138,7 +138,7 @@ public class TVService extends Service{
 		}
 
 		public void startScan(TVScanParams sp){
-			Message msg = handler.obtainMessage(MSG_START_SCAN);
+			Message msg = handler.obtainMessage(MSG_START_SCAN, sp);
                         handler.sendMessage(msg);
 		}
 
@@ -276,10 +276,6 @@ public class TVService extends Service{
 		STATUS_PLAYBACK,
 		STATUS_STOPPED,
 		STATUS_SCAN
-	}
-
-	public TVService(){
-		Log.d(TAG, "XXXXXXXXXXXXXXXXXX");
 	}
 
 	private TVStatus status;
@@ -449,7 +445,7 @@ public class TVService extends Service{
 			stopScan(false);
 		}
 
-		//device.setInputSource(src);
+		device.setInputSource(src);
 
 		status = TVStatus.STATUS_SET_INPUT_SOURCE;
 	}
@@ -482,54 +478,50 @@ public class TVService extends Service{
 
 	/*Start channel scanning.*/
 	private void resolveStartScan(TVScanParams sp){
-		Log.d(TAG, "resolveStart");
-		/*if(!isInTVMode())
-			return;*/
-		Log.d(TAG, "resolveStart 1111");
-		stopPlaying();
-		stopRecording();
-		stopScan(false);
-
-		channelParams = null;
-		Log.d(TAG, "resolveStart 222222");
+		if(!isInTVMode())
+			return;
+		
 		/** Configure scan */
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
-		Log.d(TAG, "resolveStart sdsdsdssdssds");
-		/*tsp.minFreq = config.getInt("scan:atv:minfreq");
-		tsp.maxFreq = config.getInt("scan:atv:maxfreq");
-		tsp.startFreq = config.getInt("scan:atv:startfreq");
-		tsp.direction = config.getInt("scan:atv:direction");
-		tsp.videoStd = config.getInt("scan:atv:vidstd");
-		tsp.audioStd = config.getInt("scan:atv:audstd");*/
-		tsp.minFreq = 100000000;
-		tsp.maxFreq = 200000000;
-		tsp.videoStd = 0;
-		tsp.audioStd = 0;
-		tsp.dbNativeHandle = TVDataProvider.getDatabaseNativeHandle();
-		tsp.demuxId = 0;
-		/** use the frequency given by startParams in sp */
-		tsp.frequencyList = null;
-		if (sp.dtvMode == TVScanParams.DTV_MODE_ALLBAND) {
-			Log.d(TAG, "resolveStart 333333");
+		/** Set params from config */
+		try {
+			tsp.setAtvParams(config.getInt("scan:atv:minfreq") , config.getInt("scan:atv:maxfreq"),
+				config.getInt("scan:atv:vidstd"), config.getInt("scan:atv:audstd"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot read atv config !!!");
+			return;
+		}
+		
+		int[] freqList = null;
+		if (sp.getTvMode() != TVScanParams.TV_MODE_ATV &&
+			sp.getDtvMode() == TVScanParams.DTV_MODE_ALLBAND) {
+			String region;
 			/** load the frequency list */
-			String region = "Default Allband";//config.getString("scan:dtv:region");
-			Cursor c = getContentResolver().query(TVDataProvider.RD_URL,
-					null,
-					"select * from region_table where name=" + region + " and source=" + sp.tsSourceID,
+			try {
+				region = config.getString("scan:dtv:region");
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.d(TAG, "Cannot read dtv region !!!");
+				return;
+			}
+			
+			Cursor c = this.getContentResolver().query(TVDataProvider.RD_URL, null,
+					"select * from region_table where name='" + region + "' and source=" + sp.getTsSourceID(),
 					null, null);
-			Log.d(TAG, "resolveStart 44444");
 			if(c != null){
 				if(c.moveToFirst()){
 					int col = c.getColumnIndex("frequencies");
 					String freqs = c.getString(col);
+					
 					if (freqs != null && freqs.length() > 0) {
 						String[] flist = freqs.split(" ");
+						
 						if (flist !=null && flist.length > 0) {
-							tsp.frequencyList = new int[flist.length];
+							freqList = new int[flist.length];
 							/** get each frequency */
-							for (int i=0; i<tsp.frequencyList.length; i++) {
-								tsp.frequencyList[i] = Integer.parseInt(flist[i]);
-								Log.d(TAG, ""+tsp.frequencyList[i]);
+							for (int i=0; i<freqList.length; i++) {
+								freqList[i] = Integer.parseInt(flist[i]);
 							}
 						}
 					}
@@ -537,7 +529,16 @@ public class TVService extends Service{
 				c.close();
 			}
 		} 
-		Log.d(TAG, "resolveStart 5555555");
+		
+		tsp.setDtvParams(TVDataProvider.getDatabaseNativeHandle(), 0, freqList);
+
+		/** No exceptions, start scan */
+		stopPlaying();
+		stopRecording();
+		stopScan(false);
+
+		channelParams = null;
+		
 		scanner.scan(tsp);
 
 		status = TVStatus.STATUS_SCAN;
@@ -640,6 +641,9 @@ public class TVService extends Service{
 				if (event.programName != null) {
 					Log.d(TAG, "New Program : "+ event.programName + ", type "+ event.programType);
 				}
+				if (event.percent >= 100)
+					scanner.stop(true);
+				TVDataProvider.syncToFile();
 				break;
 			case TVScanner.Event.EVENT_STORE_BEGIN:
 				Log.d(TAG, "Store begin...");

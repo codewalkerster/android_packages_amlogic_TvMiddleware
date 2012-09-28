@@ -1,5 +1,6 @@
 package com.amlogic.tvutil;
 
+import android.util.Log;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -90,14 +91,19 @@ public class TVScanParams implements Parcelable {
 	 *@param sp 原始参数
 	 */
 	public TVScanParams(TVScanParams sp){
+		Log.d("TVScanParams", "TVScanParams");
 		mode = sp.mode;
+		Log.d("TVScanParams", "dtvMode");
 		dtvMode = sp.dtvMode;
+		Log.d("TVScanParams", "fendID");
 		fendID = sp.fendID;
+		Log.d("TVScanParams", "tsSourceID");
 		tsSourceID = sp.tsSourceID;
-		startParams = sp.startParams;
+		//startParams = sp.startParams;
 		atvMode = sp.atvMode;
 		startFreq = sp.startFreq;
 		direction = sp.direction;
+		Log.d("TVScanParams", "END");
 	}
 
 	/**
