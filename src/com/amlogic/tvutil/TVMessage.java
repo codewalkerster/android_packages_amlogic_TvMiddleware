@@ -10,9 +10,9 @@ import android.util.Log;
  */
 public class TVMessage implements Parcelable{
 	/**正在播放的节目因收看等级不够被停止*/
-	public static final int TYPE_SERVICE_BLOCK     = 1;
+	public static final int TYPE_PROGRAM_BLOCK     = 1;
 	/**正在播放的节目从BLOCK状态恢复*/
-	public static final int TYPE_SERVICE_UNBLOCK   = 2;
+	public static final int TYPE_PROGRAM_UNBLOCK   = 2;
 	/**没有信号*/
 	public static final int TYPE_SIGNAL_LOST       = 3;
 	/**信号恢复*/
@@ -33,10 +33,16 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_SCAN_STORE_BEGIN  = 11;
 	/**Store end*/
 	public static final int TYPE_SCAN_STORE_END    = 12;
+	/**正在播放节目相关信息更新*/
+	public static final int TYPE_PROGRAM_UPDATE    = 13;
+	/**节目开始播放*/
+	public static final int TYPE_PROGRAM_START     = 14;
+	/**节目停止播放*/
+	public static final int TYPE_PROGRAM_STOP      = 15;
 
 	private static final String TAG="TVMessage";
 	private int type;
-	private int serviceID;
+	private int programID;
 	private int channelID;
 	private int bookingID;
 	private String cfgName;
@@ -50,7 +56,7 @@ public class TVMessage implements Parcelable{
 	private int scanProgramType;
 
 	private int flags;
-	private static final int FLAG_SERVICE_ID = 1;
+	private static final int FLAG_PROGRAM_ID = 1;
 	private static final int FLAG_CHANNEL_ID = 2;
 	private static final int FLAG_BOOKING_ID = 4;
 	private static final int FLAG_CONFIG     = 8;
@@ -69,8 +75,8 @@ public class TVMessage implements Parcelable{
 		type      = in.readInt();
 		flags     = in.readInt();
 
-		if((flags & FLAG_SERVICE_ID) != 0)
-			serviceID = in.readInt();
+		if((flags & FLAG_PROGRAM_ID) != 0)
+			programID = in.readInt();
 		if((flags & FLAG_CHANNEL_ID) != 0)
 			channelID = in.readInt();
 		if((flags & FLAG_BOOKING_ID) != 0)
@@ -94,8 +100,8 @@ public class TVMessage implements Parcelable{
 		dest.writeInt(type);
 		dest.writeInt(flags);
 
-		if((flags & FLAG_SERVICE_ID) != 0)
-			dest.writeInt(serviceID);
+		if((flags & FLAG_PROGRAM_ID) != 0)
+			dest.writeInt(programID);
 		if((flags & FLAG_CHANNEL_ID) != 0)
 			dest.writeInt(channelID);
 		if((flags & FLAG_BOOKING_ID) != 0)
@@ -134,11 +140,11 @@ public class TVMessage implements Parcelable{
 	 *取得消息对应服务记录ID
 	 *@return 返回服务记录ID
 	 */
-	public int getServiceID(){
-		if((flags & FLAG_SERVICE_ID) != FLAG_SERVICE_ID)
+	public int getProgramID(){
+		if((flags & FLAG_PROGRAM_ID) != FLAG_PROGRAM_ID)
 			throw new UnsupportedOperationException();
 
-		return serviceID;
+		return programID;
 	}
 
 	/**
@@ -213,29 +219,71 @@ public class TVMessage implements Parcelable{
 	}
 
 	/**
-	 *创建一个ServiceBlock消息
+	 *创建一个ProgramBlock消息
 	 *@return 返回创建的新消息
 	 */
-	public static TVMessage serviceBlock(int serviceID){
+	public static TVMessage programBlock(int programID){
 		TVMessage msg = new TVMessage();
 
-		msg.flags = FLAG_SERVICE_ID;
-		msg.type = TYPE_SERVICE_BLOCK;
-		msg.serviceID = serviceID;
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_BLOCK;
+		msg.programID = programID;
 
 		return msg;
 	}
 
 	/**
-	 *创建一个ServiceUnblock消息
+	 *创建一个ProgramUnblock消息
 	 *@return 返回创建的新消息
 	 */
-	public static TVMessage serviceUnblock(int serviceID){
+	public static TVMessage programUnblock(int programID){
 		TVMessage msg = new TVMessage();
 
-		msg.flags = FLAG_SERVICE_ID;
-		msg.type = TYPE_SERVICE_UNBLOCK;
-		msg.serviceID = serviceID;
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_UNBLOCK;
+		msg.programID = programID;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个ProgramUpdate消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programUpdate(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_UPDATE;
+		msg.programID = programID;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个ProgramStart消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programStart(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_START;
+		msg.programID = programID;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个ProgramStop消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programStop(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_STOP;
+		msg.programID = programID;
 
 		return msg;
 	}
@@ -272,12 +320,12 @@ public class TVMessage implements Parcelable{
 	 *创建一个DataLost消息
 	 *@return 返回创建的新消息
 	 */
-	public static TVMessage dataLost(int serviceID){
+	public static TVMessage dataLost(int programID){
 		TVMessage msg = new TVMessage();
 
-		msg.flags = FLAG_SERVICE_ID;
+		msg.flags = FLAG_PROGRAM_ID;
 		msg.type = TYPE_DATA_LOST;
-		msg.serviceID = serviceID;
+		msg.programID = programID;
 
 		return msg;
 	}
@@ -286,12 +334,12 @@ public class TVMessage implements Parcelable{
 	 *创建一个DataResume消息
 	 *@return 返回创建的新消息
 	 */
-	public static TVMessage dataResume(int serviceID){
+	public static TVMessage dataResume(int programID){
 		TVMessage msg = new TVMessage();
 
-		msg.flags = FLAG_SERVICE_ID;
+		msg.flags = FLAG_PROGRAM_ID;
 		msg.type = TYPE_DATA_RESUME;
-		msg.serviceID = serviceID;
+		msg.programID = programID;
 
 		return msg;
 	}
