@@ -295,14 +295,19 @@ public class TVService extends Service{
 	private TVPlayParams dtvPlayParams;
 	private int dtvProgramType = TVProgram.TYPE_TV;
 	private TVChannelParams channelParams;
+	private int channelID;
+	private int programID;
+	private boolean channelLocked = false;
 	private boolean recording = false;
 
 	private void stopPlaying(){
 		if(status == TVStatus.STATUS_PLAY_ATV){
 			device.stopATV();
+			sendMessage(TVMessage.programStop(programID));
 			status = TVStatus.STATUS_STOPPED;
 		}else if(status == TVStatus.STATUS_PLAY_DTV){
 			device.stopDTV();
+			sendMessage(TVMessage.programStop(programID));
 			status = TVStatus.STATUS_STOPPED;
 		}else if(status == TVStatus.STATUS_TIMESHIFTING){
 			device.stopTimeshifting();
@@ -377,7 +382,15 @@ public class TVService extends Service{
 
 	private void playCurrentProgramAV(){
 		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
+			TVProgram p;
+		
+			p = playParamsToProgram(dtvPlayParams);
+			programID = p.getID();
+
 			device.playATV();
+
+			sendMessage(TVMessage.programStart(programID));
+
 			status = TVStatus.STATUS_PLAY_ATV;
 		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
 			TVProgram p;
@@ -386,6 +399,9 @@ public class TVService extends Service{
 			int vpid = 0x1fff, apid = 0x1fff, vfmt = -1, afmt = -1;
 
 			p = playParamsToProgram(dtvPlayParams);
+
+			programID = p.getID();
+
 			video = p.getVideo();
 
 			try{
@@ -408,6 +424,9 @@ public class TVService extends Service{
 
 			Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
 			device.playDTV(vpid, vfmt, apid, vfmt);
+
+			sendMessage(TVMessage.programStart(programID));
+
 			status = TVStatus.STATUS_PLAY_DTV;
 		}
 	}
@@ -430,10 +449,12 @@ public class TVService extends Service{
 			p = playParamsToProgram(dtvPlayParams);
 		}
 
+		channelID = p.getChannel().getID();
 		fe_params = p.getChannel().getParams();
 
 		if((channelParams == null) || !channelParams.equals(fe_params)){
 			channelParams = fe_params;
+			channelLocked = false;
 
 			device.setFrontend(fe_params);
 			status = TVStatus.STATUS_SET_FRONTEND;
@@ -599,10 +620,17 @@ public class TVService extends Service{
 				break;
 			case TVDevice.Event.EVENT_FRONTEND:
 				if(isInTVMode()){
-					if((status == TVStatus.STATUS_SET_FRONTEND) &&
-							event.feParams.equals(channelParams) &&
-							(event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
-						playCurrentProgramAV();
+					if(channelParams!=null && event.feParams.equals(channelParams)){
+						if((status == TVStatus.STATUS_SET_FRONTEND) && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+							playCurrentProgramAV();
+						}
+						if(channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+							Log.d(TAG, "signal resume");
+							sendMessage(TVMessage.signalResume(channelID));
+						}else if(!channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
+							Log.d(TAG, "signal lost");
+							sendMessage(TVMessage.signalLost(channelID));
+						}
 					}
 				}
 				break;
