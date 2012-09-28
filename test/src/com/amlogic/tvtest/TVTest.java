@@ -4,6 +4,8 @@ import android.util.Log;
 import android.os.Bundle;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConst;
+import com.amlogic.tvutil.TVProgram;
+import com.amlogic.tvutil.TVProgramNumber;
 import com.amlogic.tvactivity.TVActivity;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVScanParams;
@@ -30,6 +32,11 @@ public class TVTest extends TVActivity{
 		Log.d(TAG, "Start Scan...");
 		startScan(sp);
 		
+
+		TVProgram prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(1));
+		if(prog!=null){
+			playProgram(new TVProgramNumber(1));
+		}
 	}
 
 	public void onDisconnected(){

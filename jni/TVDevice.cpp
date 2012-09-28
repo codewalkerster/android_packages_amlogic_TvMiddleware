@@ -1,4 +1,5 @@
 #include <am_av.h>
+#include <am_dmx.h>
 #include <am_fend_ctrl.h>
 #include <jni.h>
 #include <android/log.h>
@@ -17,11 +18,13 @@ typedef struct{
 	AM_Bool_t fend_open;
 	int       fend_mode;
 	jobject   dev_obj;
+	AM_DMX_Source_t ts_src;
 }TVDevice;
 
 #define FEND_DEV_NO    0
 #define FEND_DEF_MODE  FE_OFDM
 #define AV_DEV_NO      0
+#define DMX_DEV_NO     0
 
 #define EVENT_SET_INPUT_SOURCE_OK     0
 #define EVENT_SET_INPUT_SOURCE_FAILED 1
@@ -169,6 +172,7 @@ static void dev_init(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev;
 	AM_AV_OpenPara_t av_para;
+	AM_DMX_OpenPara_t dmx_para;
 
 	dev = (TVDevice*)malloc(sizeof(TVDevice));
 	if(!dev){
@@ -181,20 +185,28 @@ static void dev_init(JNIEnv *env, jobject obj)
 	memset(&av_para, 0, sizeof(av_para));
 	AM_AV_Open(AV_DEV_NO, &av_para);
 
+	memset(&dmx_para, 0, sizeof(dmx_para));
+	AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+
 	env->SetIntField(obj, gHandleID, (jint)dev);
 
-	dev->dev_obj = obj;
+	dev->dev_obj = env->NewWeakGlobalRef(obj);
+
+	dev->ts_src = (AM_DMX_Source_t)-1;
 }
 
 static void dev_destroy(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev = get_dev(env, obj);
 
+	AM_DMX_Close(DMX_DEV_NO);
 	AM_AV_Close(AV_DEV_NO);
 
 	if(dev->fend_open){
 		AM_FEND_Close(FEND_DEV_NO);
 	}
+
+	env->DeleteWeakGlobalRef(dev->dev_obj);
 
 	free(dev);
 }
@@ -214,6 +226,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, int src)
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 {
 	AM_FENDCTRL_DVBFrontendParameters_t fpara;
+	AM_DMX_Source_t src;
+
 	TVDevice *dev = get_dev(env, obj);
 
 	if(!dev->fend_open){
@@ -232,6 +246,15 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 	dev->fend_mode = fpara.m_type;
 
 	AM_FENDCTRL_SetPara(FEND_DEV_NO, &fpara);
+
+	AM_FEND_GetTSSource(FEND_DEV_NO, &src);
+
+	if(src != dev->ts_src){
+		AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)src);
+		AM_DMX_SetSource(DMX_DEV_NO, src);
+
+		dev->ts_src = src;
+	}
 }
 
 static jobject dev_get_frontend(JNIEnv *env, jobject obj)

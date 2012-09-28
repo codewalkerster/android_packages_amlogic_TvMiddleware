@@ -48,4 +48,22 @@ include $(BUILD_PACKAGE)
 
 ##################################################
 
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := tv_default.cfg
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_MODULE_CLASS := ETC
+
+# This will install the file in /system/etc/
+#
+LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)
+
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
+
+include $(BUILD_PREBUILT)
+
+##################################################
+
 include $(call all-makefiles-under,$(LOCAL_PATH))

@@ -20,6 +20,7 @@ import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVChannel;
+import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvdataprovider.TVDataProvider;
 //import com.amlogic.tvservice.TVScanner.TVScannerParams;
 
@@ -47,7 +48,18 @@ public class TVService extends Service{
 
 
 	final RemoteCallbackList<ITVCallback> callbacks
-	                        = new RemoteCallbackList<ITVCallback>();
+			= new RemoteCallbackList<ITVCallback>();
+	
+	private void sendMessage(TVMessage msg){
+		final int N = callbacks.beginBroadcast();
+		for (int i = 0; i < N; i++){
+			try{
+				callbacks.getBroadcastItem(i).onMessage(msg);
+			}catch(Exception e){
+			}
+		}
+		callbacks.finishBroadcast();
+	}
 
 	private final ITVService.Stub mBinder = new ITVService.Stub(){
 		public synchronized void registerCallback(ITVCallback cb){
@@ -396,6 +408,7 @@ public class TVService extends Service{
 				vfmt = video.getFormat();
 			}
 
+			Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
 			device.playDTV(vpid, vfmt, apid, vfmt);
 			status = TVStatus.STATUS_PLAY_DTV;
 		}
@@ -434,6 +447,8 @@ public class TVService extends Service{
 
 	/*Reset the input source.*/
 	private void resolveSetInputSource(TVConst.SourceType src){
+		Log.d(TAG, "try to set input source to "+src.name());
+
 		if(src == reqInputSource)
 			return;
 
@@ -452,8 +467,28 @@ public class TVService extends Service{
 
 	/*Play a program.*/
 	private void resolvePlayProgram(TVPlayParams tp){
-		if(!isInTVMode())
+		Log.d(TAG, "try to play program");
+
+		TVProgram prog = playParamsToProgram(tp);
+		if(prog == null)
 			return;
+
+		TVChannel chan = prog.getChannel();
+		if(chan == null)
+			return;
+
+		if(chan.isAnalogMode() && (inputSource == TVConst.SourceType.SOURCE_TYPE_ATV)){
+			atvPlayParams = tp;
+			playCurrentProgram();
+		}else if(!chan.isAnalogMode() && (inputSource == TVConst.SourceType.SOURCE_TYPE_DTV)){
+			dtvPlayParams = tp;
+			playCurrentProgram();
+		}else{
+			if(chan.isAnalogMode())
+				atvPlayParams = tp;
+			else
+				dtvPlayParams = tp;
+		}
 	}
 
 	/*Stop playing.*/
