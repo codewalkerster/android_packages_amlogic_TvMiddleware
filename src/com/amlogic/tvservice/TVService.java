@@ -19,6 +19,7 @@ import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVChannel;
+import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
 public class TVService extends Service{
@@ -45,7 +46,18 @@ public class TVService extends Service{
 
 
 	final RemoteCallbackList<ITVCallback> callbacks
-	                        = new RemoteCallbackList<ITVCallback>();
+			= new RemoteCallbackList<ITVCallback>();
+	
+	private void sendMessage(TVMessage msg){
+		final int N = callbacks.beginBroadcast();
+		for (int i = 0; i < N; i++){
+			try{
+				callbacks.getBroadcastItem(i).onMessage(msg);
+			}catch(Exception e){
+			}
+		}
+		callbacks.finishBroadcast();
+	}
 
 	private final ITVService.Stub mBinder = new ITVService.Stub(){
 		public synchronized void registerCallback(ITVCallback cb){
@@ -394,6 +406,7 @@ public class TVService extends Service{
 				vfmt = video.getFormat();
 			}
 
+			Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
 			device.playDTV(vpid, vfmt, apid, vfmt);
 			status = TVStatus.STATUS_PLAY_DTV;
 		}
