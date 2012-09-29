@@ -794,13 +794,14 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
 		log_error("get scan start param failed");
 		goto create_end;
 	}
+
 	para.dtv_para.resort_all = AM_FALSE;
 	para.dtv_para.sort_method = AM_SCAN_SORT_BY_FREQ_SRV_ID;
 	para.store_cb = NULL;
 	/* Open frontend & demux */
 	log_info("native start scan");
 	log_info("Opening frontend%d ...", para.fend_dev_id);
-	fend_para.mode = FE_ANALOG;
+	fend_para.mode = -1;
 	AM_FEND_Open(para.fend_dev_id, &fend_para);
 	log_info("Opening demux%d ...", para.dtv_para.dmx_dev_id);
 	memset(&dmx_para, 0, sizeof(dmx_para));

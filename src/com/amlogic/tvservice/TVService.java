@@ -595,6 +595,7 @@ public class TVService extends Service{
 
 		channelParams = null;
 		
+		device.freeFrontend();
 		scanner.scan(tsp);
 
 		status = TVStatus.STATUS_SCAN;

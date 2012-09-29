@@ -22,7 +22,7 @@ typedef struct{
 }TVDevice;
 
 #define FEND_DEV_NO    0
-#define FEND_DEF_MODE  FE_OFDM
+#define FEND_DEF_MODE  -1
 #define AV_DEV_NO      0
 #define DMX_DEV_NO     0
 
@@ -171,8 +171,6 @@ static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 static void dev_init(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev;
-	AM_AV_OpenPara_t av_para;
-	AM_DMX_OpenPara_t dmx_para;
 
 	dev = (TVDevice*)malloc(sizeof(TVDevice));
 	if(!dev){
@@ -181,12 +179,6 @@ static void dev_init(JNIEnv *env, jobject obj)
 	}
 
 	memset(dev, 0, sizeof(TVDevice));
-
-	memset(&av_para, 0, sizeof(av_para));
-	AM_AV_Open(AV_DEV_NO, &av_para);
-
-	memset(&dmx_para, 0, sizeof(dmx_para));
-	AM_DMX_Open(DMX_DEV_NO, &dmx_para);
 
 	env->SetIntField(obj, gHandleID, (jint)dev);
 
@@ -220,9 +212,7 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, int src)
 	LOGE("dev_set_input_source %d", src);
 	evt = create_event(env, obj, EVENT_SET_INPUT_SOURCE_OK);
 
-	LOGE("dev_set_input_source on_event start");
 	on_event(obj, evt);
-	LOGE("dev_set_input_source on_event end");
 }
 
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
@@ -335,6 +325,7 @@ static void dev_free_frontend(JNIEnv *env, jobject obj)
 	if(!dev->dev_open)
 		return;
 	
+	LOGI("free frontend");
 	AM_FEND_Close(FEND_DEV_NO);
 	AM_DMX_Close(DMX_DEV_NO);
 	AM_AV_Close(AV_DEV_NO);
