@@ -63,6 +63,59 @@ public class TVService extends Service{
 	}
 
 	private final ITVService.Stub mBinder = new ITVService.Stub(){
+
+		public int getFrontendStatus(){
+			int ret;
+
+			synchronized(TVService.this){
+				if(isScanning)
+					ret = scanner.getFrontendStatus();
+				else
+					ret = device.getFrontendStatus();
+			}
+
+			return ret;
+		}
+
+		public int getFrontendSignalStrength(){
+			int ret;
+
+			synchronized(TVService.this){
+				if(isScanning)
+					ret = scanner.getFrontendSignalStrength();
+				else
+					ret = device.getFrontendSignalStrength();
+			}
+
+			return ret;
+		}
+
+		public int getFrontendSNR(){
+			int ret;
+
+			synchronized(TVService.this){
+				if(isScanning)
+					ret = scanner.getFrontendSNR();
+				else
+					ret = device.getFrontendSNR();
+			}
+
+			return ret;
+		}
+
+		public int getFrontendBER(){
+			int ret;
+
+			synchronized(TVService.this){
+				if(isScanning)
+					ret = scanner.getFrontendBER();
+				else
+					ret = device.getFrontendBER();
+			}
+
+			return ret;
+		}
+
 		public synchronized void registerCallback(ITVCallback cb){
 			if(cb !=null){
 				callbacks.register(cb);
@@ -302,6 +355,7 @@ public class TVService extends Service{
 	private int programID;
 	private boolean channelLocked = false;
 	private boolean recording = false;
+	private boolean isScanning = false;
 
 	private void stopPlaying(){
 		if(status == TVStatus.STATUS_PLAY_ATV){
@@ -595,8 +649,12 @@ public class TVService extends Service{
 
 		channelParams = null;
 		
-		scanner.scan(tsp);
+		synchronized(this){
+			device.freeFrontend();
+			isScanning = true;
+		}
 
+		scanner.scan(tsp);
 		status = TVStatus.STATUS_SCAN;
 	}
 
@@ -607,6 +665,10 @@ public class TVService extends Service{
 			*/
 
 		stopScan(store);
+
+		synchronized(this){
+			isScanning = false;
+		}
 
 		playCurrentProgram();
 	}

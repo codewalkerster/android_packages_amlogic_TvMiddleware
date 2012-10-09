@@ -344,5 +344,73 @@ abstract public class TVClient{
 			}
 		}
 	}
+
+	/**
+	 *取得前端锁定状态
+	 *@return 返回锁定状态
+	 */
+	public int getFrontendStatus(){
+		int ret = 0;
+
+		if(service != null){
+			try{
+				ret = service.getFrontendStatus();
+			}catch(RemoteException e){
+			}
+		}
+
+		return ret;
+	}
+
+	/**
+	 *取得前端信号强度
+	 *@return 返回信号强度
+	 */
+	public int getFrontendSignalStrength(){
+		int ret = 0;
+
+		if(service != null){
+			try{
+				ret = service.getFrontendSignalStrength();
+			}catch(RemoteException e){
+			}
+		}
+
+		return ret;
+	}
+
+	/**
+	 *取得前端SNR值
+	 *@return 返回SNR值
+	 */
+	public int getFrontendSNR(){
+		int ret = 0;
+
+		if(service != null){
+			try{
+				ret = service.getFrontendSNR();
+			}catch(RemoteException e){
+			}
+		}
+
+		return ret;
+	}
+
+	/**
+	 *取得前端BER值
+	 *@return 返回BER值
+	 */
+	public int getFrontendBER(){
+		int ret = 0;
+
+		if(service != null){
+			try{
+				ret = service.getFrontendBER();
+			}catch(RemoteException e){
+			}
+		}
+
+		return ret;
+	}
 }
 

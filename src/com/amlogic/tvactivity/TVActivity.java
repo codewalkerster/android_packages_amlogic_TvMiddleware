@@ -422,5 +422,37 @@ abstract public class TVActivity extends Activity{
 	public void unregisterConfigCallback(String name){
 		client.unregisterConfigCallback(name);
 	}
+
+	/**
+	 *取得前端锁定状态
+	 *@return 返回锁定状态
+	 */
+	public int getFrontendStatus(){
+		return client.getFrontendStatus();
+	}
+
+	/**
+	 *取得前端信号强度
+	 *@return 返回信号强度
+	 */
+	public int getFrontendSignalStrength(){
+		return client.getFrontendSignalStrength();
+	}
+
+	/**
+	 *取得前端SNR值
+	 *@return 返回SNR值
+	 */
+	public int getFrontendSNR(){
+		return client.getFrontendSNR();
+	}
+
+	/**
+	 *取得前端BER值
+	 *@return 返回BER值
+	 */
+	public int getFrontendBER(){
+		return client.getFrontendBER();
+	}
 }
 

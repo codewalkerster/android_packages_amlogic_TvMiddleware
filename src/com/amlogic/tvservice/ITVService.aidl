@@ -70,5 +70,17 @@ interface ITVService{
 
 	//移动到指定位置(回放和时移)
 	void seekTo(int pos);
+
+	//取得前端锁定状态
+	int getFrontendStatus();
+
+	//取得信号强度
+	int getFrontendSignalStrength();
+
+	//取得信号SNR
+	int getFrontendSNR();
+
+	//取得信号BER
+	int getFrontendBER();
 }
 
