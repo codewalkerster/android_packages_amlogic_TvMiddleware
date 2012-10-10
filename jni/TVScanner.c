@@ -37,6 +37,7 @@ enum
 	EVENT_SCAN_PROGRESS = 0,
 	EVENT_STORE_BEGIN   = 1,
 	EVENT_STORE_END     = 2,
+	EVENT_SCAN_END		= 3,
 };
 
 
@@ -182,6 +183,7 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
 		(*env)->GetFieldID(env, gEventClass, "channelParams", "Lcom/amlogic/tvutil/TVChannelParams;"), cp);
 	
 
+	log_info("Call tvscanner java onevent, event type %d", evt_type);
 	/*Call the java method*/
 	(*env)->CallVoidMethod(env, pd->obj, gOnEventID, event);
 	log_info("call java  method in JNI env end");    
@@ -483,10 +485,11 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
 				break;
 			case AM_SCAN_PROGRESS_SCAN_END:
 				prog->progress = 100;
-				tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
+				tv_scan_onevent(EVENT_SCAN_END, prog);
 				break;
 			case AM_SCAN_PROGRESS_ATV_TUNING:
 				prog->cur_tp.fend_para.analog.para.frequency = (int)evt->data;
+				prog->locked = AM_FALSE;
 				tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
 				break;
 
@@ -498,6 +501,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
 	{
 		AM_SCAN_DTVSignalInfo_t *evt = (AM_SCAN_DTVSignalInfo_t*)param;		
 		prog->locked = evt->locked;
+		tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
 	}
 }
 

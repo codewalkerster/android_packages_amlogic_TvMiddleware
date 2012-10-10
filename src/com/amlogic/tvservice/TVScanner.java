@@ -10,6 +10,7 @@ abstract public class TVScanner{
 		public static final int EVENT_SCAN_PROGRESS = 0;
 		public static final int EVENT_STORE_BEGIN   = 1;
 		public static final int EVENT_STORE_END     = 2;
+		public static final int EVENT_SCAN_END		= 3;
 
 		public int type;
 		public int percent;

@@ -33,12 +33,14 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_SCAN_STORE_BEGIN  = 11;
 	/**Store end*/
 	public static final int TYPE_SCAN_STORE_END    = 12;
+	/**Scan End*/
+	public static final int TYPE_SCAN_END          = 13;
 	/**正在播放节目相关信息更新*/
-	public static final int TYPE_PROGRAM_UPDATE    = 13;
+	public static final int TYPE_PROGRAM_UPDATE    = 14;
 	/**节目开始播放*/
-	public static final int TYPE_PROGRAM_START     = 14;
+	public static final int TYPE_PROGRAM_START     = 15;
 	/**节目停止播放*/
-	public static final int TYPE_PROGRAM_STOP      = 15;
+	public static final int TYPE_PROGRAM_STOP      = 16;
 
 	private static final String TAG="TVMessage";
 	private int type;
@@ -414,6 +416,15 @@ public class TVMessage implements Parcelable{
 	
 		msg.flags = FLAG_SCAN;
 		msg.type = TYPE_SCAN_STORE_END;
+
+		return msg;
+	}
+
+	public static TVMessage scanEnd() {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_SCAN_END;
 
 		return msg;
 	}

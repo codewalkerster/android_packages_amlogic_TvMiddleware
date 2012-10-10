@@ -781,6 +781,10 @@ public class TVService extends Service{
 				Log.d(TAG, "Store end");
 				sendMessage(TVMessage.scanStoreEnd());
 				break;
+			case TVScanner.Event.EVENT_SCAN_END:
+				Log.d(TAG, "Scan end");
+				sendMessage(TVMessage.scanEnd());
+				break;
 			default:
 				break;
 				
