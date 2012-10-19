@@ -39,12 +39,13 @@ LOCAL_PACKAGE_NAME := TVService
 LOCAL_SDK_VERSION := current
 
 LOCAL_STATIC_JAVA_LIBRARIES := tvmiddleware
-
+LOCAL_JAVA_LIBRARIES := tv
 LOCAL_PROGUARD_ENABLED := disabled
 
 LOCAL_CERTIFICATE := platform
 
 include $(BUILD_PACKAGE)
+
 
 ##################################################
 

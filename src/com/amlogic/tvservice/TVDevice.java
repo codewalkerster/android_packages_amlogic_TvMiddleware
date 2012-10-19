@@ -5,9 +5,19 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
+import android.amlogic.Tv;
+import android.amlogic.Tv.SourceSwitchListener;
+import android.amlogic.Tv.SrcInput;
+import android.amlogic.Tv.StatusDTVChangeListener;
+import android.os.Handler;
+import android.os.Message;
 
-abstract public class TVDevice{
-
+abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchListener{
+		
+	
+	
+		
+ 
 	public class DTVRecordParams{
 		public File file;
 		public TVProgram.Video video;
@@ -41,10 +51,39 @@ abstract public class TVDevice{
 			this.type = type;
 		}
 	}
+	
+	Handler handler = new Handler() {
+		//Event event  = new Event();
+		public void handleMessage(Message msg) {
+			int status = 0;
+			switch (msg.what) {
+			case EVENT_FRONTEND:
+				/*status = (Integer)msg.obj;
+				if(status == 0 ){
+					Event myEvent = new Event(Event.EVENT_FRONTEND);
+					myEvent.feStatus = TVChannelParams.FE_HAS_LOCK;
+					TVDevice.this.onEvent(myEvent);
+				}else{
+					Event myEvent = new Event(Event.EVENT_FRONTEND);
+					myEvent.feStatus = TVChannelParams.FE_TIMEDOUT;
+					TVDevice.this.onEvent(myEvent);
+				}*/
+			break;
+			case EVENT_SWITCH:
+				/*status = (Integer)msg.obj;
+				Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+				TVDevice.this.onEvent(myEvent);*/
+			break;
+			}
+		}
+	};
 
 	private int native_handle;
 	private boolean destroy;
-
+	private String  TAG = "TVDevice";
+	public static Tv tv = null;
+	public static final int EVENT_FRONTEND    	= 	1<<2;
+	public static final int EVENT_SWITCH    	=   1<<3;
 	private native void native_device_init();
 	private native void native_device_destroy();
 	private native void native_set_input_source(int src);
@@ -82,15 +121,35 @@ abstract public class TVDevice{
 
 	public TVDevice(){
 		destroy = false;
-		native_device_init();
+		//native_device_init();
+		
+		tv = SingletonTv.getTvInstance();
+        tv.SetStatusDTVChangeListener(this);
+        tv.SetSourceSwitchListener(this);
+        //tv.INIT_TV();
+		
 	}
 
 	public void setInputSource(TVConst.SourceType source){
-		native_set_input_source(source.ordinal());
+		//native_set_input_source(source.ordinal());
+		Log.v(TAG,"setInputSource");
+		if(source == TVConst.SourceType.SOURCE_TYPE_DTV){
+			Log.v(TAG,"setInputSource SOURCE_TYPE_DTV");
+			tv.SetSourceInput(Tv.SrcInput.DTV);
+		}
+		//**********************temp************************
+		Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+		this.onEvent(myEvent);
+		//*********************finish************************
 	}
 
 	public void setFrontend(TVChannelParams params){
-		native_set_frontend(params);
+		//native_set_frontend(params);
+		 tv.INIT_TV();
+		 if(params.mode == TVChannelParams.MODE_QAM)
+			tv.SetFrontEnd(params.mode,params.frequency,params.symbolRate,params.modulation);
+		 if(params.mode == TVChannelParams.MODE_ANALOG)
+			tv.SetFrontEnd(params.mode,params.frequency,params.standard,0);
 	}
 
 	public TVChannelParams getFrontend(){
@@ -114,7 +173,8 @@ abstract public class TVDevice{
 	}
 
 	public void freeFrontend(){
-		native_free_frontend();
+		//native_free_frontend();
+		tv.FreeFrontEnd();
 	}
 
 	public void startVBI(int flags){
@@ -126,7 +186,8 @@ abstract public class TVDevice{
 	}
 
 	public void playATV(){
-		native_play_atv();
+		//native_play_atv();
+		tv.StartTV(TVChannelParams.MODE_ANALOG,  0 , 0 , 0 , 0);
 	}
 
 	public void stopATV(){
@@ -134,7 +195,8 @@ abstract public class TVDevice{
 	}
 
 	public void playDTV(int vpid, int vfmt, int apid, int afmt){
-		native_play_dtv(vpid, vfmt, apid, afmt);
+		//native_play_dtv(vpid, vfmt, apid, afmt);
+		tv.StartTV(TVChannelParams.MODE_QAM,  vpid ,  apid , vfmt , afmt);
 	}
 
 	public void stopDTV(){
@@ -192,5 +254,34 @@ abstract public class TVDevice{
 			native_device_destroy();
 		}
 	}
+	
+	public void onStatusDTVChange(int arg0, int arg1) {
+		// TODO Auto-generated method stub
+		Log.v(TAG, "onStatusDTVChange:	" +arg0 + "  " +arg1);
+		Message msg;
+		if(arg0 == 1 ){ //frontEnd
+				msg = handler.obtainMessage(EVENT_FRONTEND, new Integer(arg1));
+                handler.sendMessage(msg);
+			
+			
+		}
+	}
+	
+	
+	public void onSourceSwitchStatusChange(SrcInput input, int state){
+		Log.v(TAG,"onSourceSwitchStatusChange:	" + input.toString() + state);
+		Message  msg = handler.obtainMessage(EVENT_SWITCH, new Integer(state));
+		 handler.sendMessage(msg);
+	}
+}
+
+class SingletonTv {
+		static   Tv  instance = null;
+		public synchronized static  Tv getTvInstance() {
+			if (instance == null) {
+				instance = Tv.open();           
+			}        
+			return instance;
+		}
 }
 

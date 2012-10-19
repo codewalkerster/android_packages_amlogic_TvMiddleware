@@ -240,13 +240,25 @@ public class TVService extends Service{
 	};
 
 	/*Message handler*/
+	private Handler device_handler = new Handler(){
+		public void handleMessage(Message msg){
+			switch(msg.what){
+				case MSG_DEVICE_EVENT:
+					Log.v(TAG,"%%%%%%%%%%%% MSG_DEVICE_EVENT" );
+					resolveDeviceEvent((TVDevice.Event)msg.obj);
+					break;
+			
+			}
+		}
+	};
+	
+	
 	private Handler handler = new Handler(){
 		public void handleMessage(Message msg){
 			switch(msg.what){
 				case MSG_SET_SOURCE:
 					int val = (Integer)msg.obj;
 					TVConst.SourceType type = TVConst.SourceType.values()[val];
-
 					resolveSetInputSource(type);
 					break;
 				case MSG_PLAY_PROGRAM:
@@ -288,9 +300,8 @@ public class TVService extends Service{
 				case MSG_SEEK_TO:
 					resolveSeekTo((Integer)msg.obj);
 					break;
-				case MSG_DEVICE_EVENT:
-					resolveDeviceEvent((TVDevice.Event)msg.obj);
-					break;
+					
+			
 				case MSG_EPG_EVENT:
 					resolveEpgEvent((TVEpgScanner.Event)msg.obj);
 					break;
@@ -304,10 +315,12 @@ public class TVService extends Service{
 	private TVTime time = new TVTime();
 	private TVConfig config;
 	private TVDevice device = new TVDevice(){
-		/*Device event handler*/
+		/*Device event device_handler*/
 		public void onEvent(TVDevice.Event event){
-			Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
-			handler.sendMessage(msg);
+			Log.v(TAG,"onEvent  type:	" + event.type  );
+			Message msg = device_handler.obtainMessage(MSG_DEVICE_EVENT, event);
+			device_handler.sendMessage(msg);
+			//resolveDeviceEvent(event);
 		}
 	};
 
@@ -533,10 +546,10 @@ public class TVService extends Service{
 			stopRecording();
 			stopScan(false);
 		}
-
+		status = TVStatus.STATUS_SET_INPUT_SOURCE;
 		device.setInputSource(src);
 
-		status = TVStatus.STATUS_SET_INPUT_SOURCE;
+		
 	}
 
 	/*Play a program.*/
@@ -670,7 +683,7 @@ public class TVService extends Service{
 			isScanning = false;
 		}
 
-		playCurrentProgram();
+		//playCurrentProgram();
 	}
 
 	/*Start recording.*/
@@ -724,13 +737,15 @@ public class TVService extends Service{
 
 	/*Solve the events from the device.*/
 	private void resolveDeviceEvent(TVDevice.Event event){
+		Log.d(TAG, "resolveDeviceEvent type :"+event.type);
 		switch(event.type){
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_OK:
-				Log.e(TAG, "set input source to "+reqInputSource.name()+" ok");
+				Log.d(TAG, "set input source to "+reqInputSource.name()+" ok");
 				inputSource = reqInputSource;
 				if(isInTVMode()){
 					if (status == TVStatus.STATUS_SET_INPUT_SOURCE) {
-						playCurrentProgram();
+						Log.d(TAG, "%%%%set input source == TVStatus.STATUS_SET_INPUT_SOURCE");
+						//playCurrentProgram();
 					}
 				}
 				break;
