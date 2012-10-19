@@ -439,7 +439,7 @@ public class TVService extends Service{
 		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
 			TVProgram p;
 		
-			p = playParamsToProgram(dtvPlayParams);
+			p = playParamsToProgram(atvPlayParams);
 			programID = p.getID();
 
 			device.playATV();
