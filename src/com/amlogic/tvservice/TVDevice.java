@@ -229,7 +229,8 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 	}
 
 	public void stopATV(){
-		native_stop_atv();
+		//native_stop_atv();
+		tv.StopTV((int)TVConst.SourceType.SOURCE_TYPE_ATV.ordinal());
 	}
 
 	public void playDTV(int vpid, int vfmt, int apid, int afmt){

@@ -753,20 +753,26 @@ public class TVService extends Service{
 				Log.e(TAG, "set input source to "+reqInputSource.name()+" failed");
 				break;
 			case TVDevice.Event.EVENT_FRONTEND:
-				if(isInTVMode()){
-					if(channelParams!=null && event.feParams.equals(channelParams)){
-						if((status == TVStatus.STATUS_SET_FRONTEND) && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
-							playCurrentProgramAV();
-						}
-						if(channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
-							Log.d(TAG, "signal resume");
-							sendMessage(TVMessage.signalResume(channelID));
-						}else if(!channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
-							Log.d(TAG, "signal lost");
-							sendMessage(TVMessage.signalLost(channelID));
+					
+					if(isInTVMode()){
+						if(channelParams!=null )
+							if( event.feParams.isAnalogMode() || (event.feParams.equals(channelParams))){
+								if((status == TVStatus.STATUS_SET_FRONTEND) && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+									Log.v(TAG, "STATUS_SET_FRONTEND playCurrentProgramAV");
+									playCurrentProgramAV();
+								}
+								Log.v(TAG, "status  "+status+ "event.feStatus  " +event.feStatus);
+								if(channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+									Log.d(TAG, "signal resume");
+									sendMessage(TVMessage.signalResume(channelID));
+								}else if(!channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
+									Log.d(TAG, "signal lost");
+									sendMessage(TVMessage.signalLost(channelID));
+								}
 						}
 					}
-				}
+					
+				
 				break;
 		}
 	}
