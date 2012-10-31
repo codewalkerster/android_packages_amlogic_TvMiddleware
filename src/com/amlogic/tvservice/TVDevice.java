@@ -165,6 +165,7 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 	public void setInputSource(TVConst.SourceType source){
 		//native_set_input_source(source.ordinal());
 		Log.v(TAG,"setInputSource");
+		Log.v(TAG, "^^^^^^^^^^^^^^^^^ & ^------^^ & ^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 		if(source == TVConst.SourceType.SOURCE_TYPE_DTV){
 			Log.v(TAG,"setInputSource SOURCE_TYPE_DTV");
 			tv.SetSourceInput(Tv.SrcInput.DTV);
@@ -177,6 +178,7 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 		//Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
 		//this.onEvent(myEvent);
 		//*********************finish************************
+	
 		}
 	}
 
@@ -230,6 +232,7 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 
 	public void stopATV(){
 		//native_stop_atv();
+		Log.v(TAG,"stopATV");
 		tv.StopTV((int)TVConst.SourceType.SOURCE_TYPE_ATV.ordinal());
 	}
 
@@ -242,7 +245,9 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 
 
 	public void stopDTV(){
-		native_stop_dtv();
+		//native_stop_dtv();
+		Log.v(TAG,"stopDTV");
+		tv.StopTV((int)TVConst.SourceType.SOURCE_TYPE_DTV.ordinal());
 	}
 
 	public void startRecording(DTVRecordParams params){

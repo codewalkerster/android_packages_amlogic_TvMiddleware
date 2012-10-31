@@ -2,6 +2,7 @@ package com.amlogic.tvtest;
 
 import android.util.Log;
 import android.view.KeyEvent;
+import android.widget.TextView;
 import android.os.Bundle;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConst;
@@ -12,26 +13,29 @@ import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVConst;
 
+
 public class TVTest extends TVActivity{
 	private static final String TAG="TVTest";
-	private int curTvMode = TVScanParams.TV_MODE_ATV;
-
+	private int curTvMode = TVScanParams.TV_MODE_DTV;
+	 private TextView  myTextView;
 	public void onCreate(Bundle savedInstanceState){
 		Log.d(TAG, "onCreate");
 
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.test);
-
+		
+		 myTextView   =  (TextView)findViewById(R.id.proname);
+		 myTextView.setText(this.getResources().getString(R.string.warning));
 		openVideo();
 	}
 
 	public void onConnected(){
 		Log.d(TAG, "connected");
 		TVScanParams sp;
-		setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
+		//setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
 		
-		if (curTvMode == TVScanParams.TV_MODE_ATV) {
+		if (curTvMode == TVScanParams.TV_MODE_DTV) {
 			//sp = TVScanParams.atvManualScanParams(0, 144250000, 1);
 			//sp = TVScanParams.atvAutoScanParams(0);
 			Log.d(TAG, "Start Scan...");
@@ -45,7 +49,8 @@ public class TVTest extends TVActivity{
 		}
 		
 		
-		Log.d(TAG, "Start Scan...");
+		
+		//Log.d(TAG, "Start Scan...");
 		//startScan(sp);
 	}
 
@@ -122,11 +127,12 @@ public class TVTest extends TVActivity{
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_7:
-		         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(10));
-		    			if(prog!=null){	
-		    				playProgram(new TVProgramNumber(10));
-		    				Log.d(TAG, "22222222222222222222222222222222222 ");
-		    			}
+	    			 setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
+		         	 //prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(10));
+		    		 //	if(prog!=null){	
+		    		 //		playProgram(new TVProgramNumber(10));
+		    		 //		Log.d(TAG, "22222222222222222222222222222222222 ");
+		    		 //	}
 		         	
 		             break;
 		             
@@ -141,9 +147,10 @@ public class TVTest extends TVActivity{
 		             break;
 		             
 	    		 case KeyEvent.KEYCODE_9:
-		            	TVScanParams sp;
-		            	sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(259000000, TVChannelParams.MODULATION_QAM_64, 6875000));
-		            	startScan(sp);
+	    				setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV);
+		            	//TVScanParams sp;
+		            	//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(259000000, TVChannelParams.MODULATION_QAM_64, 6875000));
+		            	//startScan(sp);
 		            	break;
 	    	  
 	    	}
