@@ -164,30 +164,48 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 
 	public void setInputSource(TVConst.SourceType source){
 		//native_set_input_source(source.ordinal());
-		Log.v(TAG,"setInputSource");
+		Log.v(TAG,"setInputSource " + source.toString());
 		Log.v(TAG, "^^^^^^^^^^^^^^^^^ & ^------^^ & ^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-		if(source == TVConst.SourceType.SOURCE_TYPE_DTV){
-			Log.v(TAG,"setInputSource SOURCE_TYPE_DTV");
+		if(source == TVConst.SourceType.SOURCE_TYPE_DTV)
 			tv.SetSourceInput(Tv.SrcInput.DTV);
-		}else
-		if(source == TVConst.SourceType.SOURCE_TYPE_ATV){
-			Log.v(TAG,"setInputSource SOURCE_TYPE_ATV");
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_ATV)
 			tv.SetSourceInput(Tv.SrcInput.TV);
-		
-		//**********************temp************************
-		//Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
-		//this.onEvent(myEvent);
-		//*********************finish************************
-	
-		}else
-		if(source == TVConst.SourceType.SOURCE_TYPE_HDMI1){
-			Log.v(TAG,"setInputSource SOURCE_TYPE_HDMI1");
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_AV1)
+			tv.SetSourceInput(Tv.SrcInput.AV1);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_AV2)
+			tv.SetSourceInput(Tv.SrcInput.AV2);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_YPBPR1)
+			tv.SetSourceInput(Tv.SrcInput.YPBPR1);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_YPBPR2)
+			tv.SetSourceInput(Tv.SrcInput.YPBPR2);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_HDMI1)
 			tv.SetSourceInput(Tv.SrcInput.HDMI1);
-		}else
-		if(source == TVConst.SourceType.SOURCE_TYPE_VGA){
-			Log.v(TAG,"setInputSource SOURCE_TYPE_VGA");
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_HDMI2)
+			tv.SetSourceInput(Tv.SrcInput.HDMI2);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_HDMI3)
+			tv.SetSourceInput(Tv.SrcInput.HDMI3);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_VGA)
 			tv.SetSourceInput(Tv.SrcInput.VGA);
-		}
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_MPEG)
+			tv.SetSourceInput(Tv.SrcInput.MPEG);
+		else
+		if(source == TVConst.SourceType.SOURCE_TYPE_MAX)
+			tv.SetSourceInput(Tv.SrcInput.MAX);
+		//**********************temp************************
+				//Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+				//this.onEvent(myEvent);
+				//*********************finish************************
+		
 	}
 
 	public void setFrontend(TVChannelParams params){

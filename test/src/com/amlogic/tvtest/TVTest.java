@@ -100,11 +100,7 @@ public class TVTest extends TVActivity{
 	         	
 	             break;
 	    		case KeyEvent.KEYCODE_4:
-		         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(0));
-		    			if(prog!=null){	
-		    				playProgram(new TVProgramNumber(0));
-		    				Log.d(TAG, "22222222222222222222222222222222222 ");
-		    			}
+	    			 setInputSource(TVConst.SourceType.SOURCE_TYPE_YPBPR1);
 		         	
 		             break;
 	    		case KeyEvent.KEYCODE_5:
