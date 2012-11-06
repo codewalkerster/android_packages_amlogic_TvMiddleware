@@ -29,6 +29,14 @@ public class TVTest extends TVActivity{
 		 myTextView.setText(this.getResources().getString(R.string.warning));
 		openVideo();
 	}
+	
+	
+	  @Override
+	    protected void onPause() {
+	        super.onPause();
+	       
+	    }
+	
 
 	public void onConnected(){
 		Log.d(TAG, "connected");
@@ -82,22 +90,13 @@ public class TVTest extends TVActivity{
 					}
 	                break;
 	            case KeyEvent.KEYCODE_2:
-	            	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(3));
-					if(prog!=null){	
-						playProgram(new TVProgramNumber(3));
-						Log.d(TAG, "22222222222222222222222222222222222 ");
-					}
+	            	 setInputSource(TVConst.SourceType.SOURCE_TYPE_HDMI1);
 	            	
 	                break;
 	           
 	            	  
 	    	  	case KeyEvent.KEYCODE_3:
-	    	  		Log.d(TAG, "444444444444444444444444444444 ");
-	         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(4));
-	    			if(prog!=null){	
-	    				playProgram(new TVProgramNumber(4));
-	    				Log.d(TAG, "$$$$$$$$$$$$$$$$$444444444444444444444444444444 ");
-	    			}
+	    	  		 setInputSource(TVConst.SourceType.SOURCE_TYPE_VGA);
 	         	
 	             break;
 	    		case KeyEvent.KEYCODE_4:

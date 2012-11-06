@@ -179,6 +179,14 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 		//this.onEvent(myEvent);
 		//*********************finish************************
 	
+		}else
+		if(source == TVConst.SourceType.SOURCE_TYPE_HDMI1){
+			Log.v(TAG,"setInputSource SOURCE_TYPE_HDMI1");
+			tv.SetSourceInput(Tv.SrcInput.HDMI1);
+		}else
+		if(source == TVConst.SourceType.SOURCE_TYPE_VGA){
+			Log.v(TAG,"setInputSource SOURCE_TYPE_VGA");
+			tv.SetSourceInput(Tv.SrcInput.VGA);
 		}
 	}
 
