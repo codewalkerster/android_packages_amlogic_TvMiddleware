@@ -217,24 +217,45 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 			tv.SetFrontEnd(params.mode,params.frequency,params.standard,0);
 	}
 
-	public TVChannelParams getFrontend(){
-		return native_get_frontend();
+	public void getFrontend(TVChannelParams params){
+		//return native_get_frontend();
+		tv.INIT_TV();
+		if(tv.GetFrontEnd().mode==TVChannelParams.MODE_QAM){
+		    params.mode=tv.GetFrontEnd().mode;
+	      params.frequency=tv.GetFrontEnd().frequency;
+		    params.symbolRate=tv.GetFrontEnd().para1;
+			  params.modulation=tv.GetFrontEnd().para2;
+			  Log.v(TAG,"GET FRONTEND PARAMETERS,mode is"+params.mode+"frequency is"+params.frequency+"para1 is"+params.modulation+"para2 is"+params.modulation);
+		}else if(tv.GetFrontEnd().mode==TVChannelParams.MODE_ANALOG){
+        params.mode=tv.GetFrontEnd().mode;
+	      params.frequency=tv.GetFrontEnd().frequency;
+			  params.standard=tv.GetFrontEnd().para1;
+			  Log.v(TAG,"GET FRONTEND PARAMETERS,mode is"+params.mode+"frequency is"+params.frequency+"para1 is"+params.standard);
+		}
 	}
 
 	public int getFrontendStatus(){
-		return native_get_frontend_status();
+		//return native_get_frontend_status();
+		Log.v(TAG,"getfrontendstatus is"+tv.Get_FrontendStatus());
+		return tv.Get_FrontendStatus();
 	}
 
 	public int getFrontendSignalStrength(){
-		return native_get_frontend_signal_strength();
+		//return native_get_frontend_signal_strength();
+		Log.v(TAG,"getfrontendsignalstrength is"+tv.Get_FrontendSignalStrength());
+		return tv.Get_FrontendSignalStrength();
 	}
 
 	public int getFrontendSNR(){
-		return native_get_frontend_snr();
+		//return native_get_frontend_snr();
+		Log.v(TAG,"getfrontendsnr"+tv.Get_FrontendSNR());
+		return tv.Get_FrontendSNR();
 	}
 
 	public int getFrontendBER(){
-		return native_get_frontend_ber();
+		//return native_get_frontend_ber();
+		Log.v(TAG,"getfrontendber"+tv.Get_FrontendBER());
+		return tv.Get_FrontendBER();
 	}
 
 	public void freeFrontend(){
