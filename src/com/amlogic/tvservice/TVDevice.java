@@ -6,6 +6,7 @@ import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
 import android.amlogic.Tv;
+import android.amlogic.Tv.Frontend_Para;
 import android.amlogic.Tv.SourceSwitchListener;
 import android.amlogic.Tv.SrcInput;
 import android.amlogic.Tv.StatusDTVChangeListener;
@@ -74,6 +75,8 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 				int para1 = msg.getData().getInt("para1");
 				int para2 = msg.getData().getInt("para2");
 				Log.v(TAG,"mode freq para1 para2:" + mode + "," + freq+ "," + para1+ "," + para2);
+				myEvent.feParams   = fpara2chanpara(mode,freq,para1,para2);
+				/*
 				switch(mode){
 					case TVChannelParams.MODE_OFDM:
 					
@@ -87,7 +90,7 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 						Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK MODE_ANALOG");
 						myEvent.feParams  = TVChannelParams.analogParams(freq, TVChannelParams.STD_PAL_I, 0);
 						break;
-				}
+				}*/
 				TVDevice.this.onEvent(myEvent);
 			break;
 			
@@ -115,41 +118,6 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 	
 
 
-
-	private native void native_device_init();
-	private native void native_device_destroy();
-	private native void native_set_input_source(int src);
-	private native void native_set_frontend(TVChannelParams params);
-	private native TVChannelParams native_get_frontend();
-	private native int  native_get_frontend_status();
-	private native int  native_get_frontend_signal_strength();
-	private native int  native_get_frontend_snr();
-	private native int  native_get_frontend_ber();
-	private native void native_free_frontend();
-	private native void native_start_vbi(int flags);
-	private native void native_stop_vbi(int flags);
-	private native void native_play_atv();
-	private native void native_stop_atv();
-	private native void native_play_dtv(int vpid, int vfmt, int apid, int afmt);
-	private native void native_stop_dtv();
-	private native void native_start_recording(DTVRecordParams params);
-	private native DTVRecordParams native_stop_recording();
-	private native void native_start_timeshifting(DTVRecordParams params);
-	private native DTVRecordParams native_stop_timeshifting();
-	private native void native_start_playback(DTVRecordParams params);
-	private native void native_stop_playback();
-	private native void native_fast_forward(int speed);
-	private native void native_fast_backward(int speed);
-	private native void native_pause();
-	private native void native_resume();
-	private native void native_seek_to(int pos);
-
-	static{
-		System.loadLibrary("am_adp");
-		System.loadLibrary("am_mw");
-		System.loadLibrary("zvbi");
-		System.loadLibrary("jnitvdevice");
-	}
 
 	public TVDevice(){
 		destroy = false;
@@ -219,19 +187,9 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 
 	public void getFrontend(TVChannelParams params){
 		//return native_get_frontend();
-		tv.INIT_TV();
-		if(tv.GetFrontEnd().mode==TVChannelParams.MODE_QAM){
-		    params.mode=tv.GetFrontEnd().mode;
-	      params.frequency=tv.GetFrontEnd().frequency;
-		    params.symbolRate=tv.GetFrontEnd().para1;
-			  params.modulation=tv.GetFrontEnd().para2;
-			  Log.v(TAG,"GET FRONTEND PARAMETERS,mode is"+params.mode+"frequency is"+params.frequency+"para1 is"+params.modulation+"para2 is"+params.modulation);
-		}else if(tv.GetFrontEnd().mode==TVChannelParams.MODE_ANALOG){
-        params.mode=tv.GetFrontEnd().mode;
-	      params.frequency=tv.GetFrontEnd().frequency;
-			  params.standard=tv.GetFrontEnd().para1;
-			  Log.v(TAG,"GET FRONTEND PARAMETERS,mode is"+params.mode+"frequency is"+params.frequency+"para1 is"+params.standard);
-		}
+		//tv.INIT_TV();
+		Tv.Frontend_Para fpara = tv.GetFrontEnd();
+		params = fpara2chanpara(fpara.mode,fpara.frequency,fpara.para1,fpara.para2);
 	}
 
 	public int getFrontendStatus(){
@@ -265,11 +223,13 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 	}
 
 	public void startVBI(int flags){
-		native_start_vbi(flags);
+		Log.e(TAG,"*********startVBI have not realize");
+		//native_start_vbi(flags);
 	}
 
 	public void stopVBI(int flags){
-		native_stop_vbi(flags);
+		Log.e(TAG,"*********startVBI have not realize");
+		//native_stop_vbi(flags);
 	}
 
 	public void playATV(){
@@ -298,46 +258,58 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 	}
 
 	public void startRecording(DTVRecordParams params){
-		native_start_recording(params);
+		Log.e(TAG,"*********startVBI have not realize");
+		//native_start_recording(params);
 	}
 
 	public DTVRecordParams stopRecording(){
-		return native_stop_recording();
+		Log.e(TAG,"*********startVBI have not realize");
+		//return native_stop_recording();
+		return null;
 	}
 
 	public void startTimeshifting(DTVRecordParams params){
 	}
 
 	public DTVRecordParams stopTimeshifting(){
-		return native_stop_timeshifting();
+		//return native_stop_timeshifting();
+		Log.e(TAG,"*********startVBI have not realize");
+		return null;
 	}
 
 	public void startPlayback(DTVRecordParams params){
-		native_start_playback(params);
+		//native_start_playback(params);
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	public void stopPlayback(){
-		native_stop_playback();
+		//native_stop_playback();
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	public void pause(){
-		native_pause();
+		//native_pause();
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	public void resume(){
-		native_resume();
+		//native_resume();
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	public void fastForward(int speed){
-		native_fast_forward(speed);
+		//native_fast_forward(speed);
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	public void fastBackward(int speed){
-		native_fast_backward(speed);
+		//native_fast_backward(speed);
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	public void seekTo(int pos){
-		native_seek_to(pos);
+		//native_seek_to(pos);
+		Log.e(TAG,"*********startVBI have not realize");
 	}
 
 	abstract public void onEvent(Event event);
@@ -345,7 +317,8 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 	protected void finalize() throws Throwable {
 		if(!destroy){
 			destroy = false;
-			native_device_destroy();
+			//native_device_destroy();
+			Log.e(TAG,"*********startVBI have not realize");
 		}
 	}
 	
@@ -370,6 +343,28 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 		Log.v(TAG,"onSourceSwitchStatusChange:	" + input.toString() + state);
 		Message  msg = handler.obtainMessage(EVENT_SOURCE_SWITCH, new Integer(state));
 		 handler.sendMessage(msg);
+	}
+	
+	
+	TVChannelParams fpara2chanpara(int mode,int freq,int para1,int para2){
+		Log.v(TAG,"mode freq para1 para2:" + mode + "," + freq+ "," + para1+ "," + para2);
+		TVChannelParams tvChannelPara = null;
+		switch(mode){
+			case TVChannelParams.MODE_OFDM:
+			
+				break;
+			case TVChannelParams.MODE_QAM:
+				Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK MODE_QAM");
+				tvChannelPara  = TVChannelParams.dvbcParams(freq, para2, para1);
+				break;
+			case TVChannelParams.MODE_ANALOG:
+				//*****************temp default set pat I************************
+				Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK MODE_ANALOG");
+				tvChannelPara  = TVChannelParams.analogParams(freq, TVChannelParams.STD_PAL_I, 0);
+				break;
+		}
+		
+		return tvChannelPara;
 	}
 }
 
