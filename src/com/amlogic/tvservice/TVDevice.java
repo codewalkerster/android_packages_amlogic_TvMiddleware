@@ -9,11 +9,11 @@ import android.amlogic.Tv;
 import android.amlogic.Tv.Frontend_Para;
 import android.amlogic.Tv.SourceSwitchListener;
 import android.amlogic.Tv.SrcInput;
-import android.amlogic.Tv.StatusDTVChangeListener;
+import android.amlogic.Tv.StatusTVChangeListener;
 import android.os.Handler;
 import android.os.Message;
 
-abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchListener{
+abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchListener{
 		
 	
 	
@@ -124,7 +124,7 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 		//native_device_init();
 		
 		tv = SingletonTv.getTvInstance();
-        tv.SetStatusDTVChangeListener(this);
+        tv.SetStatusTVChangeListener(this);
         tv.SetSourceSwitchListener(this);
         //tv.INIT_TV();
 		
@@ -322,7 +322,7 @@ abstract public class TVDevice implements StatusDTVChangeListener,SourceSwitchLi
 		}
 	}
 	
-	public void onStatusDTVChange(int type,int state,int mode,int freq,int para1,int para2) {
+	public void onStatusTVChange(int type,int state,int mode,int freq,int para1,int para2) {
 		// TODO Auto-generated method stub
 		Log.v(TAG, "onStatusDTVChange:	" +type + "  " +state + "  " +mode + "  " +freq + "  " +para1 + "  " +para2);
 		Message msg;
