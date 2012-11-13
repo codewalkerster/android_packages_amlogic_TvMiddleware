@@ -46,7 +46,7 @@ public class TVTest extends TVActivity{
 		if (curTvMode == TVScanParams.TV_MODE_DTV) {
 			//sp = TVScanParams.atvManualScanParams(0, 144250000, 1);
 			//sp = TVScanParams.atvAutoScanParams(0);
-			Log.d(TAG, "Start Scan...");
+		//	Log.d(TAG, "Start Scan...");
 			//startScan(sp);
 			
 			
@@ -91,25 +91,18 @@ public class TVTest extends TVActivity{
 	                break;
 	            case KeyEvent.KEYCODE_2:
 	            	 setInputSource(TVConst.SourceType.SOURCE_TYPE_HDMI1);
-	            	
 	                break;
 	           
 	            	  
 	    	  	case KeyEvent.KEYCODE_3:
 	    	  		 setInputSource(TVConst.SourceType.SOURCE_TYPE_VGA);
-	         	
 	             break;
 	    		case KeyEvent.KEYCODE_4:
 	    			 setInputSource(TVConst.SourceType.SOURCE_TYPE_YPBPR1);
 		         	
 		             break;
 	    		case KeyEvent.KEYCODE_5:
-		         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(8));
-		    			if(prog!=null){	
-		    				playProgram(new TVProgramNumber(8));
-		    				Log.d(TAG, "22222222222222222222222222222222222 ");
-		    			}
-		         	
+	    			 setInputSource(TVConst.SourceType.SOURCE_TYPE_AV1);
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_6:
@@ -147,6 +140,16 @@ public class TVTest extends TVActivity{
 		            	//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(259000000, TVChannelParams.MODULATION_QAM_64, 6875000));
 		            	//startScan(sp);
 		            	break;
+	    		 case KeyEvent.KEYCODE_DPAD_UP:
+	    			    TVScanParams sp;	
+	    			    sp = TVScanParams.atvAutoScanParams(0);
+	    				Log.d(TAG, "Start Scan...");
+	    				startScan(sp);
+	    			 break;
+	    		 case KeyEvent.KEYCODE_DPAD_DOWN:
+	    			 	Log.d(TAG, "stopScan");
+	 					stopScan(true);
+	    			 break;
 	    	  
 	    	}
 
