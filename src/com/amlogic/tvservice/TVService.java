@@ -440,13 +440,15 @@ public class TVService extends Service{
 			TVProgram p;
 		
 			p = playParamsToProgram(dtvPlayParams);
-			programID = p.getID();
+			if(p != null){
+				programID = p.getID();
 
-			device.playATV();
+				device.playATV();
 
-			sendMessage(TVMessage.programStart(programID));
+				sendMessage(TVMessage.programStart(programID));
 
-			status = TVStatus.STATUS_PLAY_ATV;
+				status = TVStatus.STATUS_PLAY_ATV;
+			}
 		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
 			TVProgram p;
 			TVProgram.Video video;
@@ -454,35 +456,37 @@ public class TVService extends Service{
 			int vpid = 0x1fff, apid = 0x1fff, vfmt = -1, afmt = -1;
 
 			p = playParamsToProgram(dtvPlayParams);
+			if(p != null){
 
-			programID = p.getID();
+				programID = p.getID();
 
-			video = p.getVideo();
+				video = p.getVideo();
 
-			try{
-				String lang = config.getString("player:audio:language");
-				audio = p.getAudio(lang);
-				apid = audio.getPID();
-				afmt = audio.getFormat();
-			}catch(Exception e){
-				audio = p.getAudio();
-				if(audio != null){
+				try{
+					String lang = config.getString("player:audio:language");
+					audio = p.getAudio(lang);
 					apid = audio.getPID();
 					afmt = audio.getFormat();
+				}catch(Exception e){
+					audio = p.getAudio();
+					if(audio != null){
+						apid = audio.getPID();
+						afmt = audio.getFormat();
+					}
 				}
+
+				if(video != null){
+					vpid = video.getPID();
+					vfmt = video.getFormat();
+				}
+
+				Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
+				device.playDTV(vpid, vfmt, apid, vfmt);
+
+				sendMessage(TVMessage.programStart(programID));
+
+				status = TVStatus.STATUS_PLAY_DTV;
 			}
-
-			if(video != null){
-				vpid = video.getPID();
-				vfmt = video.getFormat();
-			}
-
-			Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
-			device.playDTV(vpid, vfmt, apid, vfmt);
-
-			sendMessage(TVMessage.programStart(programID));
-
-			status = TVStatus.STATUS_PLAY_DTV;
 		}
 	}
 
