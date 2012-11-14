@@ -6,59 +6,59 @@ import android.content.Context;
 
 public class TVDatabase
 {
-	public static final int DB_VERSION = 1;
-	private int native_handle;
-	private DatabaseHelper helper;
-	private SQLiteDatabase readableDB;
-	private SQLiteDatabase writableDB;
+    public static final int DB_VERSION = 1;
+    private int native_handle;
+    private DatabaseHelper helper;
+    private SQLiteDatabase readableDB;
+    private SQLiteDatabase writableDB;
 
-	/*implemented by libjnidvbdatabase.so*/
-	private native int native_db_init(SQLiteDatabase db);
+    /*implemented by libjnidvbdatabase.so*/
+    private native int native_db_init(SQLiteDatabase db);
 
-	/*Load native library*/
-	static
-	{
-		System.loadLibrary("jnitvdatabase");
-	}
+    /*Load native library*/
+    static {
+        System.loadLibrary("jnitvdatabase");
+    }
 
-	public TVDatabase(Context context, String dbName){
-		helper = new DatabaseHelper(context, dbName);
-		writableDB = helper.getWritableDatabase();
-		readableDB = helper.getReadableDatabase();
-		native_handle = native_db_init(writableDB);
-	}
+    public TVDatabase(Context context, String dbName) {
+        helper = new DatabaseHelper(context, dbName);
+        writableDB = helper.getWritableDatabase();
+        readableDB = helper.getReadableDatabase();
+        native_handle = native_db_init(writableDB);
+    }
 
-	public int getNativeHandle(){
-		return (helper!=null) ? native_handle : 0;
-	}
+    public int getNativeHandle() {
+        return (helper!=null) ? native_handle : 0;
+    }
 
-	class DatabaseHelper extends SQLiteOpenHelper{
-		DatabaseHelper(Context context, String name){
-			super(context, name, null, DB_VERSION);
-		}
+    class DatabaseHelper extends SQLiteOpenHelper
+    {
+        DatabaseHelper(Context context, String name) {
+            super(context, name, null, DB_VERSION);
+        }
 
-		@Override
-		public void onCreate(SQLiteDatabase db){
-		}
+        @Override
+        public void onCreate(SQLiteDatabase db) {
+        }
 
-		@Override
-		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
-		}
-	}
-	
-	public SQLiteDatabase getReadableDatabase(){
-		return (helper == null) ? null : readableDB;
-	}
+        @Override
+        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        }
+    }
 
-	public SQLiteDatabase getWritableDatabase(){
-		return (helper == null) ? null : writableDB;
-	}
+    public SQLiteDatabase getReadableDatabase() {
+        return (helper == null) ? null : readableDB;
+    }
 
-	public void close(){
-		if(helper != null){
-			helper.close();
-			helper = null;
-		}
-	}
+    public SQLiteDatabase getWritableDatabase() {
+        return (helper == null) ? null : writableDB;
+    }
+
+    public void close() {
+        if(helper != null) {
+            helper.close();
+            helper = null;
+        }
+    }
 }
 
