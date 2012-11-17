@@ -160,7 +160,7 @@ abstract public class TVActivity extends Activity
      *设定TV输入源
      *@param source 输入源(TVStatus.SOURCE_XXXX)
      */
-    public void setInputSource(TVConst.SourceType source) {
+    public void setInputSource(TVConst.SourceInput source) {
         client.setInputSource(source.ordinal());
     }
 

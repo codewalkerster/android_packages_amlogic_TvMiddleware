@@ -15,11 +15,6 @@ import android.os.Message;
 
 abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchListener
 {
-
-
-
-
-
     public class DTVRecordParams
     {
         public File file;
@@ -132,34 +127,34 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
 
     }
 
-    public void setInputSource(TVConst.SourceType source) {
+    public void setInputSource(TVConst.SourceInput source) {
         //native_set_input_source(source.ordinal());
         Log.v(TAG,"setInputSource " + source.toString());
         Log.v(TAG, "^^^^^^^^^^^^^^^^^ & ^------^^ & ^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-        if(source == TVConst.SourceType.SOURCE_TYPE_DTV)
+        if(source == TVConst.SourceInput.SOURCE_DTV)
             tv.SetSourceInput(Tv.SrcInput.DTV);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_ATV)
+        else if(source == TVConst.SourceInput.SOURCE_ATV)
             tv.SetSourceInput(Tv.SrcInput.TV);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_AV1)
+        else if(source == TVConst.SourceInput.SOURCE_AV1)
             tv.SetSourceInput(Tv.SrcInput.AV1);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_AV2)
+        else if(source == TVConst.SourceInput.SOURCE_AV2)
             tv.SetSourceInput(Tv.SrcInput.AV2);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_YPBPR1)
+        else if(source == TVConst.SourceInput.SOURCE_YPBPR1)
             tv.SetSourceInput(Tv.SrcInput.YPBPR1);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_YPBPR2)
+        else if(source == TVConst.SourceInput.SOURCE_YPBPR2)
             tv.SetSourceInput(Tv.SrcInput.YPBPR2);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_HDMI1)
+        else if(source == TVConst.SourceInput.SOURCE_HDMI1)
             tv.SetSourceInput(Tv.SrcInput.HDMI1);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_HDMI2)
+        else if(source == TVConst.SourceInput.SOURCE_HDMI2)
             tv.SetSourceInput(Tv.SrcInput.HDMI2);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_HDMI3)
+        else if(source == TVConst.SourceInput.SOURCE_HDMI3)
             tv.SetSourceInput(Tv.SrcInput.HDMI3);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_VGA)
+        else if(source == TVConst.SourceInput.SOURCE_VGA)
             tv.SetSourceInput(Tv.SrcInput.VGA);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_MPEG)
+        else if(source == TVConst.SourceInput.SOURCE_MPEG)
             tv.SetSourceInput(Tv.SrcInput.MPEG);
-        else if(source == TVConst.SourceType.SOURCE_TYPE_MAX)
-            tv.SetSourceInput(Tv.SrcInput.MAX);
+        else if(source == TVConst.SourceInput.SOURCE_SVIDEO)
+            tv.SetSourceInput(Tv.SrcInput.SVIDEO);
         //**********************temp************************
         //Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
         //this.onEvent(myEvent);
@@ -225,19 +220,19 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
 
     public void playATV() {
         //native_play_atv();
-        tv.StartTV((int)TVConst.SourceType.SOURCE_TYPE_ATV.ordinal(),  0 , 0 , 0 , 0);
+        tv.StartTV((int)TVConst.SourceInput.SOURCE_ATV.ordinal(),  0 , 0 , 0 , 0);
     }
 
     public void stopATV() {
         //native_stop_atv();
         Log.v(TAG,"stopATV");
-        tv.StopTV((int)TVConst.SourceType.SOURCE_TYPE_ATV.ordinal());
+        tv.StopTV((int)TVConst.SourceInput.SOURCE_ATV.ordinal());
     }
 
     public void playDTV(int vpid, int vfmt, int apid, int afmt) {
         //native_play_dtv(vpid, vfmt, apid, afmt);
-        Log.v(TAG,"SourceType SOURCE_TYPE_DTV" + (int)TVConst.SourceType.SOURCE_TYPE_DTV.ordinal());
-        tv.StartTV((int)TVConst.SourceType.SOURCE_TYPE_DTV.ordinal(),  vpid ,  apid , vfmt , afmt);
+        Log.v(TAG,"SourceInput SOURCE_DTV" + (int)TVConst.SourceInput.SOURCE_DTV.ordinal());
+        tv.StartTV((int)TVConst.SourceInput.SOURCE_DTV.ordinal(),  vpid ,  apid , vfmt , afmt);
     }
 
 
@@ -245,7 +240,7 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
     public void stopDTV() {
         //native_stop_dtv();
         Log.v(TAG,"stopDTV");
-        tv.StopTV((int)TVConst.SourceType.SOURCE_TYPE_DTV.ordinal());
+        tv.StopTV((int)TVConst.SourceInput.SOURCE_DTV.ordinal());
     }
 
     public void startRecording(DTVRecordParams params) {

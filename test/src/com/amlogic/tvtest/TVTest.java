@@ -42,7 +42,7 @@ public class TVTest extends TVActivity
     public void onConnected() {
         Log.d(TAG, "connected");
         TVScanParams sp;
-        //setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
+        //setInputSource(TVConst.SourceInput.SOURCE_ATV);
 
         if (curTvMode == TVScanParams.TV_MODE_DTV) {
             //sp = TVScanParams.atvManualScanParams(0, 144250000, 1);
@@ -91,19 +91,19 @@ public class TVTest extends TVActivity
             }
             break;
         case KeyEvent.KEYCODE_2:
-            setInputSource(TVConst.SourceType.SOURCE_TYPE_HDMI1);
+            setInputSource(TVConst.SourceInput.SOURCE_HDMI1);
             break;
 
 
         case KeyEvent.KEYCODE_3:
-            setInputSource(TVConst.SourceType.SOURCE_TYPE_VGA);
+            setInputSource(TVConst.SourceInput.SOURCE_VGA);
             break;
         case KeyEvent.KEYCODE_4:
-            setInputSource(TVConst.SourceType.SOURCE_TYPE_YPBPR1);
+            setInputSource(TVConst.SourceInput.SOURCE_YPBPR1);
 
             break;
         case KeyEvent.KEYCODE_5:
-            setInputSource(TVConst.SourceType.SOURCE_TYPE_AV1);
+            setInputSource(TVConst.SourceInput.SOURCE_AV1);
             break;
 
         case KeyEvent.KEYCODE_6:
@@ -116,7 +116,7 @@ public class TVTest extends TVActivity
             break;
 
         case KeyEvent.KEYCODE_7:
-            setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
+            setInputSource(TVConst.SourceInput.SOURCE_ATV);
             //prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(10));
             // if(prog!=null){
             //     playProgram(new TVProgramNumber(10));
@@ -136,7 +136,7 @@ public class TVTest extends TVActivity
             break;
 
         case KeyEvent.KEYCODE_9:
-            setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV);
+            setInputSource(TVConst.SourceInput.SOURCE_DTV);
             //TVScanParams sp;
             //sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(259000000, TVChannelParams.MODULATION_QAM_64, 6875000));
             //startScan(sp);
