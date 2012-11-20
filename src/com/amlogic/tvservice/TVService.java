@@ -571,7 +571,7 @@ public class TVService extends Service
         if(chan.isAnalogMode() && (CurrentSourceInput == TVConst.SourceInput.SOURCE_ATV)) {
             AtvPlayParams = tp;
             playCurrentProgram();
-        } else if(!chan.isAnalogMode() && (CurrentSourceInput == TVConst.SourceInput.SOURCE_ATV)) {
+        } else if(!chan.isAnalogMode() && (CurrentSourceInput == TVConst.SourceInput.SOURCE_DTV)) {
             DtvPlayParams = tp;
             playCurrentProgram();
         } else {
