@@ -214,7 +214,7 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
     }
 
     public void stopVBI(int flags) {
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********stopVBI have not realize");
         //native_stop_vbi(flags);
     }
 
@@ -244,12 +244,12 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
     }
 
     public void startRecording(DTVRecordParams params) {
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********startRecording have not realize");
         //native_start_recording(params);
     }
 
     public DTVRecordParams stopRecording() {
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********stopRecording have not realize");
         //return native_stop_recording();
         return null;
     }
@@ -259,43 +259,43 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
 
     public DTVRecordParams stopTimeshifting() {
         //return native_stop_timeshifting();
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********stopTimeshifting have not realize");
         return null;
     }
 
     public void startPlayback(DTVRecordParams params) {
         //native_start_playback(params);
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********startPlayback have not realize");
     }
 
     public void stopPlayback() {
         //native_stop_playback();
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********stopPlayback have not realize");
     }
 
     public void pause() {
         //native_pause();
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********pause have not realize");
     }
 
     public void resume() {
         //native_resume();
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********resume have not realize");
     }
 
     public void fastForward(int speed) {
         //native_fast_forward(speed);
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********fastForward have not realize");
     }
 
     public void fastBackward(int speed) {
         //native_fast_backward(speed);
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********fastBackward have not realize");
     }
 
     public void seekTo(int pos) {
         //native_seek_to(pos);
-        Log.e(TAG,"*********startVBI have not realize");
+        Log.e(TAG,"*********seekTo have not realize");
     }
 
     abstract public void onEvent(Event event);
@@ -304,7 +304,7 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
         if(!destroy) {
             destroy = false;
             //native_device_destroy();
-            Log.e(TAG,"*********startVBI have not realize");
+            Log.e(TAG,"*********finalize have not realize");
         }
     }
 
