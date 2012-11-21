@@ -173,6 +173,10 @@ public class TVService extends Service
             Message msg = handler.obtainMessage(MSG_SET_SOURCE, new Integer(source));
             handler.sendMessage(msg);
         }
+        
+        public  int getCurInputSource() {
+        	return device.getCurInputSource();
+        }
 
         public void playProgram(TVPlayParams tp) {
             Message msg = handler.obtainMessage(MSG_PLAY_PROGRAM, tp);

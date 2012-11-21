@@ -123,6 +123,21 @@ abstract public class TVClient
             }
         }
     }
+    
+    /**
+     *得到当前信号源
+     */
+    public synchronized  TVConst.SourceInput getCurInputSource() {
+        if(service != null) {
+            try {
+                int sourceInt = service.getCurInputSource();
+                TVConst.SourceInput source = TVConst.SourceInput.values()[sourceInt];
+                return source;
+            } catch(RemoteException e) {
+            }
+        }
+		return null;
+    }
 
     /**
      *开始电视节目播放

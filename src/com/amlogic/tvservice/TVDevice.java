@@ -101,7 +101,7 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
         }
     };
 
-    private int native_handle;
+	
     private boolean destroy;
     private String  TAG = "TVDevice";
     public static Tv tv = null;
@@ -162,6 +162,14 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
 
     }
 
+    public int getCurInputSource() {
+     
+        int source = tv.GetCurrentSourceInput();
+        Log.v(TAG, "^^^^^^^^^^^^^^^^getCurInputSource^^^^^^^^^^^^^^^^^^^^^^^^^^^" + source);
+        return source;
+    }
+    
+    
     public void setFrontend(TVChannelParams params) {
         //native_set_frontend(params);
         tv.INIT_TV();

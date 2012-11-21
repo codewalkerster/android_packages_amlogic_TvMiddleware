@@ -164,6 +164,11 @@ abstract public class TVActivity extends Activity
         client.setInputSource(source.ordinal());
     }
 
+   
+	 public TVConst.SourceInput   getCurInputSource(){
+	        return client.getCurInputSource();
+	 }
+    		
     /**
      *停止播放节目
      */
