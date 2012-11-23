@@ -7,26 +7,40 @@
 #define log_error(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 
-static jint db_init(JNIEnv *env, jobject obj, jobject db)
+static void db_setup(JNIEnv *env, jstring name, jboolean create)
 {
-	jfieldID native_handle;
-	jclass objclass=(*env)->FindClass(env,"android/database/sqlite/SQLiteDatabase");
-	int hdb;
+	const char *str;
 
-	native_handle = (*env)->GetFieldID(env, objclass, "mNativeHandle", "I"); 
-	if (native_handle == 0) 
-		return -1; 
-	hdb = (*env)->GetIntField(env, db, native_handle);
+	str = (*env)->GetStringUTFChars(env, name, NULL);
+	if(str){
 
-	AM_DB_CreateTables((sqlite3*)hdb);
+		log_info("setup database");
+		AM_DB_Setup((char*)str, NULL);
 
-	return hdb;
+		if(create){
+			sqlite3 *handle;
+
+			log_info("create tables");
+			AM_DB_GetHandle(&handle);
+			AM_DB_CreateTables(handle);
+			sqlite3_close(handle);
+		}
+
+		(*env)->ReleaseStringUTFChars(env, name, str);
+	}
+}
+
+static void db_unsetup(JNIEnv *env)
+{
+	log_info("unsetup database");
+	AM_DB_UnSetup();
 }
 
 static JNINativeMethod db_methods[] = 
 {
 	/* name, signature, funcPtr */
-	{"native_db_init", "(Landroid/database/sqlite/SQLiteDatabase;)I", (void*)db_init},
+	{"native_db_setup", "(Ljava/lang/String;Z)V", (void*)db_setup},
+	{"native_db_unsetup", "()V", (void*)db_unsetup},
 };
 
 //JNIHelp.h ????

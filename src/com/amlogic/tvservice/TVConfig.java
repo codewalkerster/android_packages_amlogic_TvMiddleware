@@ -162,36 +162,38 @@ public class TVConfig{
 			String val = "";
 
 			try{
-				switch(ent.value.getType()){
-					case TVConfigValue.TYPE_STRING:
-						val = "\""+ent.value.getString()+"\"";
-						break;
-					case TVConfigValue.TYPE_BOOL:
-						val = ent.value.getBoolean()?"true":"false";
-						break;
-					case TVConfigValue.TYPE_INT:
-						val = new Integer(ent.value.getInt()).toString();
-						break;
-					case TVConfigValue.TYPE_INT_ARRAY:
-						StringBuilder sb = new StringBuilder();
-						int v[] = ent.value.getIntArray();
-						int i;
-						for(i = 0; i < v.length; i++){
-							if(i != 0)
-								sb.append(",");
-							sb.append(new Integer(v[i]).toString());
-						}
-						val = sb.toString();
-						break;
-				}
+				if(ent.read==null){
+					switch(ent.value.getType()){
+						case TVConfigValue.TYPE_STRING:
+							val = "\""+ent.value.getString()+"\"";
+							break;
+						case TVConfigValue.TYPE_BOOL:
+							val = ent.value.getBoolean()?"true":"false";
+							break;
+						case TVConfigValue.TYPE_INT:
+							val = new Integer(ent.value.getInt()).toString();
+							break;
+						case TVConfigValue.TYPE_INT_ARRAY:
+							StringBuilder sb = new StringBuilder();
+							int v[] = ent.value.getIntArray();
+							int i;
+							for(i = 0; i < v.length; i++){
+								if(i != 0)
+									sb.append(",");
+								sb.append(new Integer(v[i]).toString());
+							}
+							val = sb.toString();
+							break;
+					}
 
-				ConfigString cstr = new ConfigString(pname, val);
-				list.add(cstr);
+					ConfigString cstr = new ConfigString(pname, val);
+					list.add(cstr);
+				}
 			}catch(Exception e){
 			}
 		}
 
-		if(ent.children != null){
+		if(ent.children != null && ent.read == null){
 			Iterator iter = ent.children.entrySet().iterator();
 			while(iter.hasNext()){
 				Map.Entry map_entry = (Map.Entry) iter.next();

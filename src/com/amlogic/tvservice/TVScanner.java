@@ -51,7 +51,6 @@ abstract public class TVScanner{
 		private int videoStd;
 		private int audioStd;
 		/** Dtv set */
-		private int dbNativeHandle;
 		private int demuxID;
 		private int frequencyList[];	
 
@@ -59,8 +58,7 @@ abstract public class TVScanner{
 			super(sp);
 		}
 
-		public void setDtvParams(int dbHandle, int dmxID, int[] freqList) {
-			this.dbNativeHandle = dbHandle;
+		public void setDtvParams(int dmxID, int[] freqList) {
 			this.demuxID = dmxID;
 			this.frequencyList = freqList;
 		}

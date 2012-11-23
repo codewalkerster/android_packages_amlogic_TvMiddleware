@@ -644,7 +644,7 @@ public class TVService extends Service{
 			}
 		} 
 		
-		tsp.setDtvParams(TVDataProvider.getDatabaseNativeHandle(), 0, freqList);
+		tsp.setDtvParams(0, freqList);
 
 		/** No exceptions, start scan */
 		stopPlaying();
@@ -781,7 +781,6 @@ public class TVService extends Service{
 				sendMessage(TVMessage.scanStoreBegin());
 				break;
 			case TVScanner.Event.EVENT_STORE_END:
-				TVDataProvider.syncToFile();
 				Log.d(TAG, "Store end");
 				sendMessage(TVMessage.scanStoreEnd());
 				break;

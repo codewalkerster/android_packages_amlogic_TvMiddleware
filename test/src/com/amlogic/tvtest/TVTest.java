@@ -28,7 +28,9 @@ public class TVTest extends TVActivity{
 		Log.d(TAG, "connected");
 
 		//TVScanParams sp = TVScanParams.dtvAllbandScanParams(0, TVChannelParams.MODE_QAM);
-		TVScanParams sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
+		//TVScanParams sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
+		TVScanParams sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
+
 		setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV);
 		Log.d(TAG, "Start Scan...");
 		startScan(sp);

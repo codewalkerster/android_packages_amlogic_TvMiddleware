@@ -1,19 +1,21 @@
 package com.amlogic.tvdataprovider;
 
+import java.io.File;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
-public class TVDatabase
+public class TVDatabase extends SQLiteOpenHelper
 {
-	public static final int DB_VERSION = 1;
-	private int native_handle;
-	private DatabaseHelper helper;
-	private SQLiteDatabase readableDB;
-	private SQLiteDatabase writableDB;
+	private static final int DB_VERSION = 1;
+	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
+	private static String name;
 
 	/*implemented by libjnidvbdatabase.so*/
-	private native int native_db_init(SQLiteDatabase db);
+	private static native void native_db_setup(String name, boolean create);
+	private static native void native_db_unsetup();
 
 	/*Load native library*/
 	static
@@ -21,44 +23,39 @@ public class TVDatabase
 		System.loadLibrary("jnitvdatabase");
 	}
 
-	public TVDatabase(Context context, String dbName){
-		helper = new DatabaseHelper(context, dbName);
-		writableDB = helper.getWritableDatabase();
-		readableDB = helper.getReadableDatabase();
-		native_handle = native_db_init(writableDB);
+	static public void setup(Context context, String dbName){
+		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+		int curVer = pref.getInt(DB_VERSION_FIELD, -1);
+		boolean create = false;
+
+		File file = context.getDatabasePath(dbName);
+		name = dbName;
+
+		if(curVer != DB_VERSION){
+			create = true;
+		}
+
+		native_db_setup(file.toString(), create);
+
+		if(create){
+			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION);
+		}
 	}
 
-	public int getNativeHandle(){
-		return (helper!=null) ? native_handle : 0;
+	static public void unsetup(Context context){
+		native_db_unsetup();
 	}
 
-	class DatabaseHelper extends SQLiteOpenHelper{
-		DatabaseHelper(Context context, String name){
-			super(context, name, null, DB_VERSION);
-		}
+	public TVDatabase(Context context){
+		super(context, name, null, DB_VERSION);
+	}
 
-		@Override
-		public void onCreate(SQLiteDatabase db){
-		}
-
-		@Override
-		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
-		}
+	@Override
+	public void onCreate(SQLiteDatabase db){
 	}
 	
-	public SQLiteDatabase getReadableDatabase(){
-		return (helper == null) ? null : readableDB;
-	}
-
-	public SQLiteDatabase getWritableDatabase(){
-		return (helper == null) ? null : writableDB;
-	}
-
-	public void close(){
-		if(helper != null){
-			helper.close();
-			helper = null;
-		}
+	@Override
+	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
 	}
 }
 
