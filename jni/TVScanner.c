@@ -37,6 +37,7 @@ enum
 	EVENT_SCAN_PROGRESS = 0,
 	EVENT_STORE_BEGIN   = 1,
 	EVENT_STORE_END     = 2,
+	EVENT_SCAN_END		= 3,
 };
 
 
@@ -182,6 +183,7 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
 		(*env)->GetFieldID(env, gEventClass, "channelParams", "Lcom/amlogic/tvutil/TVChannelParams;"), cp);
 	
 
+	log_info("Call tvscanner java onevent, event type %d", evt_type);
 	/*Call the java method*/
 	(*env)->CallVoidMethod(env, pd->obj, gOnEventID, event);
 	log_info("call java  method in JNI env end");    
@@ -482,11 +484,13 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
 				tv_scan_onevent(EVENT_STORE_END, prog);
 				break;
 			case AM_SCAN_PROGRESS_SCAN_END:
-			{
 				prog->progress = 100;
-				tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
+				tv_scan_onevent(EVENT_SCAN_END, prog);
 				break;
-			}
+			case AM_SCAN_PROGRESS_ATV_TUNING:
+				prog->cur_tp.fend_para.analog.para.frequency = (int)evt->data;
+				prog->locked = AM_FALSE;
+				tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
 				break;
 
 			default:
@@ -497,6 +501,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
 	{
 		AM_SCAN_DTVSignalInfo_t *evt = (AM_SCAN_DTVSignalInfo_t*)param;		
 		prog->locked = evt->locked;
+		tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
 	}
 }
 
@@ -716,9 +721,15 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		if (start_para->atv_para.fe_paras != NULL) 
 		{
 			memset(start_para->atv_para.fe_paras, 0, 3 * sizeof(AM_FENDCTRL_DVBFrontendParameters_t));		
+			start_para->atv_para.fe_paras[0].m_type = FE_ANALOG;
 			start_para->atv_para.fe_paras[0].analog.para.frequency = (*env)->GetIntField(env, para, min_freq); 
-			start_para->atv_para.fe_paras[0].analog.para.frequency = (*env)->GetIntField(env, para, max_freq); 
-			start_para->atv_para.fe_paras[0].analog.para.frequency = (*env)->GetIntField(env, para, start_freq);
+			start_para->atv_para.fe_paras[1].m_type = FE_ANALOG;
+			start_para->atv_para.fe_paras[1].analog.para.frequency = (*env)->GetIntField(env, para, max_freq); 
+			start_para->atv_para.fe_paras[2].m_type = FE_ANALOG;
+			start_para->atv_para.fe_paras[2].analog.para.frequency = (*env)->GetIntField(env, para, start_freq);
+			log_info("min %u, max %u, start %u", start_para->atv_para.fe_paras[0].analog.para.frequency,
+				start_para->atv_para.fe_paras[1].analog.para.frequency,
+				start_para->atv_para.fe_paras[2].analog.para.frequency);
 		}
 		
 		start_para->atv_para.direction = (*env)->GetIntField(env, para, direction); 
@@ -739,8 +750,10 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		{
 			jobject cp = (*env)->GetObjectField(env, para, chan_para); 
 			start_para->dtv_para.fe_cnt = 1;
-			if (tv_scan_get_channel_para(env, thiz, cp, &start_para->dtv_para.fe_paras) < 0)
+			if (tv_scan_get_channel_para(env, thiz, cp, &start_para->dtv_para.fe_paras) < 0) {
+				log_info("Cannot get channel param !");
 				return -1;
+			}
 			/* use the fe_type  specified by user */
 			start_para->dtv_para.source = start_para->dtv_para.fe_paras[0].m_type;
 		}

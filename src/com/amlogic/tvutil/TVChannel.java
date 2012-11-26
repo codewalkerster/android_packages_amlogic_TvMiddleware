@@ -49,6 +49,10 @@ public class TVChannel{
 
 			this.params = TVChannelParams.dvbtParams(freq, bw);
 		}
+		else if(src == TVChannelParams.MODE_ANALOG){
+			int std = TVChannelParams.STD_PAL_I;
+			this.params = TVChannelParams.analogParams(freq,std, 0);
+		}
 
 		this.fendID = 0;
 	}
