@@ -29,6 +29,26 @@ public class TVChannelParams  implements Parcelable {
 	/**模拟模式*/
 	public static final int MODE_ANALOG = 4;
 
+	/**
+	 *由字符串获得调制模式
+	 *@param str 字符串
+	 *@return 返回调制模式
+	 */
+	public static int getModeFromString(String str){
+		if(str.equals("dvbt"))
+			return MODE_OFDM;
+		else if(str.equals("dvbc"))
+			return MODE_QAM;
+		else if(str.equals("dvbs"))
+			return MODE_QPSK;
+		else if(str.equals("atsc"))
+			return MODE_ATSC;
+		else if(str.equals("analog"))
+			return MODE_ANALOG;
+
+		return -1;
+	}
+
 	/**8MHz带宽*/
 	public static final int BANDWIDTH_8_MHZ = 0;
 	/**7MHz带宽*/

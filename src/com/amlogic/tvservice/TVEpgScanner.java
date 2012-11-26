@@ -57,8 +57,49 @@ abstract public class TVEpgScanner{
 	private int dmx_dev_id  = -1;
 	private int fend_type   = -1;
 	private boolean created = false;
+	private int channel_id  = -1;
+	private int program_id  = -1;
+	private int scan_mode   = 0;
+
+	/*Start scan the sections.*/
+	private void startScan(int mode){
+		mode = mode & ~scan_mode;
+
+		if(mode == 0)
+			return;
+
+		if(!created)
+			return;
+
+		native_epg_change_mode(MODE_ADD, mode);
+	}
+
+	/*Stop scan the sections.*/
+	private void stopScan(int mode){
+		mode = scan_mode & mode;
+
+		if(mode == 0)
+			return;
+
+		if(!created)
+			return;
+
+		native_epg_change_mode(MODE_REMOVE, mode);
+	}
 
 	public TVEpgScanner(){
+	}
+
+	public void setSource(int fend, int dmx, int src){
+		if(created)
+			destroy();
+		
+		fend_dev_id = fend;
+		dmx_dev_id  = dmx;
+		fend_type   = src;
+
+		native_epg_create(fend, dmx, src);
+		created = true;
 	}
 
 	public void destroy(){
@@ -68,30 +109,62 @@ abstract public class TVEpgScanner{
 		}
 	}
 
-	public synchronized void setChannelID(int id){
-		channelID = id;
-	}
+	/*Enter a channel.*/
+	public void enterChannel(int chan_id){
+		if(chan_id == channel_id)
+			return;
 
-	private void startTable(int mask){
-	}
+		if(!created)
+			return;
 
-	private void stopTable(int mask){
-	}
-
-	public void start(int channelID){
-		synchronized(this){
-			this.channelID = channelID;
+		if(channel_id != -1){
+			leaveChannel();
 		}
 
-		startTable(SCAN_ALL);
+		startScan(SCAN_EIT_ALL|SCAN_SDT|SCAN_NIT|SCAN_TDT);
+		channel_id = chan_id;
 	}
 
-	public void stop(){
-		stopTable(SCAN_ALL);
+	/*Leave the channel.*/
+	public void leaveChannel(){
+		if(channel_id == -1)
+			return;
 
-		synchronized(this){
-			this.channelID = -1;
+		if(!created)
+			return;
+
+		stopScan(SCAN_ALL);
+		channel_id = -1;
+	}
+
+	/*Enter the program.*/
+	public void enterProgram(int prog_id){
+		if(prog_id == program_id)
+			return;
+
+		if(!created)
+			return;
+
+		if(program_id != -1){
+			leaveProgram();
 		}
+
+		native_epg_monitor_service(prog_id);
+		startScan(SCAN_PAT|SCAN_PMT|SCAN_CAT);
+		program_id = prog_id;
+	}
+
+	/*Leave the program.*/
+	public void leaveProgram(){
+		if(program_id == -1)
+			return;
+
+		if(!created)
+			return;
+
+		stopScan(SCAN_PAT|SCAN_PMT|SCAN_CAT);
+		native_epg_monitor_service(-1);
+		program_id = -1;
 	}
 
 	abstract void onEvent(Event event);

@@ -460,6 +460,10 @@ public class TVService extends Service{
 
 				programID = p.getID();
 
+				/*Scan the program's EPG*/
+				epgScanner.enterProgram(programID);
+
+				/*Play the DTV program's AV*/
 				video = p.getVideo();
 
 				try{
@@ -515,6 +519,10 @@ public class TVService extends Service{
 			channelParams = fe_params;
 			channelLocked = false;
 
+			/*Stop the epg scanner.*/
+			epgScanner.leaveChannel();
+
+			/*Reset the frontend.*/
 			device.setFrontend(fe_params);
 			status = TVStatus.STATUS_SET_FRONTEND;
 			return;
@@ -744,7 +752,14 @@ public class TVService extends Service{
 			case TVDevice.Event.EVENT_FRONTEND:
 				if(isInTVMode()){
 					if(channelParams!=null && event.feParams.equals(channelParams)){
+						if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+							/*Start EPG scanner.*/
+							if(channelID !=-1){
+								epgScanner.enterChannel(channelID);
+							}
+						}
 						if((status == TVStatus.STATUS_SET_FRONTEND) && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+							/*Play AV.*/
 							playCurrentProgramAV();
 						}
 						if(channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
@@ -798,6 +813,16 @@ public class TVService extends Service{
 		super.onCreate();
 		TVDataProvider.openDatabase(this);
 		config = new TVConfig(this);
+
+		try{
+			String modeStr = config.getString("tv:dtv:mode");
+			int mode = TVChannelParams.getModeFromString(modeStr);
+			if(mode == -1)
+				throw new Exception();
+			epgScanner.setSource(0, 0, mode);
+		}catch(Exception e){
+			Log.e(TAG, "get tv:dtv:mode failed");
+		}
 	}
 
 	public void onDestroy(){
