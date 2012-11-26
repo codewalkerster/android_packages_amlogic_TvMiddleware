@@ -59,6 +59,22 @@ public class TVDataProvider extends ContentProvider{
 	public synchronized static void openDatabase(Context context){
 		if(openCount == 0){
 			TVDatabase.setup(context, DB_NAME);
+
+			/** load the frequency lists from code*/
+			ContentValues cv = new ContentValues();
+			TVDatabase db = new TVDatabase(context);
+
+			for (int i=0; i<tvRegions.length; i++) {
+				Log.d(TAG, "Loading region "+tvRegions[i].name+", source "+tvRegions[i].source);
+				cv.put("name", tvRegions[i].name);
+				cv.put("source", tvRegions[i].source);
+				cv.put("frequencies", tvRegions[i].freqList);
+				db.getWritableDatabase().insert("region_table", "", cv);
+				Log.d(TAG, tvRegions[i].name + " done !");
+				cv.clear();
+			}
+
+			db.close();
 		}
 
 		openCount++;
