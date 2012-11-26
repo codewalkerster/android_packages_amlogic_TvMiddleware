@@ -353,6 +353,7 @@ public class TVService extends Service{
 	private TVChannelParams channelParams;
 	private int channelID;
 	private int programID;
+	private boolean programBlocked = false;
 	private boolean channelLocked = false;
 	private boolean recording = false;
 	private boolean isScanning = false;
@@ -435,6 +436,28 @@ public class TVService extends Service{
 		return p;
 	}
 
+	private boolean checkProgramBlock(){
+		boolean ret = false;
+
+		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
+		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+		}
+
+		if(ret != programBlocked){
+			programBlocked = ret;
+
+			if(ret){
+				Log.d(TAG, "block the program");
+				sendMessage(TVMessage.programBlock(programID));
+			}else{
+				Log.d(TAG, "unblock the program");
+				sendMessage(TVMessage.programUnblock(programID));
+			}
+		}
+
+		return programBlocked;
+	}
+
 	private void playCurrentProgramAV(){
 		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
 			TVProgram p;
@@ -443,7 +466,10 @@ public class TVService extends Service{
 			if(p != null){
 				programID = p.getID();
 
-				device.playATV();
+				if(!checkProgramBlock()){
+					Log.d(TAG, "play ATV");
+					device.playATV();
+				}
 
 				sendMessage(TVMessage.programStart(programID));
 
@@ -484,8 +510,10 @@ public class TVService extends Service{
 					vfmt = video.getFormat();
 				}
 
-				Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
-				device.playDTV(vpid, vfmt, apid, vfmt);
+				if(!checkProgramBlock()){
+					Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
+					device.playDTV(vpid, vfmt, apid, vfmt);
+				}
 
 				sendMessage(TVMessage.programStart(programID));
 

@@ -17,7 +17,7 @@ public class TVTime{
 
 	/**
 	 *设定当前时间
-	 *@param time 当前时间（毫米单位）
+	 *@param time 当前时间（毫秒单位）
 	 */
 	synchronized void setTime(long time){
 		Date sys = new Date();

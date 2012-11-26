@@ -41,6 +41,10 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_PROGRAM_START     = 15;
 	/**节目停止播放*/
 	public static final int TYPE_PROGRAM_STOP      = 16;
+	/**TV系统时间更新*/
+	public static final int TYPE_TIME_UPDATE       = 17;
+	/**事件信息更新*/
+	public static final int TYPE_EVENT_UPDATE      = 18;
 
 	private static final String TAG="TVMessage";
 	private int type;
@@ -425,6 +429,20 @@ public class TVMessage implements Parcelable{
 	
 		msg.flags = FLAG_SCAN;
 		msg.type = TYPE_SCAN_END;
+
+		return msg;
+	}
+
+	public static TVMessage timeUpdate(){
+		TVMessage msg = new TVMessage();
+		msg.type = TYPE_TIME_UPDATE;
+
+		return msg;
+	}
+
+	public static TVMessage eventUpdate(){
+		TVMessage msg = new TVMessage();
+		msg.type = TYPE_EVENT_UPDATE;
 
 		return msg;
 	}
