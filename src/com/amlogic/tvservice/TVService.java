@@ -674,8 +674,23 @@ public class TVService extends Service
             IsScanning = true;
         }
 
+        //*********************************stop_tv() and change of source 
+        if(isInATVMode() ){
+        	device.stopATV();
+        	ReqSourceInput = TVConst.SourceInput.SOURCE_MAX;
+        	  try {
+      			Thread.sleep(2000);
+      		} catch (InterruptedException e) {
+      			// TODO Auto-generated catch block
+      			e.printStackTrace();
+      		}
+        }
+        
+      
         scanner.scan(tsp);
         Tv_Status = TVStatus.STATUS_SCAN;
+        
+      
     }
 
     /*Stop scanning process.*/
