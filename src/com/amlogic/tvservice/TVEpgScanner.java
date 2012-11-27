@@ -43,6 +43,7 @@ abstract public class TVEpgScanner{
 		public int dvbVersion;
 	}
 
+	private int native_handle;
 	private native void native_epg_create(int fend_id, int dmx_id, int src);
 	private native void native_epg_destroy();
 	private native void native_epg_change_mode(int op, int mode);

@@ -303,13 +303,7 @@ public class TVService extends Service{
 
 	private TVTime time = new TVTime();
 	private TVConfig config;
-	private TVDevice device = new TVDevice(){
-		/*Device event handler*/
-		public void onEvent(TVDevice.Event event){
-			Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
-			handler.sendMessage(msg);
-		}
-	};
+	private TVDevice device;
 
 	private TVScanner scanner = new TVScanner(){
 		/*Scanner event handler*/
@@ -843,6 +837,15 @@ public class TVService extends Service{
 
 	public void onCreate(){
 		super.onCreate();
+
+		device = new TVMBoxDevice(){
+			/*Device event handler*/
+			public void onEvent(TVDevice.Event event){
+				Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
+				handler.sendMessage(msg);
+			}
+		};
+
 		TVDataProvider.openDatabase(this);
 		config = new TVConfig(this);
 

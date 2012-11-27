@@ -42,155 +42,59 @@ abstract public class TVDevice{
 		}
 	}
 
-	private int native_handle;
-	private boolean destroy;
-
-	private native void native_device_init();
-	private native void native_device_destroy();
-	private native void native_set_input_source(int src);
-	private native void native_set_frontend(TVChannelParams params);
-	private native TVChannelParams native_get_frontend();
-	private native int  native_get_frontend_status();
-	private native int  native_get_frontend_signal_strength();
-	private native int  native_get_frontend_snr();
-	private native int  native_get_frontend_ber();
-	private native void native_free_frontend();
-	private native void native_start_vbi(int flags);
-	private native void native_stop_vbi(int flags);
-	private native void native_play_atv();
-	private native void native_stop_atv();
-	private native void native_play_dtv(int vpid, int vfmt, int apid, int afmt);
-	private native void native_stop_dtv();
-	private native void native_start_recording(DTVRecordParams params);
-	private native DTVRecordParams native_stop_recording();
-	private native void native_start_timeshifting(DTVRecordParams params);
-	private native DTVRecordParams native_stop_timeshifting();
-	private native void native_start_playback(DTVRecordParams params);
-	private native void native_stop_playback();
-	private native void native_fast_forward(int speed);
-	private native void native_fast_backward(int speed);
-	private native void native_pause();
-	private native void native_resume();
-	private native void native_seek_to(int pos);
-
-	static{
-		System.loadLibrary("am_adp");
-		System.loadLibrary("am_mw");
-		System.loadLibrary("zvbi");
-		System.loadLibrary("jnitvdevice");
-	}
-
 	public TVDevice(){
-		destroy = false;
-		native_device_init();
 	}
 
-	public void setInputSource(TVConst.SourceType source){
-		native_set_input_source(source.ordinal());
-	}
+	abstract public void setInputSource(TVConst.SourceType source);
 
-	public void setFrontend(TVChannelParams params){
-		native_set_frontend(params);
-	}
+	abstract public void setFrontend(TVChannelParams params);
 
-	public TVChannelParams getFrontend(){
-		return native_get_frontend();
-	}
+	abstract public TVChannelParams getFrontend();
 
-	public int getFrontendStatus(){
-		return native_get_frontend_status();
-	}
+	abstract public int getFrontendStatus();
 
-	public int getFrontendSignalStrength(){
-		return native_get_frontend_signal_strength();
-	}
+	abstract public int getFrontendSignalStrength();
 
-	public int getFrontendSNR(){
-		return native_get_frontend_snr();
-	}
+	abstract public int getFrontendSNR();
 
-	public int getFrontendBER(){
-		return native_get_frontend_ber();
-	}
+	abstract public int getFrontendBER();
 
-	public void freeFrontend(){
-		native_free_frontend();
-	}
+	abstract public void freeFrontend();
 
-	public void startVBI(int flags){
-		native_start_vbi(flags);
-	}
+	abstract public void startVBI(int flags);
 
-	public void stopVBI(int flags){
-		native_stop_vbi(flags);
-	}
+	abstract public void stopVBI(int flags);
 
-	public void playATV(){
-		native_play_atv();
-	}
+	abstract public void playATV();
 
-	public void stopATV(){
-		native_stop_atv();
-	}
+	abstract public void stopATV();
 
-	public void playDTV(int vpid, int vfmt, int apid, int afmt){
-		native_play_dtv(vpid, vfmt, apid, afmt);
-	}
+	abstract public void playDTV(int vpid, int vfmt, int apid, int afmt);
 
-	public void stopDTV(){
-		native_stop_dtv();
-	}
+	abstract public void stopDTV();
 
-	public void startRecording(DTVRecordParams params){
-		native_start_recording(params);
-	}
+	abstract public void startRecording(DTVRecordParams params);
 
-	public DTVRecordParams stopRecording(){
-		return native_stop_recording();
-	}
+	abstract public DTVRecordParams stopRecording();
 
-	public void startTimeshifting(DTVRecordParams params){
-	}
+	abstract public void startTimeshifting(DTVRecordParams params);
 
-	public DTVRecordParams stopTimeshifting(){
-		return native_stop_timeshifting();
-	}
+	abstract public DTVRecordParams stopTimeshifting();
 
-	public void startPlayback(DTVRecordParams params){
-		native_start_playback(params);
-	}
+	abstract public void startPlayback(DTVRecordParams params);
 
-	public void stopPlayback(){
-		native_stop_playback();
-	}
+	abstract public void stopPlayback();
 
-	public void pause(){
-		native_pause();
-	}
+	abstract public void pause();
 
-	public void resume(){
-		native_resume();
-	}
+	abstract public void resume();
 
-	public void fastForward(int speed){
-		native_fast_forward(speed);
-	}
+	abstract public void fastForward(int speed);
 
-	public void fastBackward(int speed){
-		native_fast_backward(speed);
-	}
+	abstract public void fastBackward(int speed);
 
-	public void seekTo(int pos){
-		native_seek_to(pos);
-	}
+	abstract public void seekTo(int pos);
 
 	abstract public void onEvent(Event event);
-	
-	protected void finalize() throws Throwable {
-		if(!destroy){
-			destroy = false;
-			native_device_destroy();
-		}
-	}
 }
 

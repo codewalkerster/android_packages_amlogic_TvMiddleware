@@ -36,8 +36,8 @@ public class TVTest extends TVActivity{
 			sp = TVScanParams.atvAutoScanParams(0);
 		} else {
 			//sp = TVScanParams.dtvAllbandScanParams(0, TVChannelParams.MODE_QAM);
-			sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
-			//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
+			//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
+			sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
 		}
 		
 		setInputSource(TVConst.SourceType.SOURCE_TYPE_DTV);

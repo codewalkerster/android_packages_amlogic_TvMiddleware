@@ -43,9 +43,9 @@ include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := libjnitvdevice
+LOCAL_MODULE    := libjnitvmboxdevice
 LOCAL_MODULE_TAGS := optional
-LOCAL_SRC_FILES := TVDevice.cpp
+LOCAL_SRC_FILES := TVMBoxDevice.cpp
 LOCAL_C_INCLUDES := external/libzvbi/src \
 	external/dvb/include/am_mw \
 	external/dvb/include/am_adp \

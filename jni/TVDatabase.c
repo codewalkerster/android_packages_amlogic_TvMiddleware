@@ -7,7 +7,7 @@
 #define log_error(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 
-static void db_setup(JNIEnv *env, jstring name, jboolean create)
+static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create)
 {
 	const char *str;
 
@@ -30,7 +30,7 @@ static void db_setup(JNIEnv *env, jstring name, jboolean create)
 	}
 }
 
-static void db_unsetup(JNIEnv *env)
+static void db_unsetup(JNIEnv *env, jobject obj)
 {
 	log_info("unsetup database");
 	AM_DB_UnSetup();

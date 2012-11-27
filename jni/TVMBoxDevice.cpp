@@ -10,7 +10,7 @@ extern "C" {
 #undef LOG_TAG
 #endif
 
-#define LOG_TAG    "jnitvdevice"
+#define LOG_TAG    "jnitvmboxdevice"
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
@@ -451,9 +451,9 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 		return -1;
 	}
 
-	clazz = env->FindClass("com/amlogic/tvservice/TVDevice");
+	clazz = env->FindClass("com/amlogic/tvservice/TVMBoxDevice");
 	if(clazz == NULL){
-		LOGE("FindClass com/amlogic/tvservice/TVDevice failed");
+		LOGE("FindClass com/amlogic/tvservice/TVMBoxDevice failed");
 		return -1;
 	}
 
@@ -478,7 +478,7 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gChanParamsBWID   = env->GetFieldID(gChanParamsClass, "bandwidth", "I");
 	gChanParamsInitID = env->GetMethodID(gChanParamsClass, "<init>", "(I)V");
 
-	LOGI("load jnitvdevice ok");
+	LOGI("load jnitvmboxdevice ok");
 	return JNI_VERSION_1_4;
 }
 

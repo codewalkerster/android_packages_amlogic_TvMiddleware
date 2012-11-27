@@ -687,7 +687,7 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSate
 static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_CreatePara_t *start_para)
 {
 	jfieldID amode, min_freq, max_freq, start_freq, direction, vid_std, aud_std;
-	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id, hdb;
+	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id;
 	int java_mode;
 	
 	jclass objclass =(*env)->FindClass(env,"com/amlogic/tvservice/TVScanner$TVScannerParams"); 
@@ -701,7 +701,6 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	aud_std = (*env)->GetFieldID(env,objclass, "audioStd", "I"); 
 	mode = (*env)->GetFieldID(env,objclass, "mode", "I"); 
 	dmode = (*env)->GetFieldID(env,objclass, "dtvMode", "I"); 
-	hdb = (*env)->GetFieldID(env,objclass, "dbNativeHandle", "I"); 
 	fend_id = (*env)->GetFieldID(env,objclass, "fendID", "I"); 
 	dmx_id = (*env)->GetFieldID(env,objclass, "demuxID", "I"); 
 	source = (*env)->GetFieldID(env,objclass, "tsSourceID", "I"); 
@@ -710,7 +709,6 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	
 	start_para->fend_dev_id = (*env)->GetIntField(env, para, fend_id); 
 	java_mode = (*env)->GetIntField(env, para, mode); 
-	start_para->hdb = (sqlite3*)(*env)->GetIntField(env, para, hdb); 
 	if (java_mode == 0) {
 		start_para->mode = AM_SCAN_MODE_ATV_DTV;
 		start_para->dtv_para.mode = AM_SCAN_DTVMODE_NONE;
