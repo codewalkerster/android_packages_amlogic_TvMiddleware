@@ -23,6 +23,7 @@ public class TVDataProvider extends ContentProvider{
 	public static final Uri WR_URL = Uri.parse("content://com.amlogic.tv.tvdataprovider/wr_db");
 
 	private static int openCount = 0;
+	private static TVDatabase db;
 
 	static{
 		URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
@@ -62,7 +63,7 @@ public class TVDataProvider extends ContentProvider{
 
 			/** load the frequency lists from code*/
 			ContentValues cv = new ContentValues();
-			TVDatabase db = new TVDatabase(context);
+			db = new TVDatabase(context);
 
 			for (int i=0; i<tvRegions.length; i++) {
 				Log.d(TAG, "Loading region "+tvRegions[i].name+", source "+tvRegions[i].source);
@@ -73,8 +74,6 @@ public class TVDataProvider extends ContentProvider{
 				Log.d(TAG, tvRegions[i].name + " done !");
 				cv.clear();
 			}
-
-			db.close();
 		}
 
 		openCount++;
@@ -88,6 +87,7 @@ public class TVDataProvider extends ContentProvider{
 
 		if(openCount == 0){
 			Log.d(TAG, "close database");
+			db.close();
 			TVDatabase.unsetup(context);
 		}
 	}
@@ -109,21 +109,13 @@ public class TVDataProvider extends ContentProvider{
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder)
 	{
-		TVDatabase db = null;
 		int id = URI_MATCHER.match(uri);
 		Cursor c = null;
 
-		try{
-			db = new TVDatabase(getContext());
-
-			if(id == RD_SQL){
-				c = db.getReadableDatabase().rawQuery(selection, null);
-			}else if(id == WR_SQL){
-				db.getWritableDatabase().execSQL(selection);
-			}
-		}finally{
-			if(db != null)
-				db.close();
+		if(id == RD_SQL){
+			c = db.getReadableDatabase().rawQuery(selection, null);
+		}else if(id == WR_SQL){
+			db.getWritableDatabase().execSQL(selection);
 		}
 
 		return c;
