@@ -59,11 +59,9 @@ public class TVDataProvider extends ContentProvider{
 
 	public synchronized static void openDatabase(Context context){
 		if(openCount == 0){
-			TVDatabase.setup(context, DB_NAME);
-
 			/** load the frequency lists from code*/
 			ContentValues cv = new ContentValues();
-			db = new TVDatabase(context);
+			db = new TVDatabase(context, DB_NAME);
 
 			for (int i=0; i<tvRegions.length; i++) {
 				Log.d(TAG, "Loading region "+tvRegions[i].name+", source "+tvRegions[i].source);
@@ -87,8 +85,8 @@ public class TVDataProvider extends ContentProvider{
 
 		if(openCount == 0){
 			Log.d(TAG, "close database");
+			db.unsetup(context);
 			db.close();
-			TVDatabase.unsetup(context);
 		}
 	}
 
