@@ -36,21 +36,41 @@ LOCAL_SRC_FILES := \
 	src/com/amlogic/tvservice/TVConfig.java \
 	src/com/amlogic/tvservice/TVEpgScanner.java \
 	src/com/amlogic/tvservice/TVScanner.java \
-	src/com/amlogic/tvservice/TVDevice.java \
+	src/com/amlogic/tvservice/TVAbstractDevice.java \
 	src/com/amlogic/tvservice/TVService.java \
-	src/com/amlogic/tvservice/TVTime.java \
-	src/com/amlogic/tvservice/TVMBoxDevice.java
+	src/com/amlogic/tvservice/TVTime.java
 
-LOCAL_PACKAGE_NAME := TVService
+LOCAL_MODULE_CLASS := APPS
+LOCAL_MODULE := TVService
+intermediates := $(call local-intermediates-dir, COMMON)
+
+GEN_PATH := $(intermediates)/src/src/com/amlogic/tvservice
+GEN := $(GEN_PATH)/TVDevice.java
+GEN_SRC_PATH := $(LOCAL_PATH)/src/com/amlogic/tvservice
+
+ifeq ($(BOARD_HAVE_TV), true)
+	GEN_SRC := $(GEN_SRC_PATH)/TVSrvDevice.java
+	LOCAL_JAVA_LIBRARIES := tv
+else
+	GEN_SRC := $(GEN_SRC_PATH)/TVMBoxDevice.java
+endif
+LOCAL_GENERATED_SOURCES := $(GEN)
+
+$(GEN): $(GEN_SRC)
+	mkdir -p $(GEN_PATH)
+	cp $(GEN_SRC) $(GEN)
+
+$(info $(GEN))
 
 LOCAL_SDK_VERSION := current
 
 LOCAL_STATIC_JAVA_LIBRARIES := tvmiddleware
-#LOCAL_JAVA_LIBRARIES := tv
+
 LOCAL_PROGUARD_ENABLED := disabled
-
 LOCAL_CERTIFICATE := platform
-
+LOCAL_PACKAGE_NAME := TVService
+LOCAL_MODULE :=
+LOCAL_MODULE_CLASS :=
 include $(BUILD_PACKAGE)
 
 
