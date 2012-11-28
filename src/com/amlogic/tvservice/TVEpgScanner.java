@@ -26,22 +26,23 @@ abstract public class TVEpgScanner{
 	public static final int SCAN_ALL = SCAN_PAT | SCAN_PMT | SCAN_CAT | SCAN_SDT | SCAN_NIT | SCAN_TDT | SCAN_EIT_ALL |
 			SCAN_MGT | SCAN_VCT | SCAN_STT | SCAN_RRT | SCAN_PSIP_EIT;
 
-	public class Event{
-		public static final int EVENT_PF_EIT_END  = 1;
-		public static final int EVENT_SCH_EIT_END = 2;
-		public static final int EVENT_PMT_END     = 3;
-		public static final int EVENT_SDT_END     = 4;
-		public static final int EVENT_TDT_END     = 5;
-		public static final int EVENT_NIT_END     = 6;
+    public class Event
+    {
+        public static final int EVENT_PF_EIT_END  = 1;
+        public static final int EVENT_SCH_EIT_END = 2;
+        public static final int EVENT_PMT_END     = 3;
+        public static final int EVENT_SDT_END     = 4;
+        public static final int EVENT_TDT_END     = 5;
+        public static final int EVENT_NIT_END     = 6;
 
-		public int type;
-		public int channelID;
-		public int dvbOrigNetID;
-		public int dvbTSID;
-		public int dvbServiceID;
-		public long time;
-		public int dvbVersion;
-	}
+        public int type;
+        public int channelID;
+        public int dvbOrigNetID;
+        public int dvbTSID;
+        public int dvbServiceID;
+        public long time;
+        public int dvbVersion;
+    }
 
 	private int native_handle;
 	private native void native_epg_create(int fend_id, int dmx_id, int src);
@@ -168,6 +169,6 @@ abstract public class TVEpgScanner{
 		program_id = -1;
 	}
 
-	abstract void onEvent(Event event);
+    abstract void onEvent(Event event);
 }
 

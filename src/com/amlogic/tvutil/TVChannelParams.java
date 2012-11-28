@@ -167,13 +167,13 @@ public class TVChannelParams  implements Parcelable {
 	/**PAL*/
 	public static final int STD_PAL       = STD_PAL_BG|STD_PAL_DK|STD_PAL_H|STD_PAL_I;
 
-	private int mode;
-	private int frequency;
-	private int symbolRate;
-	private int modulation;
-	private int bandwidth;
-	private int audio;
-	private int standard;
+	public int mode;
+	public int frequency;
+	public int symbolRate;
+	public int modulation;
+	public int bandwidth;
+	public int audio;
+	public int standard;
 
 	public static final Parcelable.Creator<TVChannelParams> CREATOR = new Parcelable.Creator<TVChannelParams>(){
 		public TVChannelParams createFromParcel(Parcel in) {

@@ -22,7 +22,6 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVChannel;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvdataprovider.TVDataProvider;
-//import com.amlogic.tvservice.TVScanner.TVScannerParams;
 
 public class TVService extends Service{
 	private static final String TAG = "TVService";
@@ -173,6 +172,10 @@ public class TVService extends Service{
 			handler.sendMessage(msg);
 		}
 
+		public int getCurInputSource(){
+			return device.getCurInputSource().ordinal();
+		}
+
 		public void playProgram(TVPlayParams tp){
 			Message msg = handler.obtainMessage(MSG_PLAY_PROGRAM, tp);
 			handler.sendMessage(msg);
@@ -245,7 +248,7 @@ public class TVService extends Service{
 			switch(msg.what){
 				case MSG_SET_SOURCE:
 					int val = (Integer)msg.obj;
-					TVConst.SourceType type = TVConst.SourceType.values()[val];
+					TVConst.SourceInput type = TVConst.SourceInput.values()[val];
 
 					resolveSetInputSource(type);
 					break;
@@ -339,8 +342,8 @@ public class TVService extends Service{
 	}
 
 	private TVStatus status;
-	private TVConst.SourceType inputSource;
-	private TVConst.SourceType reqInputSource;
+	private TVConst.SourceInput inputSource;
+	private TVConst.SourceInput reqInputSource;
 	private TVPlayParams atvPlayParams;
 	private TVPlayParams dtvPlayParams;
 	private int dtvProgramType = TVProgram.TYPE_TV;
@@ -387,8 +390,8 @@ public class TVService extends Service{
 	}
 
 	private boolean isInTVMode(){
-		if((inputSource == TVConst.SourceType.SOURCE_TYPE_ATV) ||
-				(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV))
+		if((inputSource == TVConst.SourceInput.SOURCE_ATV) ||
+				(inputSource == TVConst.SourceInput.SOURCE_DTV))
 			return true;
 		return false;
 	}
@@ -412,7 +415,7 @@ public class TVService extends Service{
 				case TVPlayParams.PLAY_PROGRAM_NUMBER:
 					int type;
 
-					if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV)
+					if(inputSource == TVConst.SourceInput.SOURCE_DTV)
 						type = dtvProgramType;
 					else
 						type = TVProgram.TYPE_ATV;
@@ -433,8 +436,8 @@ public class TVService extends Service{
 	private boolean checkProgramBlock(){
 		boolean ret = false;
 
-		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
-		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 		}
 
 		if(ret != programBlocked){
@@ -453,7 +456,7 @@ public class TVService extends Service{
 	}
 
 	private void playCurrentProgramAV(){
-		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
+		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 			TVProgram p;
 		
 			p = playParamsToProgram(dtvPlayParams);
@@ -469,7 +472,7 @@ public class TVService extends Service{
 
 				status = TVStatus.STATUS_PLAY_ATV;
 			}
-		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 			TVProgram p;
 			TVProgram.Video video;
 			TVProgram.Audio audio;
@@ -520,13 +523,13 @@ public class TVService extends Service{
 		TVProgram p = null;
 		TVChannelParams fe_params;
 
-		if(inputSource == TVConst.SourceType.SOURCE_TYPE_ATV){
+		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 			if(atvPlayParams == null){
 				status = TVStatus.STATUS_STOPPED;
 				return;
 			}
 			p = playParamsToProgram(atvPlayParams);
-		}else if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 			if(dtvPlayParams == null){
 				status = TVStatus.STATUS_STOPPED;
 				return;
@@ -554,7 +557,7 @@ public class TVService extends Service{
 	}
 
 	/*Reset the input source.*/
-	private void resolveSetInputSource(TVConst.SourceType src){
+	private void resolveSetInputSource(TVConst.SourceInput src){
 		Log.d(TAG, "try to set input source to "+src.name());
 
 		if(src == reqInputSource)
@@ -585,10 +588,10 @@ public class TVService extends Service{
 		if(chan == null)
 			return;
 
-		if(chan.isAnalogMode() && (inputSource == TVConst.SourceType.SOURCE_TYPE_ATV)){
+		if(chan.isAnalogMode() && (inputSource == TVConst.SourceInput.SOURCE_ATV)){
 			atvPlayParams = tp;
 			playCurrentProgram();
-		}else if(!chan.isAnalogMode() && (inputSource == TVConst.SourceType.SOURCE_TYPE_DTV)){
+		}else if(!chan.isAnalogMode() && (inputSource == TVConst.SourceInput.SOURCE_DTV)){
 			dtvPlayParams = tp;
 			playCurrentProgram();
 		}else{
@@ -774,7 +777,7 @@ public class TVService extends Service{
 			case TVDevice.Event.EVENT_FRONTEND:
 				if(isInTVMode()){
 					if(channelParams!=null && event.feParams.equals(channelParams)){
-						if(inputSource == TVConst.SourceType.SOURCE_TYPE_DTV){
+						if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 							/*Start EPG scanner.*/
 							if(channelID !=-1){
 								epgScanner.enterChannel(channelID);

@@ -52,8 +52,15 @@ abstract public class TVMBoxDevice extends TVDevice{
 		native_device_init();
 	}
 
-	public void setInputSource(TVConst.SourceType source){
+	private TVConst.SourceInput curInputSource = TVConst.SourceInput.SOURCE_DTV;
+
+	public void setInputSource(TVConst.SourceInput source){
 		native_set_input_source(source.ordinal());
+		curInputSource = source;
+	}
+
+	public TVConst.SourceInput getCurInputSource(){
+		return curInputSource;
 	}
 
 	public void setFrontend(TVChannelParams params){

@@ -32,19 +32,27 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES := $(call all-java-files-under, src/com/amlogic/tvservice)
+LOCAL_SRC_FILES := \
+	src/com/amlogic/tvservice/TVConfig.java \
+	src/com/amlogic/tvservice/TVEpgScanner.java \
+	src/com/amlogic/tvservice/TVScanner.java \
+	src/com/amlogic/tvservice/TVDevice.java \
+	src/com/amlogic/tvservice/TVService.java \
+	src/com/amlogic/tvservice/TVTime.java \
+	src/com/amlogic/tvservice/TVMBoxDevice.java
 
 LOCAL_PACKAGE_NAME := TVService
 
 LOCAL_SDK_VERSION := current
 
 LOCAL_STATIC_JAVA_LIBRARIES := tvmiddleware
-
+#LOCAL_JAVA_LIBRARIES := tv
 LOCAL_PROGUARD_ENABLED := disabled
 
 LOCAL_CERTIFICATE := platform
 
 include $(BUILD_PACKAGE)
+
 
 ##################################################
 

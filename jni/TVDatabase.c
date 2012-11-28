@@ -55,34 +55,35 @@ static JNINativeMethod db_methods[] =
 #ifndef NELEM
 # define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 #endif
+
 static int registerNativeMethods(JNIEnv* env, const char* className,
                                  const JNINativeMethod* methods, int numMethods)
 {
-	int rc;
-	jclass clazz;
-	clazz = (*env)->FindClass(env, className);
+    int rc;
+    jclass clazz;
+    clazz = (*env)->FindClass(env, className);
 
-	if (clazz == NULL) 
-		return -1;
+    if (clazz == NULL)
+        return -1;
 
-	if (rc = ((*env)->RegisterNatives(env, clazz, methods, numMethods)) < 0) 
-		return -1;
+    if (rc = ((*env)->RegisterNatives(env, clazz, methods, numMethods)) < 0)
+        return -1;
 
-	return 0;
+    return 0;
 }
 
 JNIEXPORT jint
 JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-	JNIEnv* env = NULL;
+    JNIEnv* env = NULL;
 
-	if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) 
-		return -1;
-	
-	if (registerNativeMethods(env, "com/amlogic/tvdataprovider/TVDatabase", db_methods, NELEM(db_methods)) < 0)
-		return -1;
+    if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK)
+        return -1;
 
-	return JNI_VERSION_1_4;
+    if (registerNativeMethods(env, "com/amlogic/tvdataprovider/TVDatabase", db_methods, NELEM(db_methods)) < 0)
+        return -1;
+
+    return JNI_VERSION_1_4;
 }
 
 

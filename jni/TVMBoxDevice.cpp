@@ -14,12 +14,12 @@ extern "C" {
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
-typedef struct{
-	AM_Bool_t dev_open;
-	int       fend_mode;
-	jobject   dev_obj;
-	AM_DMX_Source_t ts_src;
-}TVDevice;
+    typedef struct {
+        AM_Bool_t dev_open;
+        int       fend_mode;
+        jobject   dev_obj;
+        AM_DMX_Source_t ts_src;
+    } TVDevice;
 
 #define FEND_DEV_NO    0
 #define FEND_DEF_MODE  -1
