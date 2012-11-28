@@ -239,7 +239,7 @@ abstract public class TVDevice implements StatusTVChangeListener,SourceSwitchLis
 
     public void playDTV(int vpid, int vfmt, int apid, int afmt) {
         //native_play_dtv(vpid, vfmt, apid, afmt);
-        Log.v(TAG,"SourceInput SOURCE_DTV" + (int)TVConst.SourceInput.SOURCE_DTV.ordinal());
+        Log.v(TAG,"playDTV" + (int)TVConst.SourceInput.SOURCE_DTV.ordinal());
         tv.StartTV((int)TVConst.SourceInput.SOURCE_DTV.ordinal(),  vpid ,  apid , vfmt , afmt);
     }
 
