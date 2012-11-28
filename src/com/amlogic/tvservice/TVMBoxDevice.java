@@ -6,7 +6,7 @@ import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
 
-abstract public class TVDevice extends TVAbstractDevice{
+abstract public class TVDeviceImpl extends TVDevice{
 
 	private int native_handle;
 	private boolean destroy;
@@ -46,7 +46,7 @@ abstract public class TVDevice extends TVAbstractDevice{
 		System.loadLibrary("jnitvmboxdevice");
 	}
 
-	public TVDevice(){
+	public TVDeviceImpl(){
 		super();
 		destroy = false;
 		native_device_init();

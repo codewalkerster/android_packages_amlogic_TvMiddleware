@@ -451,9 +451,9 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 		return -1;
 	}
 
-	clazz = env->FindClass("com/amlogic/tvservice/TVMBoxDevice");
+	clazz = env->FindClass("com/amlogic/tvservice/TVDeviceImpl");
 	if(clazz == NULL){
-		LOGE("FindClass com/amlogic/tvservice/TVMBoxDevice failed");
+		LOGE("FindClass com/amlogic/tvservice/TVDeviceImpl failed");
 		return -1;
 	}
 

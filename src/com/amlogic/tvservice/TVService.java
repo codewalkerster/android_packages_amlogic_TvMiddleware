@@ -841,7 +841,7 @@ public class TVService extends Service{
 	public void onCreate(){
 		super.onCreate();
 
-		device = new TVDevice(){
+		device = new TVDeviceImpl(){
 			/*Device event handler*/
 			public void onEvent(TVDevice.Event event){
 				Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);

@@ -13,7 +13,7 @@ import android.amlogic.Tv.StatusTVChangeListener;
 import android.os.Handler;
 import android.os.Message;
 
-abstract public class TVDevice extends TVAbstractDevice implements StatusTVChangeListener,SourceSwitchListener
+abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener,SourceSwitchListener
 {
     Handler handler = new Handler() {
         //Event event  = new Event();
@@ -66,7 +66,7 @@ abstract public class TVDevice extends TVAbstractDevice implements StatusTVChang
     };
 
     private boolean destroy;
-    private String  TAG = "TVDevice";
+    private String  TAG = "TVDeviceImpl";
     public static Tv tv = null;
     public static final int NATVIVE_EVENT_FRONTEND      =   1;
     public static final int NATVIVE_EVENT_PLAYER        =   2;
@@ -76,7 +76,7 @@ abstract public class TVDevice extends TVAbstractDevice implements StatusTVChang
     public static final int EVENT_FRONTEND              =   1<<1;
     public static final int EVENT_SOURCE_SWITCH             =   1<<2;
 
-    public TVDevice() {
+    public TVDeviceImpl() {
     	super();
 
         destroy = false;

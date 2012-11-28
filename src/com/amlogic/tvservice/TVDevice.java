@@ -6,7 +6,7 @@ import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
 
-abstract public class TVAbstractDevice{
+abstract public class TVDevice{
 
 	public class DTVRecordParams{
 		public File file;
@@ -42,7 +42,7 @@ abstract public class TVAbstractDevice{
 		}
 	}
 
-	public TVAbstractDevice(){
+	public TVDevice(){
 	}
 
 	abstract public void setInputSource(TVConst.SourceInput source);

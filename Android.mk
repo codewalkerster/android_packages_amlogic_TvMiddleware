@@ -36,7 +36,7 @@ LOCAL_SRC_FILES := \
 	src/com/amlogic/tvservice/TVConfig.java \
 	src/com/amlogic/tvservice/TVEpgScanner.java \
 	src/com/amlogic/tvservice/TVScanner.java \
-	src/com/amlogic/tvservice/TVAbstractDevice.java \
+	src/com/amlogic/tvservice/TVDevice.java \
 	src/com/amlogic/tvservice/TVService.java \
 	src/com/amlogic/tvservice/TVTime.java
 
@@ -45,7 +45,7 @@ LOCAL_MODULE := TVService
 intermediates := $(call local-intermediates-dir, COMMON)
 
 GEN_PATH := $(intermediates)/src/src/com/amlogic/tvservice
-GEN := $(GEN_PATH)/TVDevice.java
+GEN := $(GEN_PATH)/TVDeviceImpl.java
 GEN_SRC_PATH := $(LOCAL_PATH)/src/com/amlogic/tvservice
 
 ifeq ($(BOARD_HAVE_TV), true)
