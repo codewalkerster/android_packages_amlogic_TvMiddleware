@@ -868,5 +868,84 @@ public class TVProgram{
 
 		return channel;
 	}
+
+	/**
+	 *取得节目加锁标志
+	 *@return true表示节目加锁，false表示节目未加锁
+	 */
+	public boolean getLockFlag(){
+		return lock;
+	}
+
+	/**
+	 *取得节目跳过标志
+	 *@return true 表示节目设置了跳过标志，false表示节目未设置跳过标志
+	 */
+	public boolean getSkipFlag(){
+		return skip;
+	}
+
+	/**
+	 *取得节目加锁标志
+	 *@param f 加锁标志
+	 */
+	public void setLockFlag(boolean f){
+		lock = f;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update srv_table set lock = "+(f?1:0)+" where srv_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *取得节目加锁标志
+	 *@param f 跳过标志
+	 */
+	public void setSkipFlag(boolean f){
+		skip = f;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update srv_table set skip = "+(f?1:0)+" where srv_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *取得节目正在播放事件
+	 *@param context 当前Context
+	 *@param now 当前时间
+	 *@return 返回正在播放事件，null 表示无正在播放事件信息
+	 */
+	public TVEvent getPresentEvent(Context context, long now){
+		return null;
+	}
+
+	/**
+	 *取得节目即将播放事件
+	 *@param context 当前Context
+	 *@param now 当前时间
+	 *@return 返回即将播放事件，null 表示无即将播放事件信息
+	 */
+	public TVEvent getFollowingEvent(Context context, long now){
+		return null;
+	}
+
+	/**
+	 *取得节目在一个时间段内的事件
+	 *@param context 当前Context
+	 *@param start 时间段的开始时间
+	 *@param duration  时间段长度
+	 *@return 返回时间段内的事件数组，null表示无相关事件信息
+	 */
+	public TVEvent[] getScheduleEvents(Context context, long start, long duration){
+		return null;
+	}
 }
 

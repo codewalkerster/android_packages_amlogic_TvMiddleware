@@ -147,9 +147,16 @@ public class TVTest extends TVActivity{
 		            	//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(259000000, TVChannelParams.MODULATION_QAM_64, 6875000));
 		            	//startScan(sp);
 		            	break;
+		         case KeyEvent.KEYCODE_DPAD_LEFT:
+		         		channelUp();
+		         		break;
+		         case KeyEvent.KEYCODE_DPAD_RIGHT:
+		         		channelDown();
+		         		break;
 	    		 case KeyEvent.KEYCODE_DPAD_UP:
 	    			    TVScanParams sp;	
-	    			    sp = TVScanParams.atvAutoScanParams(0);
+	    			    //sp = TVScanParams.atvAutoScanParams(0);
+	    			    sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
 	    				Log.d(TAG, "Start Scan...");
 	    				startScan(sp);
 	    			 break;
@@ -157,7 +164,6 @@ public class TVTest extends TVActivity{
 	    			 	Log.d(TAG, "stopScan");
 	 					stopScan(true);
 	    			 break;
-	    	  
 	    	}
 
 	      
@@ -196,7 +202,16 @@ public class TVTest extends TVActivity{
 				break;
 			case TVMessage.TYPE_SCAN_STORE_END:
 				Log.d(TAG, "Store Done !");
-				TVProgram prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(1));
+
+				TVProgram plist[] = TVProgram.selectAll(this, false);
+				for(int i=0; i<plist.length; i++){
+					TVProgram p = plist[i];
+					Log.d(TAG, "program "+p.getNumber().getNumber()+": "+p.getName()+"("+p.getType()+")");
+				}
+
+				TVProgram prog = TVProgram.selectFirstValid(this, TVProgram.TYPE_TV);
+				if(prog != null)
+					playProgram(prog.getNumber());
 				//if(prog!=null){	
 				//		Log.d(TAG, "1111111111111111111111111111111111 ");
 				//	playProgram(new TVProgramNumber(1));
