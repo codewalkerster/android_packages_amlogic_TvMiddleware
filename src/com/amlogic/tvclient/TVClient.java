@@ -126,6 +126,7 @@ abstract public class TVClient
     
     /**
      *得到当前信号源
+     *@return 返回当前信号源
      */
     public synchronized  TVConst.SourceInput getCurInputSource() {
         if(service != null) {
@@ -138,6 +139,19 @@ abstract public class TVClient
         }
 		return null;
     }
+
+	/**
+	 *在数字电视模式下，设定节目类型是电视或广播
+	 *@param type 节目类型TVProgram.TYPE_TV/TVProgram.TYPE_RADIO
+	 */
+    public synchronized void setProgramType(int type){
+ 		if(service != null) {
+            try {
+                service.setProgramType(type);
+            } catch(RemoteException e) {
+            }
+        }
+	}
 
     /**
      *开始电视节目播放

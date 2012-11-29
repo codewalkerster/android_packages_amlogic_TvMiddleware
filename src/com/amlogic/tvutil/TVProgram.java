@@ -2,6 +2,7 @@ package com.amlogic.tvutil;
 
 import android.database.Cursor;
 import android.content.Context;
+import android.util.Log;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
 /**
@@ -9,6 +10,8 @@ import com.amlogic.tvdataprovider.TVDataProvider;
  *Program对应ATV中的一个频道，DTV中的一个service
  */
 public class TVProgram{
+	private static final String TAG="TVProgram";
+
 	/**未定义类型*/
 	public static final int TYPE_UNKNOWN = 0;
 	/**电视节目*/
@@ -19,6 +22,8 @@ public class TVProgram{
 	public static final int TYPE_ATV   = 3;
 	/**数据节目*/
 	public static final int TYPE_DATA  = 4;
+	/**数字节目*/
+	public static final int TYPE_DTV   = 5;
 
 	private Context context;
 	private int id;
@@ -288,12 +293,15 @@ public class TVProgram{
 
 	private TVProgram(Context context, Cursor c){
 		int col;
-		int num, type;
+		int num, type, src;
 
 		this.context = context;
 
 		col = c.getColumnIndex("db_id");
 		this.id = c.getInt(col);
+
+		col = c.getColumnIndex("src");
+		src = c.getInt(col);
 
 		col = c.getColumnIndex("service_id");
 		this.dvbServiceID = c.getInt(col);
@@ -304,10 +312,20 @@ public class TVProgram{
 		col = c.getColumnIndex("name");
 		this.name = c.getString(col);
 
-		col = c.getColumnIndex("chan_num");
-		num = c.getInt(col);
-		this.number = new TVProgramNumber(num);
+		if(src != TVChannelParams.MODE_ATSC){
+			col = c.getColumnIndex("chan_num");
+			num = c.getInt(col);
+			this.number = new TVProgramNumber(num);
+		}else{
+			int major, minor;
 
+			col   = c.getColumnIndex("major_chan_num");
+			major = c.getInt(col);
+			col   = c.getColumnIndex("minor_chan_num");
+			minor = c.getInt(col);
+
+			this.number = new TVProgramNumber(major, minor);
+		}
 
 		col = c.getColumnIndex("service_type");
 		type = c.getInt(col);
@@ -335,23 +353,31 @@ public class TVProgram{
 
 		this.video = new Video(pid, fmt);
 
-		String pids[], fmts[], langs[], str;
+		String pids[]=null, fmts[]=null, langs[]=null, str;
 		int i, count;
 
 		col = c.getColumnIndex("aud_pids");
 		str = c.getString(col);
-		pids = str.split(" ");
+		if(str.length() != 0)
+			pids = str.split(" ");
 
 		col = c.getColumnIndex("aud_fmts");
 		str = c.getString(col);
-		fmts = str.split(" ");
+		if(str.length() != 0)
+			fmts = str.split(" ");
 
 		col = c.getColumnIndex("aud_langs");
 		str = c.getString(col);
-		langs = str.split(" ");
+		if(str.length() != 0)
+			langs = str.split(" ");
 
-		count = pids.length;
-		this.audioes = new Audio[count];
+		if(pids != null){
+			count = pids.length;
+			this.audioes = new Audio[count];
+		}else{
+			count = 0;
+			this.audioes = null;
+		}
 
 		for(i=0; i<count; i++){
 			String lang;
@@ -379,8 +405,8 @@ public class TVProgram{
 		if(c != null){
 			if(c.moveToFirst()){
 				p = new TVProgram(context, c);
-				c.close();
 			}
+			c.close();
 		}
 
 		return p;
@@ -397,11 +423,20 @@ public class TVProgram{
 		TVProgram p = null;
 		String cmd;
 
-		cmd = "select * from srv_table where";
-		if(type != TYPE_UNKNOWN)
-			cmd += " service_type = "+type+" and";
+		cmd = "select * from srv_table where ";
+		if(type != TYPE_UNKNOWN){
+			if(type == TYPE_DTV){
+				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
+			}else{
+				cmd += "service_type = "+type+" and ";
+			}
+		}
 
-		cmd += " chan_num = "+num.getNumber();
+		if(num.isATSCMode()){
+			cmd += "major_cha_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
+		}else{
+			cmd += "chan_num = "+num.getNumber();
+		}
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -410,12 +445,222 @@ public class TVProgram{
 		if(c != null){
 			if(c.moveToFirst()){
 				p = new TVProgram(context, c);
-				c.close();
 			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *根据节目号选择下一节目
+	 *@param context 当前Context
+	 *@param type 节目类型
+	 *@param num 节目号
+	 *@return 返回对应的TVProgram对象，null表示不存在该id所对应的对象
+	 */
+	public static TVProgram selectUp(Context context, int type, TVProgramNumber num){
+		String cmd;
+		Cursor c;
+		TVProgram p = null;
+
+		cmd = "select * from srv_table where ";
+
+		if(type != TYPE_UNKNOWN){
+			if(type == TYPE_DTV){
+				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
+			}else{
+				cmd += "service_type = "+type+" and ";
+			}
+		}
+
+		if(num.isATSCMode()){
+			cmd += "(major_chan_num > "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num > "+num.getMinor()+")) ";
+		}else{
+			cmd += "chan_num > "+num.getNumber()+" ";
+		}
+
+		cmd += "order by chan_num";
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+			}
+			c.close();
+		}
+
+		if(p != null) return p;
+
+		cmd = "select * from srv_table where ";
+
+		if(type != TYPE_UNKNOWN){
+			if(type == TYPE_DTV){
+				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
+			}else{
+				cmd += "service_type = "+type+" and ";
+			}
+		}
+
+		if(num.isATSCMode()){
+			cmd += "(major_chan_num < "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num < "+num.getMinor()+")) ";
+		}else{
+			cmd += "chan_num < "+num.getNumber()+" ";
+		}
+
+		cmd += "order by chan_num";
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *根据节目号选择上一节目
+	 *@param context 当前Context
+	 *@param type 节目类型
+	 *@param num 节目号
+	 *@return 返回对应的TVProgram对象，null表示不存在该id所对应的对象
+	 */
+	public static TVProgram selectDown(Context context, int type, TVProgramNumber num){
+		String cmd;
+		Cursor c;
+		TVProgram p = null;
+
+		cmd = "select * from srv_table where ";
+
+		if(type != TYPE_UNKNOWN){
+			if(type == TYPE_DTV){
+				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
+			}else{
+				cmd += "service_type = "+type+" and ";
+			}
+		}
+
+		if(num.isATSCMode()){
+			cmd += "(major_chan_num < "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num < "+num.getMinor()+")) ";
+		}else{
+			cmd += "chan_num < "+num.getNumber()+" ";
+		}
+
+		cmd += "order by chan_num desc";
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+			}
+			c.close();
+		}
+
+		if(p != null) return p;
+
+		cmd = "select * from srv_table where ";
+
+		if(type != TYPE_UNKNOWN){
+			if(type == TYPE_DTV){
+				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
+			}else{
+				cmd += "service_type = "+type+" and ";
+			}
+		}
+
+		if(num.isATSCMode()){
+			cmd += "(major_chan_num > "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num > "+num.getMinor()+")) ";
+		}else{
+			cmd += "chan_num > "+num.getNumber()+" ";
+		}
+
+		cmd += "order by chan_num desc";
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+			}
+			c.close();
 		}
 
 		return p;
 
+	}
+
+	/**
+	 *选择一个有效的节目，先查找频道号最小的电视节目，如果没有电视，再查找频道号最小的广播节目
+	 **@param context 当前Context
+	 */
+	public static TVProgram selectFirstValid(Context context, int type){
+		TVProgram p = null;
+		String cmd;
+		Cursor c;
+
+		if((type == TYPE_TV) || (type == TYPE_DTV) || (type == TYPE_UNKNOWN)){
+			cmd = "select * from srv_table where service_type = "+TYPE_TV+" order by chan_num";
+			c = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd,
+					null, null);
+			if(c != null){
+				if(c.moveToFirst()){
+					p = new TVProgram(context, c);
+				}
+				c.close();
+			}
+
+			if(p != null) return p;
+		}
+
+		if((type == TYPE_RADIO) || (type == TYPE_DTV) || (type == TYPE_UNKNOWN)){
+			cmd = "select * from srv_table where service_type = "+TYPE_RADIO+" order by chan_num";
+			c = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd,
+					null, null);
+			if(c != null){
+				if(c.moveToFirst()){
+					p = new TVProgram(context, c);
+				}
+				c.close();
+			}
+
+			if(p != null) return p;
+		}
+
+		if((type == TYPE_ATV) || (type == TYPE_UNKNOWN)){
+			cmd = "select * from srv_table where service_type = "+TYPE_ATV+" order by chan_num";
+			c = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd,
+					null, null);
+			if(c != null){
+				if(c.moveToFirst()){
+					p = new TVProgram(context, c);
+				}
+				c.close();
+			}
+
+			if(p != null) return p;
+		}
+
+		return null;
 	}
 
 	/**
@@ -425,31 +670,7 @@ public class TVProgram{
 	 *@return 返回TVProgram数组，null表示没有节目
 	 */
 	public static TVProgram[] selectAll(Context context, boolean no_skip){
-		TVProgram p[] = null;
-		String cmd = "select * from srv_table";
-
-		if(no_skip){
-			cmd += " where skip = 0 ";
-		}
-
-		cmd += " order by chan_order";
-
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
-				null,
-				cmd,
-				null, null);
-		if(c != null){
-			if(c.moveToFirst()){
-				int id = 0;
-				p = new TVProgram[c.getCount()];
-				do{
-					p[id++] = new TVProgram(context, c);
-				}while(c.moveToNext());
-				c.close();
-			}
-		}
-
-		return p;
+		return selectByType(context, TYPE_UNKNOWN, no_skip);
 	}
 
 	/**
@@ -461,17 +682,23 @@ public class TVProgram{
 	 */
 	public static TVProgram[] selectByType(Context context, int type, boolean no_skip){
 		TVProgram p[] = null;
-		int tval = TYPE_DATA;
+		boolean where = false;
+		String cmd = "select * from srv_table ";
 
-		if(type == TYPE_TV)
-			tval = TYPE_TV;
-		else if(type == TYPE_RADIO)
-			tval = TYPE_RADIO;
-
-		String cmd = "select * from srv_table where type = "+ tval;
+		if(type == TYPE_DTV){
+			cmd += "where (service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") ";
+			where = true;
+		}else if(type != TYPE_UNKNOWN){
+			cmd += "where service_type = "+type+" ";
+			where = true;
+		}
 
 		if(no_skip){
-			cmd += " and skip = 0 ";
+			if(where){
+				cmd += " and skip = 0 ";
+			}else{
+				cmd = " where skip = 0 ";
+			}
 		}
 
 		cmd += " order by chan_order";
@@ -487,8 +714,8 @@ public class TVProgram{
 				do{
 					p[id++] = new TVProgram(context, c);
 				}while(c.moveToNext());
-				c.close();
 			}
+			c.close();
 		}
 
 		return p;

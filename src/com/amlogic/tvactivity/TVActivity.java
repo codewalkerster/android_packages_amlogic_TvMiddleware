@@ -163,11 +163,22 @@ abstract public class TVActivity extends Activity
     public void setInputSource(TVConst.SourceInput source) {
         client.setInputSource(source.ordinal());
     }
+    
+    /**
+     *得到当前信号源
+     *@return 返回当前信号源
+     */
+    public TVConst.SourceInput   getCurInputSource(){
+    	return client.getCurInputSource();
+    }
 
-   
-	 public TVConst.SourceInput   getCurInputSource(){
-	        return client.getCurInputSource();
-	 }
+	/**
+	 *在数字电视模式下，设定节目类型是电视或广播
+	 *@param type 节目类型TVProgram.TYPE_TV/TVProgram.TYPE_RADIO
+	 */
+    public void setProgramType(int type){
+    	client.setProgramType(type);
+	}
     		
     /**
      *停止播放节目
@@ -233,12 +244,18 @@ abstract public class TVActivity extends Activity
      *播放下一频道节目
      */
     public void channelUp() {
+    	TVPlayParams tp = TVPlayParams.playProgramUp();
+
+        client.playProgram(tp);
     }
 
     /**
      *播放上一频道节目
      */
     public void channelDown() {
+    	TVPlayParams tp = TVPlayParams.playProgramDown();
+
+        client.playProgram(tp);
     }
 
     /**
@@ -250,7 +267,7 @@ abstract public class TVActivity extends Activity
 
         client.playProgram(tp);
     }
-
+    
     /**
      *根据节目ID播放
      *@param id 节目ID

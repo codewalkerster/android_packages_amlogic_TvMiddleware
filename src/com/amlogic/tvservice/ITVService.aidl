@@ -35,6 +35,9 @@ interface ITVService{
 	//得到输入源
 	int getCurInputSource();
 
+	//设定当前节目类型
+	void setProgramType(int type);
+
 	//开始播放
 	void playProgram(in TVPlayParams tp);
 

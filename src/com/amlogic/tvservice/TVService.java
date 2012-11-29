@@ -44,6 +44,7 @@ public class TVService extends Service{
 	private static final int MSG_DEVICE_EVENT    = 1963;
 	private static final int MSG_EPG_EVENT       = 1964;
 	private static final int MSG_SCAN_EVENT      = 1965;
+	private static final int MSG_SET_PROGRAM_TYPE = 1966;
 
 
 	final RemoteCallbackList<ITVCallback> callbacks
@@ -176,6 +177,11 @@ public class TVService extends Service{
 			return device.getCurInputSource().ordinal();
 		}
 
+		public void setProgramType(int type){
+			Message msg = handler.obtainMessage(MSG_SET_PROGRAM_TYPE, new Integer(type));
+			handler.sendMessage(msg);
+		}
+
 		public void playProgram(TVPlayParams tp){
 			Message msg = handler.obtainMessage(MSG_PLAY_PROGRAM, tp);
 			handler.sendMessage(msg);
@@ -251,6 +257,9 @@ public class TVService extends Service{
 					TVConst.SourceInput type = TVConst.SourceInput.values()[val];
 
 					resolveSetInputSource(type);
+					break;
+				case MSG_SET_PROGRAM_TYPE:
+					resolveSetProgramType((Integer)msg.obj);
 					break;
 				case MSG_PLAY_PROGRAM:
 					resolvePlayProgram((TVPlayParams)msg.obj);
@@ -344,16 +353,55 @@ public class TVService extends Service{
 	private TVStatus status;
 	private TVConst.SourceInput inputSource;
 	private TVConst.SourceInput reqInputSource;
+	private TVConst.SourceInput lastTVSource;
 	private TVPlayParams atvPlayParams;
-	private TVPlayParams dtvPlayParams;
+	private TVPlayParams dtvTVPlayParams;
+	private TVPlayParams dtvRadioPlayParams;
 	private int dtvProgramType = TVProgram.TYPE_TV;
 	private TVChannelParams channelParams;
-	private int channelID;
-	private int programID;
+	private int channelID = -1;
+	private int programID = -1;
+	private TVProgramNumber programNum;
 	private boolean programBlocked = false;
 	private boolean channelLocked = false;
 	private boolean recording = false;
 	private boolean isScanning = false;
+
+	private void setDTVPlayParams(TVPlayParams params){
+		if(dtvProgramType == TVProgram.TYPE_TV)
+			dtvTVPlayParams = params;
+		else if(dtvProgramType == TVProgram.TYPE_RADIO)
+			dtvRadioPlayParams = params;
+	}
+
+	private TVPlayParams getDTVPlayParams(){
+		if(dtvProgramType == TVProgram.TYPE_TV)
+			return dtvTVPlayParams;
+		else if(dtvProgramType == TVProgram.TYPE_RADIO)
+			return dtvRadioPlayParams;
+
+		return null;
+	}
+
+	private int getCurProgramType(){
+		int type = TVProgram.TYPE_UNKNOWN;
+
+		try{
+			if(config.getBoolean("tv:mix_atv_dtv")){
+				type = TVProgram.TYPE_UNKNOWN;
+			}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+				if(config.getBoolean("tv:dtv:mix_tv_radio"))
+					type = TVProgram.TYPE_DTV;
+				else
+					type = dtvProgramType;
+			}else{
+					type = TVProgram.TYPE_ATV;
+			}
+		}catch(Exception e){
+		}
+
+		return type;
+	}
 
 	private void stopPlaying(){
 		if(status == TVStatus.STATUS_PLAY_ATV){
@@ -377,6 +425,17 @@ public class TVService extends Service{
 		if(status == TVStatus.STATUS_SCAN){
 			scanner.stop(store);
 			status = TVStatus.STATUS_STOPPED;
+
+			if(store){
+				atvPlayParams = null;
+				dtvTVPlayParams = null;
+				dtvRadioPlayParams = null;
+			}
+
+			channelID  = -1;
+			programID  = -1;
+			programNum = null;
+			channelParams = null;
 		}
 	}
 
@@ -413,12 +472,7 @@ public class TVService extends Service{
 		try{
 			switch(params.getType()){
 				case TVPlayParams.PLAY_PROGRAM_NUMBER:
-					int type;
-
-					if(inputSource == TVConst.SourceInput.SOURCE_DTV)
-						type = dtvProgramType;
-					else
-						type = TVProgram.TYPE_ATV;
+					int type = getCurProgramType();
 
 					p = TVProgram.selectByNumber(this, type, params.getProgramNumber());
 					break;
@@ -427,7 +481,6 @@ public class TVService extends Service{
 					break;
 			}
 		}catch(Exception e){
-			Log.e(TAG, "playParamsToProgram failed");
 		}
 
 		return p;
@@ -459,7 +512,7 @@ public class TVService extends Service{
 		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 			TVProgram p;
 		
-			p = playParamsToProgram(dtvPlayParams);
+			p = playParamsToProgram(atvPlayParams);
 			if(p != null){
 				programID = p.getID();
 
@@ -478,7 +531,7 @@ public class TVService extends Service{
 			TVProgram.Audio audio;
 			int vpid = 0x1fff, apid = 0x1fff, vfmt = -1, afmt = -1;
 
-			p = playParamsToProgram(dtvPlayParams);
+			p = playParamsToProgram(getDTVPlayParams());
 			if(p != null){
 
 				programID = p.getID();
@@ -530,16 +583,24 @@ public class TVService extends Service{
 			}
 			p = playParamsToProgram(atvPlayParams);
 		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
-			if(dtvPlayParams == null){
+			TVPlayParams tp = getDTVPlayParams();
+			if(tp == null){
+				tp = dtvTVPlayParams;
+			}
+			if(tp == null){
+				tp = dtvRadioPlayParams;
+			}
+			if(tp == null){
 				status = TVStatus.STATUS_STOPPED;
 				return;
 			}
-			p = playParamsToProgram(dtvPlayParams);
+			p = playParamsToProgram(tp);
 		}
 
 		if(p == null)
 			return;
 
+		programNum = p.getNumber();
 		channelID = p.getChannel().getID();
 		fe_params = p.getChannel().getParams();
 
@@ -568,6 +629,10 @@ public class TVService extends Service{
 
 		reqInputSource = src;
 
+		if((src == TVConst.SourceInput.SOURCE_ATV) || (src == TVConst.SourceInput.SOURCE_DTV)){
+			lastTVSource = src;
+		}
+
 		if(isInTVMode()){
 			stopPlaying();
 			stopRecording();
@@ -579,10 +644,51 @@ public class TVService extends Service{
 		status = TVStatus.STATUS_SET_INPUT_SOURCE;
 	}
 
+	/*Reset the program's type.*/
+	private void resolveSetProgramType(int type){
+		TVPlayParams tp;
+
+		if((inputSource == TVConst.SourceInput.SOURCE_DTV) && (type == dtvProgramType))
+			return;
+
+		dtvProgramType = type;
+
+		if(inputSource != TVConst.SourceInput.SOURCE_DTV){
+			return;
+		}
+
+		tp = getDTVPlayParams();
+		resolvePlayProgram(tp);
+	}
+
 	/*Play a program.*/
 	private void resolvePlayProgram(TVPlayParams tp){
 		Log.d(TAG, "try to play program");
 
+		/*Translate the channel up/channel down parameters*/
+		int playType = tp.getType();
+
+		if((playType == TVPlayParams.PLAY_PROGRAM_UP) || (playType == TVPlayParams.PLAY_PROGRAM_DOWN)){
+			int type = getCurProgramType();
+			TVProgramNumber num = programNum;
+			TVProgram p;
+
+			if(num == null)
+				return;
+
+			if(playType == TVPlayParams.PLAY_PROGRAM_UP){
+				p = TVProgram.selectUp(this, type, num);
+			}else{
+				p = TVProgram.selectDown(this, type, num);
+			}
+
+			if(p == null)
+				return;
+
+			tp = TVPlayParams.playProgramByNumber(p.getNumber());
+		}
+
+		/*Get the program*/
 		TVProgram prog = playParamsToProgram(tp);
 		if(prog == null)
 			return;
@@ -591,17 +697,36 @@ public class TVService extends Service{
 		if(chan == null)
 			return;
 
+		programNum = prog.getNumber();
+
+		/*Check if the input source needed reset.*/
+		try{
+			if(config.getBoolean("tv:mix_atv_dtv")){
+				if(chan.isAnalogMode() && (inputSource == TVConst.SourceInput.SOURCE_DTV)){
+					atvPlayParams = tp;
+					resolveSetInputSource(TVConst.SourceInput.SOURCE_ATV);
+					return;
+				}else if(!chan.isAnalogMode() && (inputSource == TVConst.SourceInput.SOURCE_ATV)){
+					setDTVPlayParams(tp);
+					resolveSetInputSource(TVConst.SourceInput.SOURCE_DTV);
+					return;
+				}
+			}
+		}catch(Exception e){
+		}
+
+		/*Try to play the program.*/
 		if(chan.isAnalogMode() && (inputSource == TVConst.SourceInput.SOURCE_ATV)){
 			atvPlayParams = tp;
 			playCurrentProgram();
 		}else if(!chan.isAnalogMode() && (inputSource == TVConst.SourceInput.SOURCE_DTV)){
-			dtvPlayParams = tp;
+			setDTVPlayParams(tp);
 			playCurrentProgram();
 		}else{
 			if(chan.isAnalogMode())
 				atvPlayParams = tp;
 			else
-				dtvPlayParams = tp;
+				setDTVPlayParams(tp);
 		}
 	}
 
@@ -769,7 +894,30 @@ public class TVService extends Service{
 				Log.e(TAG, "set input source to "+reqInputSource.name()+" ok");
 				inputSource = reqInputSource;
 				if(isInTVMode()){
-					if (status == TVStatus.STATUS_SET_INPUT_SOURCE) {
+					if(status == TVStatus.STATUS_SET_INPUT_SOURCE) {
+						TVProgram p = null;
+
+						if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+							if(dtvTVPlayParams == null && dtvRadioPlayParams == null){
+								/*Get a valid program*/
+								p = TVProgram.selectFirstValid(this, TVProgram.TYPE_DTV);
+								if(p != null){
+									if(p.getType() == TVProgram.TYPE_TV)
+										dtvTVPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+									else
+										dtvRadioPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+								}
+							}
+						}else if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+							if(atvPlayParams == null){
+								/*Get a valid program*/
+								p = TVProgram.selectFirstValid(this, TVProgram.TYPE_ATV);
+								if(p != null)
+									atvPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+							}
+						}
+
+						/*Play program*/
 						playCurrentProgram();
 					}
 				}

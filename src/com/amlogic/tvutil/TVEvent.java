@@ -63,8 +63,8 @@ public class TVEvent{
 		if(c != null){
 			if(c.moveToFirst()){
 				e = new TVEvent(context, c);
-				c.close();
 			}
+			c.close();
 		}
 
 		return e;

@@ -6,6 +6,7 @@ import android.os.Parcelable;
 public class TVProgramNumber implements Parcelable {
 	private int major;
 	private int minor;
+	private boolean atscMode;
 
 	public static final Parcelable.Creator<TVProgramNumber> CREATOR = new Parcelable.Creator<TVProgramNumber>(){
 		public TVProgramNumber createFromParcel(Parcel in) {
@@ -23,6 +24,7 @@ public class TVProgramNumber implements Parcelable {
 	public TVProgramNumber(int no){
 		this.major = no;
 		this.minor = 0;
+		this.atscMode = false;
 	}
 
 	/**
@@ -32,6 +34,7 @@ public class TVProgramNumber implements Parcelable {
 	public TVProgramNumber(TVProgramNumber no){
 		this.major = no.major;
 		this.minor = no.minor;
+		this.atscMode = no.atscMode;
 	}
 
 	/**
@@ -41,7 +44,8 @@ public class TVProgramNumber implements Parcelable {
 	 */
 	public TVProgramNumber(int major, int minor){
 		this.major = major;
-		this.minor = 0;
+		this.minor = minor;
+		this.atscMode = true;
 	}
 
 
@@ -53,11 +57,13 @@ public class TVProgramNumber implements Parcelable {
 	public void readFromParcel(Parcel in){
 		major = in.readInt();
 		minor = in.readInt();
+		atscMode = (in.readInt()!=0);
 	}
 
 	public void writeToParcel(Parcel dest, int flags){
 		dest.writeInt(major);
 		dest.writeInt(minor);
+		dest.writeInt(atscMode?1:0);
 	}
 
 	/**
@@ -82,6 +88,14 @@ public class TVProgramNumber implements Parcelable {
 	 */
 	public int getMinor(){
 		return minor;
+	}
+
+	/**
+	 *是否为ATSC模式
+	 *@return 如果是ATSC模式返回true
+	 */
+	public boolean isATSCMode(){
+		return atscMode;
 	}
 
 	/**

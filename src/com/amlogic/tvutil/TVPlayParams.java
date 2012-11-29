@@ -9,6 +9,8 @@ import android.os.Parcelable;
 public class TVPlayParams implements Parcelable {
 	public static final int PLAY_PROGRAM_NUMBER = 0;
 	public static final int PLAY_PROGRAM_ID     = 1;
+	public static final int PLAY_PROGRAM_UP     = 2;
+	public static final int PLAY_PROGRAM_DOWN   = 3;
 
 	private int type;
 	private TVProgramNumber number;
@@ -64,6 +66,24 @@ public class TVPlayParams implements Parcelable {
 		TVPlayParams tp = new TVPlayParams(PLAY_PROGRAM_ID);
 
 		tp.id = id;
+		return tp;
+	}
+
+	/**
+	 *播放下一节目(频道号比当前节目大)
+	 *@return 返回新的播放参数
+	 */
+	public static TVPlayParams playProgramUp(){
+		TVPlayParams tp = new TVPlayParams(PLAY_PROGRAM_UP);
+		return tp;
+	}
+
+	/**
+	 *播放上一节目(频道号比当前节目小)
+	 *@return 返回新的播放参数
+	 */
+	public static TVPlayParams playProgramDown(){
+		TVPlayParams tp = new TVPlayParams(PLAY_PROGRAM_DOWN);
 		return tp;
 	}
 

@@ -73,8 +73,8 @@ public class TVChannel{
 		if(c != null){
 			if(c.moveToFirst()){
 				chan = new TVChannel(context, c);
-				c.close();
 			}
+			c.close();
 		}
 
 		return chan;
