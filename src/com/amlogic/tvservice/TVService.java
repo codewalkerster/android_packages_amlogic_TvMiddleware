@@ -537,6 +537,9 @@ public class TVService extends Service{
 			p = playParamsToProgram(dtvPlayParams);
 		}
 
+		if(p == null)
+			return;
+
 		channelID = p.getChannel().getID();
 		fe_params = p.getChannel().getParams();
 
