@@ -815,6 +815,85 @@ public class TVProgram{
 	public Subtitle getSubtitle(String lang){
 		int i;
 
+		if(subtitles==null){
+			String cmd1, cmd2;
+			Cursor c1, c2;
+			int count = 0;
+			int id = 0;
+			
+			cmd1 = "select * from subtitle_table where db_srv_id = "+getID();
+			c1 = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd1,
+					null, null);
+			cmd2 = "select * from teletext_table where db_srv_id = "+getID()+" and (type=2 or type=5)";
+			c2 = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd2,
+					null, null);
+
+			if(c1 != null)
+				count += c1.getCount();
+			if(c2 != null)
+				count += c2.getCount();
+
+			if(count != 0){
+				subtitles = new Subtitle[count];
+
+				if(c1 != null){
+					if(c1.moveToFirst()){
+						do{
+							int pid, comp, anc;
+							String slang;
+							int col;
+
+							col = c1.getColumnIndex("pid");
+							pid = c1.getInt(col);
+
+							col = c1.getColumnIndex("composition_page_id");
+							comp = c1.getInt(col);
+
+							col = c1.getColumnIndex("ancillary_page_id");
+							anc = c1.getInt(col);
+
+							col = c1.getColumnIndex("language");
+							slang = c1.getString(col);
+
+							Subtitle sub = new Subtitle(pid, slang, Subtitle.TYPE_DVB_SUBTITLE, comp, anc);
+							subtitles[id++] = sub;
+						}while(c1.moveToNext());
+					}
+					c1.close();
+				}
+
+				if(c2 != null){
+					if(c2.moveToFirst()){
+						do{
+							int pid, page, mag;
+							String slang;
+							int col;
+
+							col = c2.getColumnIndex("pid");
+							pid = c2.getInt(col);
+
+							col = c2.getColumnIndex("magazine_number");
+							mag = c2.getInt(col);
+
+							col = c2.getColumnIndex("page_number");
+							page = c2.getInt(col);
+
+							col = c2.getColumnIndex("language");
+							slang = c2.getString(col);
+
+							Subtitle sub = new Subtitle(pid, slang, Subtitle.TYPE_DTV_TELETEXT, mag, page);
+							subtitles[id++] = sub;
+						}while(c2.moveToNext());
+					}
+					c2.close();
+				}
+			}
+		}
+
 		if(subtitles==null)
 			return null;
 
@@ -843,6 +922,45 @@ public class TVProgram{
 	 */
 	public Teletext getTeletext(String lang){
 		int i;
+
+		if(teletexts==null){
+			String cmd;
+			Cursor c;
+			int id = 0;
+			
+			cmd = "select * from teletext_table where db_srv_id = "+getID()+" and type != 2 and type != 5";
+			c = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd,
+					null, null);
+
+			if(c != null){
+				if(c.moveToFirst()){
+					teletexts = new Teletext[c.getCount()];
+					do{
+						int pid, page, mag;
+						String tlang;
+						int col;
+
+						col = c.getColumnIndex("pid");
+						pid = c.getInt(col);
+
+						col = c.getColumnIndex("magazine_number");
+						mag = c.getInt(col);
+
+						col = c.getColumnIndex("page_number");
+						page = c.getInt(col);
+
+						col = c.getColumnIndex("language");
+						tlang = c.getString(col);
+
+						Teletext tt = new Teletext(pid, tlang, mag, page);
+						teletexts[id++] = tt;
+					}while(c.moveToNext());
+				}
+				c.close();
+			}
+		}
 
 		if(teletexts==null)
 			return null;
@@ -929,7 +1047,7 @@ public class TVProgram{
 		TVEvent evt = null;
 		Cursor c;
 
-		cmd = "select * from evt_table where evt_table.db_srv_id = "+id+" and evt_table.start <= "+time+" and evt_table.end > "+time;
+		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and evt_table.start <= "+time+" and evt_table.end > "+time;
 
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -957,7 +1075,7 @@ public class TVProgram{
 		TVEvent evt = null;
 		Cursor c;
 
-		cmd = "select * from evt_table where evt_table.db_srv_id = "+id+" and evt_table.start > "+time+" order by evt_table.start";
+		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and evt_table.start > "+time+" order by evt_table.start";
 
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -986,11 +1104,10 @@ public class TVProgram{
 		int end   = (int)((start+duration)/1000);
 		TVEvent evts[] = null;
 		Cursor c;
-		int id = 0;
 
-		cmd = "select * from evt_table where evt_table.db_srv_id = "+id+" and ";
-		cmd += " ((start < "+start+" and end > "+end+") ||";
-		cmd += " (start >= "+start+" and start < "+end+"))";
+		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and ";
+		cmd += " ((start < "+begin+" and end > "+end+") ||";
+		cmd += " (start >= "+begin+" and start < "+end+"))";
 		cmd += " order by evt_table.start";
 
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
@@ -1000,6 +1117,7 @@ public class TVProgram{
 		if(c != null){
 			if(c.moveToFirst()){
 				evts = new TVEvent[c.getCount()];
+				int id = 0;
 				do{
 					evts[id++] = new TVEvent(context, c);
 				}while(c.moveToNext());

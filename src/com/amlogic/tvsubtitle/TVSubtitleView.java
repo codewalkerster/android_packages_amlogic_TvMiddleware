@@ -67,7 +67,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * DVB subtitle 参数
 	 */
-	public class DVBSubParams{
+	static public class DVBSubParams{
 		private int dmx_id;
 		private int pid;
 		private int composition_page_id;
@@ -91,7 +91,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 数字电视teletext图文参数
 	 */
-	public class DTVTTParams{
+	static public class DTVTTParams{
 		private int dmx_id;
 		private int pid;
 		private int page_no;
@@ -112,13 +112,13 @@ public class TVSubtitleView extends View {
 		}
 	}
 
-	public class ATVTTParams{
+	static public class ATVTTParams{
 	}
 
-	public class DTVCCParams{
+	static public class DTVCCParams{
 	}
 
-	public class ATVCCParams{
+	static public class ATVCCParams{
 	}
 
 	private class SubParams{

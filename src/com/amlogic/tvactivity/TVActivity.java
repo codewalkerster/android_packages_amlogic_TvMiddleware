@@ -16,6 +16,7 @@ import java.lang.StringBuilder;
 import com.amlogic.tvclient.TVClient;
 import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVProgramNumber;
+import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
@@ -63,6 +64,7 @@ abstract public class TVActivity extends Activity
                 onDisconnected();
                 break;
             case MSG_MESSAGE:
+            	solveMessage((TVMessage)msg.obj);
                 onMessage((TVMessage)msg.obj);
                 break;
             }
@@ -81,6 +83,65 @@ abstract public class TVActivity extends Activity
         client.disconnect(this);
         super.onDestroy();
     }
+
+	/*On program started*/
+    private void onProgramStart(int prog_id){
+    	Log.d(TAG, "onProgramStart");
+
+    	TVProgram prog = TVProgram.selectByID(this, prog_id);
+
+		/*Start subtitle*/
+        if((subtitleView != null) && getBooleanConfig("tv:subtitle:enable")){
+        	TVProgram.Subtitle sub;
+
+        	sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+        	if(sub != null){
+        		switch(sub.getType()){
+					case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
+						subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
+						break;
+					case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
+						int mag, pg, pgno;
+
+						mag = sub.getMagazineNumber();
+						pg  = sub.getPageNumber();
+						pgno = (mag==0) ? 800 : mag*100;
+						pgno += pg;
+						subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
+						break;
+				}
+
+				subtitleView.startSub();
+        		subtitleView.show();
+
+			}
+		}
+	}
+
+	/*On program stopped*/
+	private void onProgramStop(int prog_id){
+		Log.d(TAG, "onProgramStop");
+
+    	TVProgram prog = TVProgram.selectByID(this, prog_id);
+
+    	/*Stop subtitle.*/
+    	if(subtitleView != null){
+    		subtitleView.stop();
+    		subtitleView.hide();
+		}
+	}
+
+	/*Solve the TV message*/
+    private void solveMessage(TVMessage msg){
+    	switch(msg.getType()){
+			case TVMessage.TYPE_PROGRAM_START:
+				onProgramStart(msg.getProgramID());
+				break;
+			case TVMessage.TYPE_PROGRAM_STOP:
+				onProgramStop(msg.getProgramID());
+				break;
+		}
+	}
 
     /**
      *在到TVService的连接建立成功后被调用，子类中重载

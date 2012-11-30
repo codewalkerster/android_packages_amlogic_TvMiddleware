@@ -517,7 +517,7 @@ public class TVService extends Service{
 				programID = p.getID();
 
 				if(!checkProgramBlock()){
-					Log.d(TAG, "play ATV");
+					Log.d(TAG, "play ATV "+programID);
 					device.playATV();
 				}
 
@@ -561,7 +561,7 @@ public class TVService extends Service{
 				}
 
 				if(!checkProgramBlock()){
-					Log.d(TAG, "play dtv video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
+					Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
 					device.playDTV(vpid, vfmt, apid, vfmt);
 				}
 
