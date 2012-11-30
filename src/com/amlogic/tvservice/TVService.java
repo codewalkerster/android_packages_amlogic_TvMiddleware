@@ -419,6 +419,8 @@ public class TVService extends Service{
 			device.stopPlayback();
 			status = TVStatus.STATUS_STOPPED;
 		}
+
+		programID = -1;
 	}
 
 	private void stopScan(boolean store){
@@ -692,6 +694,11 @@ public class TVService extends Service{
 		TVProgram prog = playParamsToProgram(tp);
 		if(prog == null)
 			return;
+
+		/*Stop playing*/
+		if(prog.getID() != programID){
+			stopPlaying();
+		}
 
 		TVChannel chan = prog.getChannel();
 		if(chan == null)
