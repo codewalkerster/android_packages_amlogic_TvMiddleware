@@ -20,7 +20,7 @@ public class TVEvent{
 	private int dvbContent;
 	private int dvbViewAge;
 
-	private TVEvent(Context context, Cursor c){
+	TVEvent(Context context, Cursor c){
 		this.context = context;
 
 		int col;

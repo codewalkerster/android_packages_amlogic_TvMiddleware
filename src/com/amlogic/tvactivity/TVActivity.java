@@ -149,12 +149,38 @@ abstract public class TVActivity extends Activity
     }
 
     /**
-     *取得TV当前时间
-     *@return 当前时间，单位为毫秒
-     */
-    public long getTime() {
-        return client.getTime();
-    }
+	 *计算本地时间
+	 *@param utc UTC时间
+	 *@return 返回本地时间
+	 */
+    public long getLocalTime(long utc){
+    	return client.getLocalTime(utc);
+	}
+
+	/**
+	 *取得当前本地时间
+	 *@return 返回本地时间
+	 */
+    public long getLocalTime(){
+    	return client.getLocalTime();
+	}
+
+	/**
+	 *计算UTC时间
+	 *@param local 本地时间
+	 *@return 返回UTC时间
+	 */
+	public long getUTCTime(long local){
+    	return client.getUTCTime(local);
+	}
+
+	/**
+	 *取得当前UTC时间
+	 *@return 返回UTC时间
+	 */
+	public long getUTCTime(){
+		return client.getUTCTime();
+	}
 
     /**
      *设定TV输入源
@@ -244,18 +270,14 @@ abstract public class TVActivity extends Activity
      *播放下一频道节目
      */
     public void channelUp() {
-    	TVPlayParams tp = TVPlayParams.playProgramUp();
-
-        client.playProgram(tp);
+        client.channelUp();
     }
 
     /**
      *播放上一频道节目
      */
     public void channelDown() {
-    	TVPlayParams tp = TVPlayParams.playProgramDown();
-
-        client.playProgram(tp);
+        client.channelDown();
     }
 
     /**
@@ -263,9 +285,7 @@ abstract public class TVActivity extends Activity
      *@param no 频道号
      */
     public void playProgram(TVProgramNumber no) {
-        TVPlayParams tp = TVPlayParams.playProgramByNumber(no);
-
-        client.playProgram(tp);
+        client.playProgram(no);
     }
     
     /**
@@ -273,9 +293,7 @@ abstract public class TVActivity extends Activity
      *@param id 节目ID
      */
     public void playProgram(int id) {
-        TVPlayParams tp = TVPlayParams.playProgramByID(id);
-
-        client.playProgram(tp);
+        client.playProgram(id);
     }
 
     /**
@@ -297,6 +315,7 @@ abstract public class TVActivity extends Activity
      *@param speed 播放速度，1为正常速度，2为2倍速播放
      */
     public void fastForward(int speed) {
+    	client.fastForward(speed);
     }
 
     /**
@@ -304,6 +323,7 @@ abstract public class TVActivity extends Activity
      *@param speed 播放速度，1为正常速度，2为2倍速播放
      */
     public void fastBackward(int speed) {
+    	client.fastBackward(speed);
     }
 
     /**
@@ -311,6 +331,7 @@ abstract public class TVActivity extends Activity
      *@param pos 移动位置，从文件头开始的秒数
      */
     public void seekTo(int pos) {
+    	client.seekTo(pos);
     }
 
     /**
@@ -421,6 +442,60 @@ abstract public class TVActivity extends Activity
     public void setConfig(String name, TVConfigValue value) {
         client.setConfig(name, value);
     }
+    
+    /**
+     *设定配置选项
+     *@param name 配置选项名
+     *@param value 设定值
+     */
+    public void setConfig(String name, boolean value) {
+        client.setConfig(name, value);
+    }
+    
+    /**
+     *设定配置选项
+     *@param name 配置选项名
+     *@param value 设定值
+     */
+    public void setConfig(String name, int value) {
+        client.setConfig(name, value);
+    }
+    
+    /**
+     *设定配置选项
+     *@param name 配置选项名
+     *@param value 设定值
+     */
+    public void setConfig(String name, String value) {
+        client.setConfig(name, value);
+    }
+
+	/**
+	 *取得布尔型配置项值
+	 *@param name 配置项名称
+	 *@return 返回配置项值
+	 */
+	public boolean getBooleanConfig(String name){
+		return client.getBooleanConfig(name);
+	}
+
+	/**
+	 *取得整型配置项值
+	 *@param name 配置项名称
+	 *@return 返回配置项值
+	 */
+	public int getIntConfig(String name){
+		return client.getIntConfig(name);
+	}
+
+	/**
+	 *取得字符串型配置项值
+	 *@param name 配置项名称
+	 *@return 返回配置项值
+	 */
+	public String getStringConfig(String name){
+		return client.getStringConfig(name);
+	}
 
     /**
      *读取配置选项

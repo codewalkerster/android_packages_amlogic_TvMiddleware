@@ -98,7 +98,7 @@ abstract public class TVClient
      *取TV当前时间(单位为毫秒)
      *@return 返回当前时间(单位为毫秒)
      */
-    public synchronized long getTime() {
+    private synchronized long getTime() {
         long ret = 0;
 
         if(service != null) {
@@ -110,6 +110,48 @@ abstract public class TVClient
 
         return ret;
     }
+
+	/**
+	 *计算本地时间
+	 *@param utc UTC时间
+	 *@return 返回本地时间
+	 */
+    public long getLocalTime(long utc){
+    	long offset = getIntConfig("tv:time:offset");
+
+    	return offset * 1000 + utc;
+	}
+
+	/**
+	 *取得当前本地时间
+	 *@return 返回本地时间
+	 */
+    public long getLocalTime(){
+    	long offset = getIntConfig("tv:time:offset");
+
+    	return offset * 1000 + getTime();
+	}
+
+	/**
+	 *计算UTC时间
+	 *@param local 本地时间
+	 *@return 返回UTC时间
+	 */
+	public long getUTCTime(long local){
+ 		long offset = getIntConfig("tv:time:offset");
+
+    	return local - offset * 1000;
+	}
+
+	/**
+	 *取得当前UTC时间
+	 *@return 返回UTC时间
+	 */
+	public long getUTCTime(){
+ 		long offset = getIntConfig("tv:time:offset");
+
+    	return getTime() - offset * 1000;
+	}
 
     /**
      *设定TV信号源
@@ -165,6 +207,36 @@ abstract public class TVClient
             }
         }
     }
+
+    /**
+     *开始电视节目播放
+     *@param id 节目ID
+     */
+    public void playProgram(int id){
+    	playProgram(TVPlayParams.playProgramByID(id));
+	}
+
+    /**
+     *开始电视节目播放
+     *@param num 节目号
+     */
+	public void playProgram(TVProgramNumber num){
+		playProgram(TVPlayParams.playProgramByNumber(num));
+	}
+	
+	/**
+	 *播放下一节目号的节目
+	 */
+	public void channelUp(){
+		playProgram(TVPlayParams.playProgramUp());
+	}
+	
+	/**
+	 *播放下一节目号的节目
+	 */
+	public void channelDown(){
+		playProgram(TVPlayParams.playProgramDown());
+	}
 
     /**
      *停止电视节目播放
@@ -348,6 +420,87 @@ abstract public class TVClient
 
         return value;
     }
+
+    /**
+     *设定配置选项
+     *@param name 配置选项名
+     *@param value 设定值
+     */
+    public void setConfig(String name, String value){
+    	setConfig(name, new TVConfigValue(value));
+	}
+
+    /**
+     *设定配置选项
+     *@param name 配置选项名
+     *@param value 设定值
+     */
+	public void setConfig(String name, boolean value){
+		setConfig(name, new TVConfigValue(value));
+	}
+
+    /**
+     *设定配置选项
+     *@param name 配置选项名
+     *@param value 设定值
+     */
+	public void setConfig(String name, int value){
+		setConfig(name, new TVConfigValue(value));
+	}
+
+	/**
+	 *取得布尔型配置项值
+	 *@param name 配置项名称
+	 *@return 返回配置项值
+	 */
+	public boolean getBooleanConfig(String name){
+		TVConfigValue value = getConfig(name);
+		boolean b = false;
+
+		try{
+			b = value.getBoolean();
+		}catch(Exception e){
+			Log.e(TAG, "The config is not a boolean value");
+		}
+
+		return b;
+	}
+
+	/**
+	 *取得整型配置项值
+	 *@param name 配置项名称
+	 *@return 返回配置项值
+	 */
+	public int getIntConfig(String name){
+		TVConfigValue value = getConfig(name);
+		int i = 0;
+
+		try{
+			i = value.getInt();
+		}catch(Exception e){
+			Log.e(TAG, "The config is not an integer value");
+		}
+
+		return i;
+	}
+
+	/**
+	 *取得字符串型配置项值
+	 *@param name 配置项名称
+	 *@return 返回配置项值
+	 */
+	public String getStringConfig(String name){
+		TVConfigValue value = getConfig(name);
+		String s = "";
+
+		try{
+			s = value.getString();
+		}catch(Exception e){
+			Log.e(TAG, "The config is not a string value");
+		}
+
+		return s;
+	}
 
     /**
      *注册配置选项回调，当选项修改时，onMessage会被调用

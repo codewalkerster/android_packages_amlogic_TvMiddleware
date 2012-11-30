@@ -48,7 +48,7 @@ GEN_PATH := $(intermediates)/src/src/com/amlogic/tvservice
 GEN := $(GEN_PATH)/TVDeviceImpl.java
 GEN_SRC_PATH := $(LOCAL_PATH)/src/com/amlogic/tvservice
 
-BOARD_HAVE_TV := true
+#BOARD_HAVE_TV := true
 ifeq ($(BOARD_HAVE_TV), true)
 	GEN_SRC := $(GEN_SRC_PATH)/TVSrvDevice.java
 	LOCAL_JAVA_LIBRARIES := tv

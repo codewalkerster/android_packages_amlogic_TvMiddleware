@@ -920,32 +920,94 @@ public class TVProgram{
 	/**
 	 *取得节目正在播放事件
 	 *@param context 当前Context
-	 *@param now 当前时间
+	 *@param now 当前时间(UTC时间)
 	 *@return 返回正在播放事件，null 表示无正在播放事件信息
 	 */
 	public TVEvent getPresentEvent(Context context, long now){
-		return null;
+		String cmd;
+		int time = (int)(now / 1000);
+		TVEvent evt = null;
+		Cursor c;
+
+		cmd = "select * from evt_table where evt_table.db_srv_id = "+id+" and evt_table.start <= "+time+" and evt_table.end > "+time;
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				evt = new TVEvent(context, c);
+			}
+			c.close();
+		}
+
+		return evt;
 	}
 
 	/**
 	 *取得节目即将播放事件
 	 *@param context 当前Context
-	 *@param now 当前时间
+	 *@param now 当前时间(UTC时间)
 	 *@return 返回即将播放事件，null 表示无即将播放事件信息
 	 */
 	public TVEvent getFollowingEvent(Context context, long now){
-		return null;
+		String cmd;
+		int time = (int)(now / 1000);
+		TVEvent evt = null;
+		Cursor c;
+
+		cmd = "select * from evt_table where evt_table.db_srv_id = "+id+" and evt_table.start > "+time+" order by evt_table.start";
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				evt = new TVEvent(context, c);
+			}
+			c.close();
+		}
+
+		return evt;
 	}
 
 	/**
 	 *取得节目在一个时间段内的事件
 	 *@param context 当前Context
-	 *@param start 时间段的开始时间
+	 *@param start 时间段的开始时间(UTC时间)
 	 *@param duration  时间段长度
 	 *@return 返回时间段内的事件数组，null表示无相关事件信息
 	 */
 	public TVEvent[] getScheduleEvents(Context context, long start, long duration){
-		return null;
+		String cmd;
+		int begin = (int)(start / 1000);
+		int end   = (int)((start+duration)/1000);
+		TVEvent evts[] = null;
+		Cursor c;
+		int id = 0;
+
+		cmd = "select * from evt_table where evt_table.db_srv_id = "+id+" and ";
+		cmd += " ((start < "+start+" and end > "+end+") ||";
+		cmd += " (start >= "+start+" and start < "+end+"))";
+		cmd += " order by evt_table.start";
+
+		c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				evts = new TVEvent[c.getCount()];
+				do{
+					evts[id++] = new TVEvent(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return evts;
 	}
 }
 
