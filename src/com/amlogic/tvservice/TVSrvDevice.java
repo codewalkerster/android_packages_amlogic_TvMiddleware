@@ -15,56 +15,6 @@ import android.os.Message;
 
 abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener,SourceSwitchListener
 {
-    Handler handler = new Handler() {
-        //Event event  = new Event();
-        public void handleMessage(Message msg) {
-            int status = 0;
-            switch (msg.what) {
-            case EVENT_FRONTEND:
-                status = (Integer)msg.obj;
-                Event myEvent = new Event(Event.EVENT_FRONTEND);
-                if(status == NATVIVE_EVENT_SIGNAL_OK ) {
-                    Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK");
-                    myEvent.feStatus = TVChannelParams.FE_HAS_LOCK;
-                } else if(status == NATVIVE_EVENT_SIGNAL_NOT_OK ) {
-                    Log.v(TAG,"NATVIVE_EVENT_SIGNAL_NOT_OK");
-                    myEvent.feStatus = TVChannelParams.FE_TIMEDOUT;
-                }
-
-                int mode = msg.getData().getInt("mode");
-                int freq = msg.getData().getInt("freq");
-                int para1 = msg.getData().getInt("para1");
-                int para2 = msg.getData().getInt("para2");
-                Log.v(TAG,"mode freq para1 para2:" + mode + "," + freq+ "," + para1+ "," + para2);
-                myEvent.feParams   = fpara2chanpara(mode,freq,para1,para2);
-                /*
-                switch(mode){
-                    case TVChannelParams.MODE_OFDM:
-
-                        break;
-                    case TVChannelParams.MODE_QAM:
-                        Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK MODE_QAM");
-                        myEvent.feParams  = TVChannelParams.dvbcParams(freq, para2, para1);
-                        break;
-                    case TVChannelParams.MODE_ANALOG:
-                        //*****************temp default set pat I************************
-                        Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK MODE_ANALOG");
-                        myEvent.feParams  = TVChannelParams.analogParams(freq, TVChannelParams.STD_PAL_I, 0);
-                        break;
-                }*/
-                TVDevice.this.onEvent(myEvent);
-                break;
-
-
-            case EVENT_SOURCE_SWITCH:
-                status = (Integer)msg.obj;
-                Event myEvent1 = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
-                TVDevice.this.onEvent(myEvent1);
-                break;
-            }
-        }
-    };
-
     private boolean destroy;
     private String  TAG = "TVDeviceImpl";
     public static Tv tv = null;
@@ -124,10 +74,39 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
     }
 
-    public int getCurInputSource() {
+    public TVConst.SourceInput getCurInputSource() {
      
-        int source = tv.GetCurrentSourceInput();
-        Log.v(TAG, "^^^^^^^^^^^^^^^^getCurInputSource^^^^^^^^^^^^^^^^^^^^^^^^^^^" + source);
+        int val = tv.GetCurrentSourceInput();
+        TVConst.SourceInput source = TVConst.SourceInput.SOURCE_ATV;
+
+        Log.v(TAG, "^^^^^^^^^^^^^^^^getCurInputSource^^^^^^^^^^^^^^^^^^^^^^^^^^^" + val);
+
+		if(val == Tv.SrcInput.DTV.toInt()){
+			source = TVConst.SourceInput.SOURCE_DTV;
+		}else if(val == Tv.SrcInput.TV.toInt()){
+			source = TVConst.SourceInput.SOURCE_ATV;
+		}else if(val == Tv.SrcInput.AV1.toInt()){
+			source = TVConst.SourceInput.SOURCE_AV1;
+		}else if(val == Tv.SrcInput.AV2.toInt()){
+			source = TVConst.SourceInput.SOURCE_AV2;
+		}else if(val == Tv.SrcInput.YPBPR1.toInt()){
+			source = TVConst.SourceInput.SOURCE_YPBPR1;
+		}else if(val == Tv.SrcInput.YPBPR2.toInt()){
+			source = TVConst.SourceInput.SOURCE_YPBPR2;
+		}else if(val == Tv.SrcInput.HDMI1.toInt()){
+			source = TVConst.SourceInput.SOURCE_HDMI1;
+		}else if(val == Tv.SrcInput.HDMI2.toInt()){
+			source = TVConst.SourceInput.SOURCE_HDMI2;
+		}else if(val == Tv.SrcInput.HDMI3.toInt()){
+			source = TVConst.SourceInput.SOURCE_HDMI3;
+		}else if(val == Tv.SrcInput.VGA.toInt()){
+			source = TVConst.SourceInput.SOURCE_VGA;
+		}else if(val == Tv.SrcInput.MPEG.toInt()){
+			source = TVConst.SourceInput.SOURCE_MPEG;
+		}else if(val == Tv.SrcInput.SVIDEO.toInt()){
+			source = TVConst.SourceInput.SOURCE_SVIDEO;
+		}
+
         return source;
     }
     
@@ -141,11 +120,14 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             tv.SetFrontEnd(params.mode,params.frequency,params.standard,0);
     }
 
-    public void getFrontend(TVChannelParams params) {
+    public TVChannelParams getFrontend() {
+    	TVChannelParams params;
         //return native_get_frontend();
         //tv.INIT_TV();
         Tv.Frontend_Para fpara = tv.GetFrontEnd();
         params = fpara2chanpara(fpara.mode,fpara.frequency,fpara.para1,fpara.para2);
+
+        return params;
     }
 
     public int getFrontendStatus() {
@@ -268,8 +250,6 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.e(TAG,"*********seekTo have not realize");
     }
 
-    abstract public void onEvent(Event event);
-
     protected void finalize() throws Throwable {
         if(!destroy) {
             destroy = false;
@@ -284,21 +264,27 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Message msg;
 
         if(type == NATVIVE_EVENT_FRONTEND ) { //frontEnd
-            msg = handler.obtainMessage(EVENT_FRONTEND, new Integer(state));
-            msg.getData().clear();
-            msg.getData().putInt("mode", mode);
-            msg.getData().putInt("freq", freq);
-            msg.getData().putInt("para1", para1);
-            msg.getData().putInt("para2", para2);
-            handler.sendMessage(msg);
+         	Event myEvent = new Event(Event.EVENT_FRONTEND);
+            if(state == NATVIVE_EVENT_SIGNAL_OK ) {
+                Log.v(TAG,"NATVIVE_EVENT_SIGNAL_OK");
+                myEvent.feStatus = TVChannelParams.FE_HAS_LOCK;
+            } else if(state == NATVIVE_EVENT_SIGNAL_NOT_OK ) {
+                Log.v(TAG,"NATVIVE_EVENT_SIGNAL_NOT_OK");
+                myEvent.feStatus = TVChannelParams.FE_TIMEDOUT;
+            }
+
+           	myEvent.feParams = fpara2chanpara(mode,freq,para1,para2);
+
+           	onEvent(myEvent);
         }
     }
 
 
     public void onSourceSwitchStatusChange(SrcInput input, int state) {
         Log.v(TAG,"onSourceSwitchStatusChange:  " + input.toString() + state);
-        Message  msg = handler.obtainMessage(EVENT_SOURCE_SWITCH, new Integer(state));
-        handler.sendMessage(msg);
+        
+        Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+        onEvent(myEvent);
     }
 
 
