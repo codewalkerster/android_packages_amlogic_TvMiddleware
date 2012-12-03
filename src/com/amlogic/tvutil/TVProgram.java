@@ -697,7 +697,7 @@ public class TVProgram{
 			if(where){
 				cmd += " and skip = 0 ";
 			}else{
-				cmd = " where skip = 0 ";
+				cmd += " where skip = 0 ";
 			}
 		}
 
