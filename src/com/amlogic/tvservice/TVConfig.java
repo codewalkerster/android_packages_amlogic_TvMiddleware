@@ -424,10 +424,12 @@ public class TVConfig{
 			if(ent.update != null){
 				ent.update.onUpdate(name, value);
 			}
+
 			if(ent.callbacks != null){
 				final int N = ent.callbacks.beginBroadcast();
 				TVMessage msg = TVMessage.configChanged(name, value);
 				for (int i = 0; i < N; i++){
+					Log.d(TAG, "config "+name+" callback "+i);
 					ent.callbacks.getBroadcastItem(i).onMessage(msg);
 				}
 				ent.callbacks.finishBroadcast();
@@ -449,6 +451,8 @@ public class TVConfig{
 			ent.callbacks = new RemoteCallbackList<ITVCallback>();
 
 		ent.callbacks.register(cb);
+
+		Log.d(TAG, "registerRemoteCallback "+name);
 	}
 
 	/**

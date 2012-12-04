@@ -175,6 +175,10 @@ public class TVMessage implements Parcelable{
 		return bookingID;
 	}
 
+	/**
+	 *取得搜索进度
+	 *@return 返回搜索进度百分比
+	 */
 	public int getScanProgress() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
@@ -182,6 +186,10 @@ public class TVMessage implements Parcelable{
 		return scanProgress;
 	}
 
+	/**
+	 *搜索中取得搜索到的频道数目
+	 *@return 返回搜索到的频道数目
+	 */
 	public int getScanTotalChanCount() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
@@ -189,6 +197,10 @@ public class TVMessage implements Parcelable{
 		return scanTotalChanCount;
 	}
 
+	/**
+	 *搜索中取得当前频道号
+	 *@return 返回当前频道号
+	 */
 	public int getScanCurChanNo() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
@@ -196,6 +208,10 @@ public class TVMessage implements Parcelable{
 		return scanCurChanNo;
 	}
 
+	/**
+	 *搜索中取得当前频道参数
+	 @return 返回当前频道参数
+	 */
 	public TVChannelParams getScanCurChanParams() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
@@ -203,6 +219,10 @@ public class TVMessage implements Parcelable{
 		return scanCurChanParams;
 	}
 
+	/**
+	 *搜索中取得当前频道锁定状态
+	 *@return 返回当前频道锁定状态
+	 */
 	public int getScanCurChanLockStatus() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
@@ -210,6 +230,10 @@ public class TVMessage implements Parcelable{
 		return scanCurChanLocked;
 	}
 
+	/**
+	 *搜索中取得搜到的节目名称
+	 *@return 返回搜到的节目名称
+	 */
 	public String getScanProgramName() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
@@ -217,11 +241,37 @@ public class TVMessage implements Parcelable{
 		return scanProgramName;
 	}
 
+	/**
+	 *搜索中取得搜到的节目类型
+	 *@return 返回搜到的节目类型
+	 */
 	public int getScanProgramType() {
 		if((flags & FLAG_SCAN) != FLAG_SCAN)
 			throw new UnsupportedOperationException();
 
 		return scanProgramType;
+	}
+
+	/**
+	 *取得更改的配置项目名称
+	 *@return 返回配置项目名称
+	 */
+	public String getConfigName(){
+		if((flags & FLAG_CONFIG) != FLAG_CONFIG)
+			throw new UnsupportedOperationException();
+
+		return cfgName;
+	}
+
+	/**
+	 *取得更改的配置项目值
+	 *@return 返回配置项目值
+	 */
+	public TVConfigValue getConfigValue(){
+		if((flags & FLAG_CONFIG) != FLAG_CONFIG)
+			throw new UnsupportedOperationException();
+
+		return cfgValue;
 	}
 
 	/**

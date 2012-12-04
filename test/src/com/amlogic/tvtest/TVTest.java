@@ -29,7 +29,6 @@ public class TVTest extends TVActivity{
 		
 		 myTextView   =  (TextView)findViewById(R.id.proname);
 		 myTextView.setText(this.getResources().getString(R.string.warning));
-		openVideo();
 	}
 	
 	
@@ -44,6 +43,9 @@ public class TVTest extends TVActivity{
 		Log.d(TAG, "connected");
 
 		TVScanParams sp;
+
+		openVideo();
+
 		//setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
 		
 		if (curTvMode == TVScanParams.TV_MODE_ATV) {
@@ -160,6 +162,7 @@ public class TVTest extends TVActivity{
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_8:
+	    			 /*
 	    			Log.v(TAG," prepare to play atv");
 		         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(1));
 		    			if(prog!=null){	
@@ -169,7 +172,11 @@ public class TVTest extends TVActivity{
 		    			}
 		    			//TVConst.SourceInput a  = this.getCurInputSource();
 		    			//Log.d(TAG, " ************" + a.ordinal());
-		         	
+		         	*/
+		         	 boolean sub = getBooleanConfig("tv:subtitle:enable");
+		         	 Log.d(TAG, "reset tv:subtitle:enable "+ sub + "->"+!sub);
+		         	 sub = !sub;
+		         	 setConfig("tv:subtitle:enable", sub);
 		             break;
 		             
 	    		 case KeyEvent.KEYCODE_9:

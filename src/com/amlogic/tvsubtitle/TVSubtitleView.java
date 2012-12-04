@@ -279,6 +279,8 @@ public class TVSubtitleView extends View {
 		if(visible)
 			return;
 
+		Log.d(TAG, "show");
+
 		visible = true;
 		update();
 	}
@@ -289,6 +291,8 @@ public class TVSubtitleView extends View {
 	public void hide(){
 		if(!visible)
 			return;
+
+		Log.d(TAG, "hide");
 
 		visible = false;
 		update();

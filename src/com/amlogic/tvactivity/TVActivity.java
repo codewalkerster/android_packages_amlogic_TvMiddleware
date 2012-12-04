@@ -35,6 +35,8 @@ abstract public class TVActivity extends Activity
 
     private VideoView videoView;
     private TVSubtitleView subtitleView;
+    private int currProgramID = -1;
+    private int currSubtitlePID = -1;
 
     private TVClient client = new TVClient() {
         public void onConnected() {
@@ -80,54 +82,106 @@ abstract public class TVActivity extends Activity
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
+
+        if(subtitleView == null) {
+        	unregisterConfigCallback("tv:subtitle:enable");
+        	unregisterConfigCallback("tv:subtitle:language");
+        	unregisterConfigCallback("tv:teletext:language");
+        }
+
         client.disconnect(this);
         super.onDestroy();
     }
+
+    private void restartSubtitle(){
+		if(subtitleView == null)
+			return;
+
+		TVProgram prog = TVProgram.selectByID(this, currProgramID);
+
+		/*Start subtitle*/
+       	TVProgram.Subtitle sub;
+
+       	sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+       	if((sub != null) && (sub.getPID() != currSubtitlePID)){
+       		switch(sub.getType()){
+				case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
+					subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
+					break;
+				case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
+					int mag, pg, pgno;
+
+					mag = sub.getMagazineNumber();
+					pg  = sub.getPageNumber();
+					pgno = (mag==0) ? 800 : mag*100;
+					pgno += pg;
+					subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
+					break;
+			}
+
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.show();
+			else
+				subtitleView.hide();
+
+			currSubtitlePID = sub.getPID();
+			subtitleView.startSub();
+		}
+	}
+
+	private void stopSubtitle(){
+		if(subtitleView == null)
+			return;
+
+		currSubtitlePID = -1;
+		subtitleView.stop();
+    	subtitleView.hide();
+	}
 
 	/*On program started*/
     private void onProgramStart(int prog_id){
     	Log.d(TAG, "onProgramStart");
 
-    	TVProgram prog = TVProgram.selectByID(this, prog_id);
+    	currProgramID = prog_id;
 
 		/*Start subtitle*/
-        if((subtitleView != null) && getBooleanConfig("tv:subtitle:enable")){
-        	TVProgram.Subtitle sub;
-
-        	sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
-        	if(sub != null){
-        		switch(sub.getType()){
-					case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
-						subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
-						break;
-					case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
-						int mag, pg, pgno;
-
-						mag = sub.getMagazineNumber();
-						pg  = sub.getPageNumber();
-						pgno = (mag==0) ? 800 : mag*100;
-						pgno += pg;
-						subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
-						break;
-				}
-
-				subtitleView.startSub();
-        		subtitleView.show();
-
-			}
-		}
+		restartSubtitle();
 	}
 
 	/*On program stopped*/
 	private void onProgramStop(int prog_id){
 		Log.d(TAG, "onProgramStop");
 
-    	TVProgram prog = TVProgram.selectByID(this, prog_id);
+		currProgramID = -1;
 
     	/*Stop subtitle.*/
-    	if(subtitleView != null){
-    		subtitleView.stop();
-    		subtitleView.hide();
+    	stopSubtitle();
+	}
+
+	/*On configure entry changed*/
+	private void onConfigChanged(String name, TVConfigValue val) throws Exception{
+		Log.d(TAG, "config "+name+" changed");
+
+		if(name.equals("tv:subtitle:enable")){
+			boolean v = val.getBoolean();
+
+			Log.d(TAG, "tv:subtitle:enable changed -> "+v);
+			if(subtitleView != null){
+				if(v){
+					subtitleView.show();
+				}else{
+					subtitleView.hide();
+				}
+			}
+		}else if(name.equals("tv:subtitle:language")){
+			String lang = val.getString();
+
+			Log.d(TAG, "tv:subtitle:language changed -> "+lang);
+			restartSubtitle();
+		}else if(name.equals("tv:teletext:language")){
+			String lang = val.getString();
+
+			Log.d(TAG, "tv:teletext:language changed -> "+lang);
 		}
 	}
 
@@ -139,6 +193,13 @@ abstract public class TVActivity extends Activity
 				break;
 			case TVMessage.TYPE_PROGRAM_STOP:
 				onProgramStop(msg.getProgramID());
+				break;
+			case TVMessage.TYPE_CONFIG_CHANGED:
+				try{
+					onConfigChanged(msg.getConfigName(), msg.getConfigValue());
+				}catch(Exception e){
+					Log.e(TAG, "error in onConfigChanged");
+				}
 				break;
 		}
 	}
@@ -204,7 +265,13 @@ abstract public class TVActivity extends Activity
             		getIntConfig("tv:subtitle:margin_top"),
             		getIntConfig("tv:subtitle:margin_right"),
             		getIntConfig("tv:subtitle:margin_bottom"));
+
+			Log.d(TAG, "register subtitle/teletext config callbacks");
+        	registerConfigCallback("tv:subtitle:enable");
+        	registerConfigCallback("tv:subtitle:language");
+        	registerConfigCallback("tv:teletext:language");
         }
+
         if(videoView == null) {
             Log.d(TAG, "create video view");
             videoView = new VideoView(this);

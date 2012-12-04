@@ -150,6 +150,7 @@ public class TVService extends Service{
 
 		public void registerConfigCallback(String name, ITVCallback cb){
 			try{
+				Log.d(TAG, "register config "+name+" callback "+cb);
 				config.registerRemoteCallback(name, cb);
 			}catch(Exception e){
 				Log.d(TAG, "registerRemoteCallback "+name+" failed");
@@ -158,6 +159,7 @@ public class TVService extends Service{
 
 		public void unregisterConfigCallback(String name, ITVCallback cb){
 			try{
+				Log.d(TAG, "unregister config "+name+" callback "+ cb);
 				config.unregisterRemoteCallback(name, cb);
 			}catch(Exception e){
 				Log.e(TAG, "unregisterRemoteCallback "+name+" failed");
