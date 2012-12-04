@@ -330,7 +330,7 @@ public class TVService extends Service{
 		public void onEvent(TVEpgScanner.Event event){
 			switch(event.type){
 				case TVEpgScanner.Event.EVENT_TDT_END:
-					time.setTime(event.time);
+					time.setTime(event.time*1000);
 					return;
 			}
 
@@ -960,6 +960,22 @@ public class TVService extends Service{
 
 	/*Solve the events from the EPG scanner.*/
 	private void resolveEpgEvent(TVEpgScanner.Event event){
+		switch(event.type){
+			case TVEpgScanner.Event.EVENT_PROGRAM_AV_UPDATE:
+				Log.d(TAG, "Detect program "+event.programID+"'s AV changed, try a replay now...");
+				playCurrentProgramAV();
+				break;
+			case TVEpgScanner.Event.EVENT_PROGRAM_NAME_UPDATE:
+				Log.d(TAG, "Detect program "+event.programID+"'s name changed, send msg to clients...");
+				sendMessage(TVMessage.programUpdate(event.programID));
+				break;
+			case TVEpgScanner.Event.EVENT_PROGRAM_EVENTS_UPDATE:
+				Log.d(TAG, "Detect EPG events have updates, send msg to clients...");
+				sendMessage(TVMessage.eventUpdate());
+				break;
+			default:
+				break;
+		}
 	}
 
 	/*Solve the events from the channel scanner.*/

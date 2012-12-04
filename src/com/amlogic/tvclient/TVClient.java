@@ -148,9 +148,7 @@ abstract public class TVClient
 	 *@return 返回UTC时间
 	 */
 	public long getUTCTime(){
- 		long offset = getIntConfig("tv:time:offset");
-
-    	return getTime() - offset * 1000;
+    	return getTime();
 	}
 
     /**
