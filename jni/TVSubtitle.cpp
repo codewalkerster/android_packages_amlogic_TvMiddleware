@@ -433,7 +433,7 @@ error:
         ret = open_dmx(data, dmx_id, pid);
         if(ret < 0)
             goto error;
-
+        
         return 0;
 error:
         if(data->sub_handle) {
@@ -498,6 +498,14 @@ error:
         AM_SUB2_Destroy(data->sub_handle);
         AM_PES_Destroy(data->pes_handle);
 
+
+        pthread_mutex_lock(&data->lock);
+        clear_bitmap(data);
+        data->bitmap->notifyPixelsChanged();
+        pthread_mutex_unlock(&data->lock);
+
+        sub_update(obj);
+        
         data->sub_handle = NULL;
         data->pes_handle = NULL;
 
@@ -512,6 +520,13 @@ error:
         AM_PES_Destroy(data->pes_handle);
         data->pes_handle = NULL;
         AM_TT2_Stop(data->tt_handle);
+
+        pthread_mutex_lock(&data->lock);
+        clear_bitmap(data);
+        data->bitmap->notifyPixelsChanged();
+        pthread_mutex_unlock(&data->lock);
+
+        sub_update(obj);
 
         return 0;
     }

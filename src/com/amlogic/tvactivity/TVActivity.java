@@ -199,6 +199,11 @@ abstract public class TVActivity extends Activity
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
             root.addView(subtitleView, 0);
+            subtitleView.setMargin(
+            		getIntConfig("tv:subtitle:margin_left"),
+            		getIntConfig("tv:subtitle:margin_top"),
+            		getIntConfig("tv:subtitle:margin_right"),
+            		getIntConfig("tv:subtitle:margin_bottom"));
         }
         if(videoView == null) {
             Log.d(TAG, "create video view");

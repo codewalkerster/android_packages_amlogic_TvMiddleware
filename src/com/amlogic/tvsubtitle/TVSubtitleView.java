@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.Paint;
+import android.graphics.Color;
 import android.util.AttributeSet;
 import java.lang.Exception;
 import android.util.Log;
@@ -20,11 +21,6 @@ public class TVSubtitleView extends View {
 	private static final int BUFFER_W = 720;
 	private static final int BUFFER_H = 576;
 
-	private static final int DISP_LEFT=40;
-	private static final int DISP_RIGHT=40;
-	private static final int DISP_TOP=40;
-	private static final int DISP_BOTTOM=40;
-	
 	private static final int MODE_NONE=0;
 	private static final int MODE_DTV_TT=1;
 	private static final int MODE_DTV_CC=2;
@@ -144,6 +140,11 @@ public class TVSubtitleView extends View {
 		}
 	}
 
+	private int disp_left=0;
+	private int disp_right=0;
+	private int disp_top=0;
+	private int disp_bottom=0;
+
 	private SubParams sub_params;
 	private TTParams  tt_params;
 	private int       play_mode;
@@ -219,6 +220,20 @@ public class TVSubtitleView extends View {
 	public TVSubtitleView(Context context, AttributeSet attrs, int defStyle){
 		super(context, attrs, defStyle);
 		init();
+	}
+
+	/**
+	 *设定显示边缘空隙
+	 *@param left 左边缘宽度
+	 *@param top 顶部边缘高度
+	 *@param right 右部边缘宽度
+	 *@param bottom 底部边缘高度
+	 */
+	public void setMargin(int left, int top, int right, int bottom){
+		disp_left   = left;
+		disp_top    = top;
+		disp_right  = right;
+		disp_bottom = bottom;
 	}
 
 	/**
@@ -441,9 +456,11 @@ public class TVSubtitleView extends View {
 	@Override
 	public void onDraw(Canvas canvas){
 		Rect sr;
+		Rect dr = new Rect(disp_left, disp_top, getWidth()-disp_left-disp_right, getHeight()-disp_top - disp_bottom);
 
-		if(!visible || (play_mode==PLAY_NONE))
+		if(!visible || (play_mode==PLAY_NONE)){
 			return;
+		}
 
 		if(play_mode==PLAY_TT || tt_params.mode==MODE_DTV_TT || tt_params.mode==MODE_ATV_TT){
 			sr = new Rect(0, 0, 12*41, 10*25);
@@ -452,10 +469,8 @@ public class TVSubtitleView extends View {
 		}
 
 		native_sub_lock();
-		canvas.drawBitmap(bitmap,
-				sr,
-				new Rect(DISP_LEFT, DISP_TOP, getWidth()-DISP_LEFT-DISP_RIGHT, getHeight()-DISP_TOP-DISP_BOTTOM),
-				new Paint());
+
+		canvas.drawBitmap(bitmap, sr, dr, new Paint());
 
 		native_sub_unlock();
 	}
