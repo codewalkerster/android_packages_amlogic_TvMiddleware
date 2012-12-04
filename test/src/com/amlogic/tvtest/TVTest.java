@@ -12,6 +12,8 @@ import com.amlogic.tvactivity.TVActivity;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVConst;
+import com.amlogic.tvutil.TVEvent;
+import java.text.SimpleDateFormat;
 
 
 public class TVTest extends TVActivity{
@@ -66,6 +68,34 @@ public class TVTest extends TVActivity{
 	public void onDisconnected(){
 		Log.d(TAG, "disconnected");
 	}
+	
+	private void printEvent(String strCag, TVEvent evt) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		String str_start = sdf.format(evt.getStartTime()*1000);
+		String str_end = sdf.format(evt.getEndTime()*1000);
+		Log.d(TAG, strCag+" "+str_start+"  ~  "+str_end+"  "+evt.getName());
+	}
+	
+	private void showProgramEPG(TVProgram prog) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		String str_utc = sdf.format(getUTCTime());
+		Log.d(TAG, "current UTC time: "+str_utc);
+		TVEvent evt = prog.getPresentEvent(this, getUTCTime());
+		if (evt != null) {
+			printEvent("Present    ", evt);
+		}
+		evt = prog.getFollowingEvent(this, getUTCTime());
+		if (evt != null) {
+			printEvent("Following  ", evt);
+		}
+		/* 24 hours schedule EPG */
+		TVEvent[] evts = prog.getScheduleEvents(this, getUTCTime(), (long)1*24*3600*1000);
+		if (evts != null && evts.length > 0) {
+			for (int i=0; i<evts.length; i++) {
+				printEvent("Schedule",evts[i]);
+			}
+		}		
+	}
 
 	int count_dtv = 3;
 	  public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -76,9 +106,9 @@ public class TVTest extends TVActivity{
             	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(count_dtv));
 				if(prog!=null){	
 					playProgram(new TVProgramNumber(count_dtv));
-					
+
 					Log.d(TAG, "%%%00000000000000000000000000000000 ");
-				
+					showProgramEPG(prog);
 				}
 				count_dtv++;
 				break;
@@ -89,6 +119,7 @@ public class TVTest extends TVActivity{
 						playProgram(new TVProgramNumber(count_dtv));
 						
 						Log.d(TAG, "%%%1111111111111111111111111111111111 ");
+						showProgramEPG(prog);
 					}
 					count_dtv--;
 	                break;
@@ -157,6 +188,7 @@ public class TVTest extends TVActivity{
 	    			    TVScanParams sp;	
 	    			    //sp = TVScanParams.atvAutoScanParams(0);
 	    			    sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
+	    			    //sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
 	    				Log.d(TAG, "Start Scan...");
 	    				startScan(sp);
 	    			 break;
