@@ -16,7 +16,7 @@ public class TVEvent{
 	private String description;
 	private TVProgram program;
 	private long start;
-	private int duration;
+	private int end;
 	private int dvbContent;
 	private int dvbViewAge;
 
@@ -37,8 +37,8 @@ public class TVEvent{
 		col = c.getColumnIndex("start");
 		this.start = c.getInt(col);
 
-		col = c.getColumnIndex("duration");
-		this.duration = c.getInt(col);
+		col = c.getColumnIndex("end");
+		this.end = c.getInt(col);
 
 		col = c.getColumnIndex("nibble_level");
 		this.dvbContent = c.getInt(col);
@@ -118,11 +118,10 @@ public class TVEvent{
 	}
 
 	/**
-	 *取得事件长度，单位为秒
-	 *@return 返回事件长度
+	 *取得事件结束时间
 	 */
-	public int getDuration(){
-		return duration;
+	public long getEndTime(){
+		return end;
 	}
 
 	/**

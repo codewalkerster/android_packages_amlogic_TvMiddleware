@@ -273,7 +273,7 @@ static void tv_scan_notify_program(ProgressData *pd, AM_SCAN_TS_t * ts)
                                ((psd->i_service_type == 0x1 || psd->i_service_type == 0x2) && (has_video || has_audio)))) {
                 /*取节目名称*/
                 if (psd->i_service_name_length > 0) {
-                    AM_EPG_ConvertCode((char*)psd->i_service_name, psd->i_service_name_length,\
+                    AM_SI_ConvertDVBTextCode((char*)psd->i_service_name, psd->i_service_name_length,\
                                        name, AM_DB_MAX_SRV_NAME_LEN);
                     name[AM_DB_MAX_SRV_NAME_LEN] = 0;
 

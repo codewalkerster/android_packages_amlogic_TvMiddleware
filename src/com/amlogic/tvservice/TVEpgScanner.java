@@ -28,20 +28,28 @@ abstract public class TVEpgScanner{
 
     public class Event
     {
-        public static final int EVENT_PF_EIT_END  = 1;
-        public static final int EVENT_SCH_EIT_END = 2;
-        public static final int EVENT_PMT_END     = 3;
-        public static final int EVENT_SDT_END     = 4;
-        public static final int EVENT_TDT_END     = 5;
-        public static final int EVENT_NIT_END     = 6;
+        public static final int EVENT_PF_EIT_END            = 1;
+        public static final int EVENT_SCH_EIT_END           = 2;
+        public static final int EVENT_PMT_END               = 3;
+        public static final int EVENT_SDT_END               = 4;
+        public static final int EVENT_TDT_END               = 5;
+        public static final int EVENT_NIT_END               = 6;
+        public static final int EVENT_PROGRAM_AV_UPDATE     = 7;
+        public static final int EVENT_PROGRAM_NAME_UPDATE   = 8;
+        public static final int EVENT_PROGRAM_EVENTS_UPDATE = 9;
 
         public int type;
         public int channelID;
+        public int programID;
         public int dvbOrigNetID;
         public int dvbTSID;
         public int dvbServiceID;
         public long time;
         public int dvbVersion;
+        
+        public Event(int type){
+			this.type = type;
+		}
     }
 
 	private int native_handle;
@@ -61,15 +69,9 @@ abstract public class TVEpgScanner{
 	private boolean created = false;
 	private int channel_id  = -1;
 	private int program_id  = -1;
-	private int scan_mode   = 0;
 
 	/*Start scan the sections.*/
 	private void startScan(int mode){
-		mode = mode & ~scan_mode;
-
-		if(mode == 0)
-			return;
-
 		if(!created)
 			return;
 
@@ -78,11 +80,6 @@ abstract public class TVEpgScanner{
 
 	/*Stop scan the sections.*/
 	private void stopScan(int mode){
-		mode = scan_mode & mode;
-
-		if(mode == 0)
-			return;
-
 		if(!created)
 			return;
 
@@ -123,7 +120,7 @@ abstract public class TVEpgScanner{
 			leaveChannel();
 		}
 
-		startScan(SCAN_EIT_ALL|SCAN_SDT|SCAN_NIT|SCAN_TDT);
+		startScan(SCAN_EIT_ALL|SCAN_SDT|SCAN_NIT|SCAN_TDT|SCAN_CAT);
 		channel_id = chan_id;
 	}
 
@@ -152,7 +149,7 @@ abstract public class TVEpgScanner{
 		}
 
 		native_epg_monitor_service(prog_id);
-		startScan(SCAN_PAT|SCAN_PMT|SCAN_CAT);
+		startScan(SCAN_PAT|SCAN_PMT);
 		program_id = prog_id;
 	}
 
@@ -164,7 +161,7 @@ abstract public class TVEpgScanner{
 		if(!created)
 			return;
 
-		stopScan(SCAN_PAT|SCAN_PMT|SCAN_CAT);
+		stopScan(SCAN_PAT|SCAN_PMT);
 		native_epg_monitor_service(-1);
 		program_id = -1;
 	}
