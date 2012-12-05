@@ -38,6 +38,8 @@ abstract public class TVActivity extends Activity
     private boolean connected = false;
     private int currProgramID = -1;
     private int currSubtitlePID = -1;
+    private int currSubtitleID1 = -1;
+    private int currSubtitleID2 = -1;
 
     private TVClient client = new TVClient() {
         public void onConnected() {
@@ -108,28 +110,43 @@ abstract public class TVActivity extends Activity
 
        	sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
        	if((sub != null) && (sub.getPID() != currSubtitlePID)){
+       		boolean restart = false;
+
        		switch(sub.getType()){
 				case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
-					subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
+					if(sub.getCompositionPageID() != currSubtitleID1 || sub.getAncillaryPageID() != currSubtitleID2){
+						subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
+						currSubtitleID1 = sub.getCompositionPageID();
+						currSubtitleID2 = sub.getAncillaryPageID();
+						restart = true;
+					}
 					break;
 				case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
 					int mag, pg, pgno;
 
 					mag = sub.getMagazineNumber();
 					pg  = sub.getPageNumber();
-					pgno = (mag==0) ? 800 : mag*100;
-					pgno += pg;
-					subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
+
+					if(mag != currSubtitleID1 || pg != currSubtitleID2){
+						pgno = (mag==0) ? 800 : mag*100;
+						pgno += pg;
+						subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
+						currSubtitleID1 = mag;
+						currSubtitleID2 = pg;
+						restart = true;
+					}
 					break;
 			}
 
-			if(getBooleanConfig("tv:subtitle:enable"))
-				subtitleView.show();
-			else
-				subtitleView.hide();
+			if(restart){
+				if(getBooleanConfig("tv:subtitle:enable"))
+					subtitleView.show();
+				else
+					subtitleView.hide();
 
-			currSubtitlePID = sub.getPID();
-			subtitleView.startSub();
+				currSubtitlePID = sub.getPID();
+				subtitleView.startSub();
+			}
 		}
 	}
 
