@@ -17,5 +17,16 @@
 		      android:shadowColor="@android:color/white"
 		      >
 		</TextView>
+	<TextView 
+	       
+	          android:layout_gravity="center"
+		      android:id="@+id/proname1"
+		      android:layout_height="wrap_content"
+		      android:layout_width="wrap_content" 
+		      android:textSize="36px"
+		    
+		      android:shadowColor="@android:color/white"
+		      >
+		</TextView>
 </RelativeLayout>
 

@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="warning">按键7 是切换ATV， 按键9是切换DTV， 按键0是播放DTV的频点435000000.按键8是播放频点146992000。按2是切换HDMI1，按3是切换VGA.按4是切换分量1,.按5是切换AV1,按上键开始自动搜台ATV,按下键是停止搜台</string>
+    <string name="warning">按键7 是切换ATV， 按键9是切换DTV，按2是切换HDMI1，按3是切换VGA.按4是切换分量1,.按5是切换AV1,按上键开始自动搜台ATV,按左键开始搜台dvb-c频点435的，按右键开始搜台dvb-t的474.按下键是停止搜台.按频道上下切换台。</string>
 </resources>
