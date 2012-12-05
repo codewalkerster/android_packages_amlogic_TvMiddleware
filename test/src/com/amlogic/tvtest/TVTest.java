@@ -138,27 +138,31 @@ public class TVTest extends TVActivity{
 		         	
 		             break;
 	    		case KeyEvent.KEYCODE_5:
-	    			 setInputSource(TVConst.SourceInput.SOURCE_AV1);
+	    			 //setInputSource(TVConst.SourceInput.SOURCE_AV1);
+	    			 ttGotoNextPage();
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_6:
-		         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(9));
+		         	 /*prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(9));
 		    			if(prog!=null){	
 		    				playProgram(new TVProgramNumber(9));
 		    				Log.d(TAG, "22222222222222222222222222222222222 ");
-		    			}
-		         	
+		    			}*/
+		         	 ttGotoPreviousPage();
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_7:
-	    			Log.v(TAG,"setInputSource SOURCE_ATV)");
-	    			 setInputSource(TVConst.SourceInput.SOURCE_ATV);
+	    			//Log.v(TAG,"setInputSource SOURCE_ATV)");
+	    			 //setInputSource(TVConst.SourceInput.SOURCE_ATV);
 		         	 //prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(10));
 		    		 //	if(prog!=null){	
 		    		 //		playProgram(new TVProgramNumber(10));
 		    		 //		Log.d(TAG, "22222222222222222222222222222222222 ");
 		    		 //	}
-		         	
+		    		 if(!isInTeletextMode())
+		    		 	 ttShow();
+					 else
+					 	 ttHide();
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_8:

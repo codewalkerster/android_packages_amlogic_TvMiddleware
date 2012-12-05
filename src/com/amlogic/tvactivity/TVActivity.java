@@ -33,11 +33,17 @@ abstract public class TVActivity extends Activity
     private static final int MSG_DISCONNECTED = 1950;
     private static final int MSG_MESSAGE      = 1951;
 
+	private static final int SUBTITLE_NONE = 0;
+    private static final int SUBTITLE_SUB  = 1;
+    private static final int SUBTITLE_TT   = 2;
+
     private VideoView videoView;
     private TVSubtitleView subtitleView;
     private boolean connected = false;
     private int currProgramID = -1;
+    private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
+    private int currTeletextPID = -1;
     private int currSubtitleID1 = -1;
     private int currSubtitleID2 = -1;
 
@@ -99,69 +105,105 @@ abstract public class TVActivity extends Activity
         super.onDestroy();
     }
 
-    private void restartSubtitle(){
+    private void resetSubtitle(int mode){
 		if(subtitleView == null)
+			return;
+
+		if(mode == SUBTITLE_NONE){
+			subtitleView.stop();
+			subtitleView.hide();
+
+			currSubtitleMode = mode;
+			currSubtitlePID = -1;
+			currSubtitleID1 = -1;
+			currSubtitleID2 = -1;
+			return;
+		}
+
+		if(currProgramID == -1)
 			return;
 
 		TVProgram prog = TVProgram.selectByID(this, currProgramID);
+		if(prog == null)
+			return;
 
-		/*Start subtitle*/
-       	TVProgram.Subtitle sub;
+		int pid = -1, id1 = -1, id2 = -1, pm = -1;
 
-       	sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
-       	if(sub != null){
-       		boolean restart = false;
+		if(mode == SUBTITLE_SUB){
+    		TVProgram.Subtitle sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+    		if(sub == null)
+    			return;
 
        		switch(sub.getType()){
 				case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
-					if(sub.getPID() != currSubtitlePID || sub.getCompositionPageID() != currSubtitleID1 || sub.getAncillaryPageID() != currSubtitleID2){
-						subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
-
-						currSubtitlePID = sub.getPID();
-						currSubtitleID1 = sub.getCompositionPageID();
-						currSubtitleID2 = sub.getAncillaryPageID();
-						restart = true;
-					}
+					pid = sub.getPID();
+					id1 = sub.getCompositionPageID();
+					id2 = sub.getAncillaryPageID();
+					pm  = SUBTITLE_SUB;
 					break;
 				case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
-					int mag, pg, pgno;
-
-					mag = sub.getMagazineNumber();
-					pg  = sub.getPageNumber();
-
-					if(sub.getPID() != currSubtitlePID || mag != currSubtitleID1 || pg != currSubtitleID2){
-						pgno = (mag==0) ? 800 : mag*100;
-						pgno += pg;
-						subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
-
-						currSubtitlePID = sub.getPID();
-						currSubtitleID1 = mag;
-						currSubtitleID2 = pg;
-						restart = true;
-					}
+					pid = sub.getPID();
+					id1 = sub.getMagazineNumber();
+					id2 = sub.getPageNumber();
+					pm  = SUBTITLE_TT;
 					break;
 			}
+		}else if(mode == SUBTITLE_TT){
+			TVProgram.Teletext tt = prog.getTeletext(getStringConfig("tv:teletext:language"));
+			if(tt == null)
+				return;
 
-			if(restart){
-				if(getBooleanConfig("tv:subtitle:enable"))
-					subtitleView.show();
-				else
-					subtitleView.hide();
+			pid = tt.getPID();
+			id1 = tt.getMagazineNumber();
+			id2 = tt.getPageNumber();
+			pm  = SUBTITLE_TT;
+		}
 
-				subtitleView.startSub();
+		if(mode == currSubtitleMode && pid == currSubtitlePID && id1 == currSubtitleID1 && id2 == currSubtitleID2){
+			return;
+		}
+
+		subtitleView.stop();
+
+		if(pm == SUBTITLE_TT && pid != currTeletextPID){
+			subtitleView.clear();
+		}
+
+		TVSubtitleView.DVBSubParams subp;
+		TVSubtitleView.DTVTTParams ttp;
+
+		if(pm == SUBTITLE_SUB){
+			subp = new TVSubtitleView.DVBSubParams(0, pid, id1, id2);
+			subtitleView.setSubParams(subp);
+		}else{
+			int pgno;
+
+			pgno = (id1==0) ? 800 : id1*100;
+			pgno += id2;
+			ttp = new TVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F);
+
+			if(mode == SUBTITLE_SUB){
+				subtitleView.setSubParams(ttp);
+			}else{
+				subtitleView.setTTParams(ttp);
 			}
 		}
-	}
 
-	private void stopSubtitle(){
-		if(subtitleView == null)
-			return;
+		if(mode == SUBTITLE_SUB){
+			subtitleView.startSub();
+		}else{
+			subtitleView.startTT();
+		}
 
-		currSubtitlePID = -1;
-		currSubtitleID1 = -1;
-		currSubtitleID2 = -1;
-		subtitleView.stop();
-    	subtitleView.hide();
+		subtitleView.show();
+
+		currSubtitleMode = mode;
+		currSubtitlePID  = pid;
+		currSubtitleID1  = id1;
+		currSubtitleID2  = id2;
+
+		if(pm == SUBTITLE_TT)
+			currTeletextPID = pid;
 	}
 
 	/*On program started*/
@@ -171,7 +213,7 @@ abstract public class TVActivity extends Activity
     	currProgramID = prog_id;
 
 		/*Start subtitle*/
-		restartSubtitle();
+		resetSubtitle(SUBTITLE_SUB);
 	}
 
 	/*On program stopped*/
@@ -181,7 +223,8 @@ abstract public class TVActivity extends Activity
 		currProgramID = -1;
 
     	/*Stop subtitle.*/
-    	stopSubtitle();
+    	resetSubtitle(SUBTITLE_SUB);
+    	currTeletextPID = -1;
 	}
 
 	/*On configure entry changed*/
@@ -203,11 +246,16 @@ abstract public class TVActivity extends Activity
 			String lang = val.getString();
 
 			Log.d(TAG, "tv:subtitle:language changed -> "+lang);
-			restartSubtitle();
+			if(currSubtitleMode == SUBTITLE_SUB){
+				resetSubtitle(SUBTITLE_SUB);
+			}
 		}else if(name.equals("tv:teletext:language")){
 			String lang = val.getString();
 
 			Log.d(TAG, "tv:teletext:language changed -> "+lang);
+			if(currSubtitleMode == SUBTITLE_TT){
+				resetSubtitle(SUBTITLE_TT);
+			}
 		}
 	}
 
@@ -504,6 +552,14 @@ abstract public class TVActivity extends Activity
     	client.seekTo(pos);
     }
 
+	/**
+	 *检测是否正在显示teletext模式下
+	 *@return true表示正在teletext模式下，false表示不在teletext模式下
+	 */
+    public boolean isInTeletextMode(){
+    	return currSubtitleMode==SUBTITLE_TT;
+	}
+
     /**
      *显示Teletext
      */
@@ -511,7 +567,8 @@ abstract public class TVActivity extends Activity
         if(subtitleView == null)
             return;
 
-        stopSubtitle();
+		Log.d(TAG, "show teletext");
+        resetSubtitle(SUBTITLE_TT);
     }
 
     /**
@@ -521,7 +578,8 @@ abstract public class TVActivity extends Activity
         if(subtitleView == null)
             return;
 
-        restartSubtitle();
+		Log.d(TAG, "hide teletext");
+        resetSubtitle(SUBTITLE_SUB);
     }
 
     /**
@@ -531,6 +589,7 @@ abstract public class TVActivity extends Activity
         if(subtitleView == null)
             return;
 
+		Log.d(TAG, "goto next teletext page");
         subtitleView.nextPage();
     }
 
@@ -541,6 +600,7 @@ abstract public class TVActivity extends Activity
         if(subtitleView == null)
             return;
 
+		Log.d(TAG, "goto next previous page");
         subtitleView.previousPage();
     }
 
