@@ -109,13 +109,15 @@ abstract public class TVActivity extends Activity
        	TVProgram.Subtitle sub;
 
        	sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
-       	if((sub != null) && (sub.getPID() != currSubtitlePID)){
+       	if(sub != null){
        		boolean restart = false;
 
        		switch(sub.getType()){
 				case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
-					if(sub.getCompositionPageID() != currSubtitleID1 || sub.getAncillaryPageID() != currSubtitleID2){
+					if(sub.getPID() != currSubtitlePID || sub.getCompositionPageID() != currSubtitleID1 || sub.getAncillaryPageID() != currSubtitleID2){
 						subtitleView.setSubParams(new TVSubtitleView.DVBSubParams(0, sub.getPID(), sub.getCompositionPageID(), sub.getAncillaryPageID()));
+
+						currSubtitlePID = sub.getPID();
 						currSubtitleID1 = sub.getCompositionPageID();
 						currSubtitleID2 = sub.getAncillaryPageID();
 						restart = true;
@@ -127,10 +129,12 @@ abstract public class TVActivity extends Activity
 					mag = sub.getMagazineNumber();
 					pg  = sub.getPageNumber();
 
-					if(mag != currSubtitleID1 || pg != currSubtitleID2){
+					if(sub.getPID() != currSubtitlePID || mag != currSubtitleID1 || pg != currSubtitleID2){
 						pgno = (mag==0) ? 800 : mag*100;
 						pgno += pg;
 						subtitleView.setSubParams(new TVSubtitleView.DTVTTParams(0, sub.getPID(), pgno, 0x3F7F));
+
+						currSubtitlePID = sub.getPID();
 						currSubtitleID1 = mag;
 						currSubtitleID2 = pg;
 						restart = true;
@@ -144,7 +148,6 @@ abstract public class TVActivity extends Activity
 				else
 					subtitleView.hide();
 
-				currSubtitlePID = sub.getPID();
 				subtitleView.startSub();
 			}
 		}
@@ -155,6 +158,8 @@ abstract public class TVActivity extends Activity
 			return;
 
 		currSubtitlePID = -1;
+		currSubtitleID1 = -1;
+		currSubtitleID2 = -1;
 		subtitleView.stop();
     	subtitleView.hide();
 	}
