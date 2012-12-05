@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.view.SurfaceHolder;
 import android.graphics.Canvas;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.util.Log;
 import java.lang.StringBuilder;
 import com.amlogic.tvclient.TVClient;
@@ -71,6 +72,7 @@ abstract public class TVActivity extends Activity
             case MSG_CONNECTED:
             	connected = true;
             	initSubtitle();
+            	updateVideoWindow();
                 onConnected();
                 break;
             case MSG_DISCONNECTED:
@@ -341,6 +343,20 @@ abstract public class TVActivity extends Activity
 		registerConfigCallback("tv:teletext:language");
 	}
 
+	private void updateVideoWindow(){
+		if(videoView == null)
+			return;
+
+		if(!connected)
+			return;
+
+		int[] loc = new int[2];
+
+		videoView.getLocationOnScreen(loc);
+
+		client.setVideoWindow(loc[0], loc[1], videoView.getWidth(), videoView.getHeight());
+	}
+
     /**
      *在Activity上创建VideoView和SubtitleView
      */
@@ -353,7 +369,6 @@ abstract public class TVActivity extends Activity
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
             root.addView(subtitleView, 0);
-
             initSubtitle();
         }
 
@@ -363,8 +378,24 @@ abstract public class TVActivity extends Activity
             root.addView(videoView, 0);
             videoView.getHolder().addCallback(surfaceHolderCallback);
             videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE);
+            updateVideoWindow();
         }
     }
+
+	/**
+	 *设定视频窗口的大小
+	 *@param r 窗口矩形
+	 */
+    public void setVideoWindow(Rect r){
+    	if(videoView != null){
+    		videoView.layout(r.left, r.top, r.right, r.bottom);
+            updateVideoWindow();
+		}
+
+		if(subtitleView != null){
+			subtitleView.layout(r.left, r.top, r.right, r.bottom);
+		}
+	}
 
     /**
 	 *计算本地时间

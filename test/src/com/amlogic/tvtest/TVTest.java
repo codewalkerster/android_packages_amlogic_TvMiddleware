@@ -4,6 +4,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.TextView;
 import android.os.Bundle;
+import android.graphics.Rect;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVProgram;
@@ -29,6 +30,8 @@ public class TVTest extends TVActivity{
 		
 		 myTextView   =  (TextView)findViewById(R.id.proname);
 		 myTextView.setText(this.getResources().getString(R.string.warning));
+
+		openVideo();
 	}
 	
 	
@@ -44,7 +47,7 @@ public class TVTest extends TVActivity{
 
 		TVScanParams sp;
 
-		openVideo();
+		setVideoWindow(new Rect(100, 100, 500, 500));
 
 		//setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
 		

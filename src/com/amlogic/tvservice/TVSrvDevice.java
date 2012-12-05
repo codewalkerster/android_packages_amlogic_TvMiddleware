@@ -110,6 +110,8 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         return source;
     }
     
+    public void setVideoWindow(int x, int y, int w, int h){
+	}
     
     public void setFrontend(TVChannelParams params) {
         //native_set_frontend(params);

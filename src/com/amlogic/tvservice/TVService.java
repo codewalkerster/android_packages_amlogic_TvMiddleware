@@ -166,6 +166,10 @@ public class TVService extends Service{
 			}
 		}
 
+		public void setVideoWindow(int x, int y, int w, int h){
+			device.setVideoWindow(x, y, w, h);
+		}
+
 		public long getTime(){
 			return time.getTime();
 		}

@@ -14,6 +14,7 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_device_init();
 	private native void native_device_destroy();
 	private native void native_set_input_source(int src);
+	private native void native_set_video_window(int x, int y, int w, int h);
 	private native void native_set_frontend(TVChannelParams params);
 	private native TVChannelParams native_get_frontend();
 	private native int  native_get_frontend_status();
@@ -61,6 +62,10 @@ abstract public class TVDeviceImpl extends TVDevice{
 
 	public TVConst.SourceInput getCurInputSource(){
 		return curInputSource;
+	}
+
+    public void setVideoWindow(int x, int y, int w, int h){
+    	native_set_video_window(x, y, w, h);
 	}
 
 	public void setFrontend(TVChannelParams params){

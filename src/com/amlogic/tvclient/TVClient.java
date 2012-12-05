@@ -94,6 +94,22 @@ abstract public class TVClient
      */
     abstract public void onMessage(TVMessage msg);
 
+	/**
+	 *设定视频窗口大小
+	 *@param x 左上角X坐标
+	 *@param y 左上角Y坐标
+	 *@param w 窗口宽度
+	 *@param h 窗口高度
+	 */
+	public synchronized void setVideoWindow(int x, int y, int w, int h){
+		if(service != null){
+			try {
+				service.setVideoWindow(x, y, w, h);
+			} catch(RemoteException e) {
+			}
+		}
+	}
+
     /**
      *取TV当前时间(单位为毫秒)
      *@return 返回当前时间(单位为毫秒)

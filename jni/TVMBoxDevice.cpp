@@ -1,8 +1,10 @@
 #include <am_av.h>
 #include <am_dmx.h>
 #include <am_fend_ctrl.h>
+#include <am_misc.h>
 #include <jni.h>
 #include <android/log.h>
+#include <stdio.h>
 
 extern "C" {
 
@@ -205,7 +207,7 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	free(dev);
 }
 
-static void dev_set_input_source(JNIEnv *env, jobject obj, int src)
+static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 {
 	jobject evt;
 
@@ -213,6 +215,15 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, int src)
 	evt = create_event(env, obj, EVENT_SET_INPUT_SOURCE_OK);
 
 	on_event(obj, evt);
+}
+
+static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
+{
+	char buf[64];
+
+	snprintf(buf, sizeof(buf), "%d %d %d %d", x, y, x+w, y+h);
+
+	AM_FileEcho("/sys/class/video/axis", buf);
 }
 
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
@@ -410,6 +421,7 @@ static JNINativeMethod gMethods[] = {
 	{"native_device_init", "()V", (void*)dev_init},
 	{"native_device_destroy", "()V", (void*)dev_destroy},
 	{"native_set_input_source", "(I)V", (void*)dev_set_input_source},
+	{"native_set_video_window", "(IIII)V", (void*)dev_set_video_window},
 	{"native_set_frontend", "(Lcom/amlogic/tvutil/TVChannelParams;)V", (void*)dev_set_frontend},
 	{"native_get_frontend", "()Lcom/amlogic/tvutil/TVChannelParams;", (void*)dev_get_frontend},
 	{"native_get_frontend_status", "()I", (void*)dev_get_frontend_status},

@@ -49,6 +49,8 @@ abstract public class TVDevice{
 
 	abstract public TVConst.SourceInput getCurInputSource();
 
+	abstract public void setVideoWindow(int x, int y, int w, int h);
+
 	abstract public void setFrontend(TVChannelParams params);
 
 	abstract public TVChannelParams getFrontend();

@@ -38,6 +38,9 @@ interface ITVService{
 	//设定当前节目类型
 	void setProgramType(int type);
 
+	//设定视频窗口
+	void setVideoWindow(int x, int y, int w, int h);
+
 	//开始播放
 	void playProgram(in TVPlayParams tp);
 
