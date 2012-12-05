@@ -16,12 +16,13 @@ extern "C" {
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
-    typedef struct {
-        AM_Bool_t dev_open;
-        int       fend_mode;
-        jobject   dev_obj;
-        AM_DMX_Source_t ts_src;
-    } TVDevice;
+typedef struct {
+	AM_Bool_t dev_open;
+	AM_Bool_t in_timeshifting;
+	int       fend_mode;
+	jobject   dev_obj;
+	AM_DMX_Source_t ts_src;
+} TVDevice;
 
 #define FEND_DEV_NO    0
 #define FEND_DEF_MODE  -1
@@ -362,11 +363,32 @@ static void dev_stop_atv()
 
 static void dev_play_dtv(JNIEnv *env, jobject obj, jint vpid, jint vfmt, jint apid, jint afmt)
 {
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return;
+
 	AM_AV_StartTS(AV_DEV_NO, vpid, apid, (AM_AV_VFormat_t)vfmt, (AM_AV_AFormat_t)afmt);
+}
+
+static void dev_switch_dtv_audio(JNIEnv *env, jobject obj, jint apid, jint afmt)
+{
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return;
+
+	if(dev->in_timeshifting){
+		AM_AV_SwitchTimeshiftAudio(AV_DEV_NO, apid, (AM_AV_AFormat_t)afmt);
+	}else{
+		AM_AV_SwitchTSAudio(AV_DEV_NO, apid, (AM_AV_AFormat_t)afmt);
+	}
 }
 
 static void dev_stop_dtv(JNIEnv *env, jobject obj)
 {
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return;
+
 	AM_AV_StopTS(AV_DEV_NO);
 }
 
@@ -381,10 +403,21 @@ static jobject dev_stop_recording(JNIEnv *env, jobject obj)
 
 static void dev_start_timeshifting(JNIEnv *env, jobject obj, jobject params)
 {
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return;
+
+	dev->in_timeshifting = AM_TRUE;
 }
 
 static jobject dev_stop_timeshifting(JNIEnv *env, jobject obj)
 {
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return NULL;
+
+	dev->in_timeshifting = AM_FALSE;
+
 	return NULL;
 }
 
@@ -434,6 +467,7 @@ static JNINativeMethod gMethods[] = {
 	{"native_play_atv", "()V", (void*)dev_play_atv},
 	{"native_stop_atv", "()V", (void*)dev_stop_atv},
 	{"native_play_dtv", "(IIII)V", (void*)dev_play_dtv},
+	{"native_switch_dtv_audio", "(II)V", (void*)dev_switch_dtv_audio},
 	{"native_stop_dtv", "()V", (void*)dev_stop_dtv},
 	{"native_start_recording", "(Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;)V", (void*)dev_start_recording},
 	{"native_stop_recording", "()Lcom/amlogic/tvservice/TVDevice$DTVRecordParams;", (void*)dev_stop_recording},

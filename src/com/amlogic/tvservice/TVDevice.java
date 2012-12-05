@@ -75,6 +75,8 @@ abstract public class TVDevice{
 
 	abstract public void playDTV(int vpid, int vfmt, int apid, int afmt);
 
+	abstract public void switchDTVAudio(int pid, int afmt);
+
 	abstract public void stopDTV();
 
 	abstract public void startRecording(DTVRecordParams params);

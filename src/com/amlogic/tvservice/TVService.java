@@ -23,7 +23,7 @@ import com.amlogic.tvutil.TVChannel;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
-public class TVService extends Service{
+public class TVService extends Service implements TVConfig.Update{
 	private static final String TAG = "TVService";
 
 	/*Message types*/
@@ -45,6 +45,7 @@ public class TVService extends Service{
 	private static final int MSG_EPG_EVENT       = 1964;
 	private static final int MSG_SCAN_EVENT      = 1965;
 	private static final int MSG_SET_PROGRAM_TYPE = 1966;
+	private static final int MSG_CONFIG_CHANGED  = 1967;
 
 
 	final RemoteCallbackList<ITVCallback> callbacks
@@ -315,6 +316,9 @@ public class TVService extends Service{
 				case MSG_SCAN_EVENT:
 					resolveScanEvent((TVScanner.Event)msg.obj);
 					break;
+				case MSG_CONFIG_CHANGED:
+					resolveConfigChanged((String)msg.obj);
+					break;
 			}
 		}
 	};
@@ -367,6 +371,8 @@ public class TVService extends Service{
 	private TVChannelParams channelParams;
 	private int channelID = -1;
 	private int programID = -1;
+	private int programVideoPID = -1;
+	private int programAudioPID = -1;
 	private TVProgramNumber programNum;
 	private boolean programBlocked = false;
 	private boolean channelLocked = false;
@@ -551,7 +557,7 @@ public class TVService extends Service{
 				video = p.getVideo();
 
 				try{
-					String lang = config.getString("player:audio:language");
+					String lang = config.getString("tv:audio:language");
 					audio = p.getAudio(lang);
 					apid = audio.getPID();
 					afmt = audio.getFormat();
@@ -567,6 +573,9 @@ public class TVService extends Service{
 					vpid = video.getPID();
 					vfmt = video.getFormat();
 				}
+
+				programVideoPID = vpid;
+				programAudioPID = apid;
 
 				if(!checkProgramBlock()){
 					Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
@@ -1014,6 +1023,37 @@ public class TVService extends Service{
 		}
 	}
 
+	/*Invoked when configure value changed.*/
+	private void resolveConfigChanged(String name){
+		try{
+			if(name.equals("tv:audio:language")){
+				String lang = config.getString("tv:audio:language");
+
+				Log.d(TAG, "tv:audio:language changed -> "+lang);
+
+				if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+					if(status == TVStatus.STATUS_PLAY_DTV){
+						TVProgram p = TVProgram.selectByID(this, programID);
+						if(p != null){
+							TVProgram.Audio audio;
+							int apid, afmt;
+
+							audio = p.getAudio(lang);
+							apid = audio.getPID();
+							afmt = audio.getFormat();
+
+							if(!checkProgramBlock() && (apid != programAudioPID)){
+								device.switchDTVAudio(apid, afmt);
+								programAudioPID = apid;
+							}
+						}
+					}
+				}
+			}
+		}catch(Exception e){
+		}
+	}
+
 	public IBinder onBind (Intent intent){
 		return mBinder;
 	}
@@ -1038,8 +1078,19 @@ public class TVService extends Service{
 			if(mode == -1)
 				throw new Exception();
 			epgScanner.setSource(0, 0, mode);
+
+			config.registerUpdate("tv:audio:language", this);
 		}catch(Exception e){
-			Log.e(TAG, "get tv:dtv:mode failed");
+			Log.e(TAG, "intialize config failed");
+		}
+
+	}
+	
+	public void onUpdate(String name, TVConfigValue value){
+		try{
+			Message msg = handler.obtainMessage(MSG_CONFIG_CHANGED, name);
+			handler.sendMessage(msg);
+		}catch(Exception e){
 		}
 	}
 

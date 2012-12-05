@@ -112,6 +112,9 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     
     public void setVideoWindow(int x, int y, int w, int h){
 	}
+
+	public void switchDTVAudio(int pid, int afmt){
+	}
     
     public void setFrontend(TVChannelParams params) {
         //native_set_frontend(params);
