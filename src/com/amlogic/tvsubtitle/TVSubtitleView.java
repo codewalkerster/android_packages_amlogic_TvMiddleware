@@ -174,6 +174,7 @@ public class TVSubtitleView extends View {
 				switch(sub_params.mode){
 					case MODE_DTV_TT:
 						native_sub_stop_dtv_tt();
+						native_sub_clear();
 						break;
 					case MODE_DVB_SUB:
 						native_sub_stop_dvb_sub();
