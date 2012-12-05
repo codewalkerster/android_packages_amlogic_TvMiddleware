@@ -466,7 +466,7 @@ public class TVSubtitleView extends View {
 			return;
 		}
 
-		if(play_mode==PLAY_TT || tt_params.mode==MODE_DTV_TT || tt_params.mode==MODE_ATV_TT){
+		if(play_mode==PLAY_TT || sub_params.mode==MODE_DTV_TT || sub_params.mode==MODE_ATV_TT){
 			sr = new Rect(0, 0, 12*41, 10*25);
 		}else{
 			sr = new Rect(0, 0, BUFFER_W, BUFFER_H);
