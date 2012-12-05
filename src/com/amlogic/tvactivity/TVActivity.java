@@ -510,6 +510,8 @@ abstract public class TVActivity extends Activity
     public void ttShow() {
         if(subtitleView == null)
             return;
+
+        stopSubtitle();
     }
 
     /**
@@ -518,6 +520,8 @@ abstract public class TVActivity extends Activity
     public void ttHide() {
         if(subtitleView == null)
             return;
+
+        restartSubtitle();
     }
 
     /**
