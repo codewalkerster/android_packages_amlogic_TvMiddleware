@@ -35,6 +35,7 @@ abstract public class TVActivity extends Activity
 
     private VideoView videoView;
     private TVSubtitleView subtitleView;
+    private boolean connected = false;
     private int currProgramID = -1;
     private int currSubtitlePID = -1;
 
@@ -60,9 +61,12 @@ abstract public class TVActivity extends Activity
             Log.d(TAG, "handle message "+msg.what);
             switch(msg.what) {
             case MSG_CONNECTED:
+            	connected = true;
+            	initSubtitle();
                 onConnected();
                 break;
             case MSG_DISCONNECTED:
+            	connected = false;
                 onDisconnected();
                 break;
             case MSG_MESSAGE:
@@ -248,6 +252,25 @@ abstract public class TVActivity extends Activity
         }
     };
 
+    private void initSubtitle(){
+    	if(subtitleView == null)
+    		return;
+
+    	if(!connected)
+    		return;
+
+		subtitleView.setMargin(
+				getIntConfig("tv:subtitle:margin_left"),
+				getIntConfig("tv:subtitle:margin_top"),
+				getIntConfig("tv:subtitle:margin_right"),
+				getIntConfig("tv:subtitle:margin_bottom"));
+
+		Log.d(TAG, "register subtitle/teletext config callbacks");
+		registerConfigCallback("tv:subtitle:enable");
+		registerConfigCallback("tv:subtitle:language");
+		registerConfigCallback("tv:teletext:language");
+	}
+
     /**
      *在Activity上创建VideoView和SubtitleView
      */
@@ -260,16 +283,8 @@ abstract public class TVActivity extends Activity
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
             root.addView(subtitleView, 0);
-            subtitleView.setMargin(
-            		getIntConfig("tv:subtitle:margin_left"),
-            		getIntConfig("tv:subtitle:margin_top"),
-            		getIntConfig("tv:subtitle:margin_right"),
-            		getIntConfig("tv:subtitle:margin_bottom"));
 
-			Log.d(TAG, "register subtitle/teletext config callbacks");
-        	registerConfigCallback("tv:subtitle:enable");
-        	registerConfigCallback("tv:subtitle:language");
-        	registerConfigCallback("tv:teletext:language");
+            initSubtitle();
         }
 
         if(videoView == null) {
