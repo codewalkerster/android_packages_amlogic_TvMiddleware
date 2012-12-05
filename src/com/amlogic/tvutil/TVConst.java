@@ -277,7 +277,17 @@ public class TVConst
         TVIN_SIG_FMT_CAMERA_1280X720P_30HZ              (0x809),
         TVIN_SIG_FMT_BT601_MAX                          (0x80a),
         TVIN_SIG_FMT_BT601_THRESHOLD                    (0xa00),
-        TVIN_SIG_FMT_MAX,
+        TVIN_SIG_FMT_MAX(0xFFFFFFFF);
+
+        private int val;
+
+        TVInSigFormat(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
     }
 
     // tvin signal status
