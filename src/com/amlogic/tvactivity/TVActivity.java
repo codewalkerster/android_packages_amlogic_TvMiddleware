@@ -235,7 +235,7 @@ abstract public class TVActivity extends Activity
 			boolean v = val.getBoolean();
 
 			Log.d(TAG, "tv:subtitle:enable changed -> "+v);
-			if(subtitleView != null){
+			if(subtitleView != null && currSubtitleMode == SUBTITLE_SUB){
 				if(v){
 					subtitleView.show();
 				}else{
