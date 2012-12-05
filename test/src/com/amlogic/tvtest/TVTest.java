@@ -21,17 +21,17 @@ public class TVTest extends TVActivity{
 	private static final String TAG="TVTest";
 	private int curTvMode = TVScanParams.TV_MODE_ATV;
 	 private TextView  myTextView;
+	 private TextView  myTextView_number;
 	public void onCreate(Bundle savedInstanceState){
 		Log.d(TAG, "onCreate");
 
 		super.onCreate(savedInstanceState);
-
 		setContentView(R.layout.test);
-		
 		 myTextView   =  (TextView)findViewById(R.id.proname);
 		 myTextView.setText(this.getResources().getString(R.string.warning));
 
 		openVideo();
+		 myTextView_number  =  (TextView)findViewById(R.id.proname1);
 	}
 	
 	
@@ -52,20 +52,13 @@ public class TVTest extends TVActivity{
 		//setInputSource(TVConst.SourceType.SOURCE_TYPE_ATV);
 		
 		if (curTvMode == TVScanParams.TV_MODE_ATV) {
-			//sp = TVScanParams.atvManualScanParams(0, 144250000, 1);
-			//sp = TVScanParams.atvAutoScanParams(0);
-		//	Log.d(TAG, "Start Scan...");
-			//startScan(sp);
-			
-			
+		
 		} else {
 			//sp = TVScanParams.dtvAllbandScanParams(0, TVChannelParams.MODE_QAM);
 			//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
-			sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
+			//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
 		}
-		
-		
-		
+	
 		//Log.d(TAG, "Start Scan...");
 		//startScan(sp);
 	}
@@ -102,31 +95,19 @@ public class TVTest extends TVActivity{
 		}		
 	}
 
-	int count_dtv = 3;
+
 	  public boolean onKeyDown(int keyCode, KeyEvent event) {
 		  TVProgram prog  = null;
+		  TVScanParams sp;	
 	        switch (keyCode) {
-	        case KeyEvent.KEYCODE_0:
-            	Log.d(TAG, "00000000000000000000000000000000000 "+count_dtv);
-            	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(count_dtv));
-				if(prog!=null){	
-					playProgram(new TVProgramNumber(count_dtv));
-
-					Log.d(TAG, "%%%00000000000000000000000000000000 ");
-					showProgramEPG(prog);
-				}
-				count_dtv++;
+	           case KeyEvent.KEYCODE_0:
+            	 ttGotoNextPage();
 				break;
 	            case KeyEvent.KEYCODE_1:
-	            	Log.d(TAG, "1111111111111111111111111111111111 "+count_dtv);
-	            	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(count_dtv));
-					if(prog!=null){	
-						playProgram(new TVProgramNumber(count_dtv));
-						
-						Log.d(TAG, "%%%1111111111111111111111111111111111 ");
-						showProgramEPG(prog);
-					}
-					count_dtv--;
+	            if(!isInTeletextMode())
+		    		 	 ttShow();
+					 else
+					 	 ttHide();
 	                break;
 	            case KeyEvent.KEYCODE_2:
 	            	 setInputSource(TVConst.SourceInput.SOURCE_HDMI1);
@@ -141,8 +122,7 @@ public class TVTest extends TVActivity{
 		         	
 		             break;
 	    		case KeyEvent.KEYCODE_5:
-	    			 //setInputSource(TVConst.SourceInput.SOURCE_AV1);
-	    			 ttGotoNextPage();
+	    			 setInputSource(TVConst.SourceInput.SOURCE_AV1);
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_6:
@@ -155,31 +135,12 @@ public class TVTest extends TVActivity{
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_7:
-	    			//Log.v(TAG,"setInputSource SOURCE_ATV)");
-	    			 //setInputSource(TVConst.SourceInput.SOURCE_ATV);
-		         	 //prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(10));
-		    		 //	if(prog!=null){	
-		    		 //		playProgram(new TVProgramNumber(10));
-		    		 //		Log.d(TAG, "22222222222222222222222222222222222 ");
-		    		 //	}
-		    		 if(!isInTeletextMode())
-		    		 	 ttShow();
-					 else
-					 	 ttHide();
+	    			Log.v(TAG,"setInputSource SOURCE_ATV)");
+	    			 setInputSource(TVConst.SourceInput.SOURCE_ATV);
+		         	
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_8:
-	    			 /*
-	    			Log.v(TAG," prepare to play atv");
-		         	 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(1));
-		    			if(prog!=null){	
-		    				Log.d(TAG, "22222222222222222222222222222222222 ");
-		    				playProgram(new TVProgramNumber(1));
-		    				
-		    			}
-		    			//TVConst.SourceInput a  = this.getCurInputSource();
-		    			//Log.d(TAG, " ************" + a.ordinal());
-		         	*/
 		         	 boolean sub = getBooleanConfig("tv:subtitle:enable");
 		         	 Log.d(TAG, "reset tv:subtitle:enable "+ sub + "->"+!sub);
 		         	 sub = !sub;
@@ -188,27 +149,35 @@ public class TVTest extends TVActivity{
 		             
 	    		 case KeyEvent.KEYCODE_9:
 	    				setInputSource(TVConst.SourceInput.SOURCE_DTV);
-		            	//TVScanParams sp;
-		            	//sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(259000000, TVChannelParams.MODULATION_QAM_64, 6875000));
-		            	//startScan(sp);
 		            	break;
 		         case KeyEvent.KEYCODE_DPAD_LEFT:
-		         		channelUp();
-		         		break;
+		        	
+		        	 sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(435000000, TVChannelParams.MODULATION_QAM_64, 6875000));
+		        	 Log.d(TAG, "Start Scan...dvb-c");
+	    			 startScan(sp);
+		        	 break;
 		         case KeyEvent.KEYCODE_DPAD_RIGHT:
-		         		channelDown();
-		         		break;
+		        	 sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
+		        	 Log.d(TAG, "Start Scan...dvb-t");
+					 startScan(sp);
+		        	 break;
 	    		 case KeyEvent.KEYCODE_DPAD_UP:
-	    			    TVScanParams sp;	
-	    			    //sp = TVScanParams.atvAutoScanParams(0);
-	    			    sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
+	    			    sp = TVScanParams.atvAutoScanParams(0);
+	    			    //sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbtParams(474000000, TVChannelParams.BANDWIDTH_8_MHZ));
 	    			    //sp = TVScanParams.dtvManualScanParams(0, TVChannelParams.dvbcParams(474000000, TVChannelParams.MODULATION_QAM_64, 6875000));
-	    				Log.d(TAG, "Start Scan...");
+	    				Log.d(TAG, "Start Scan...atv");
 	    				startScan(sp);
 	    			 break;
 	    		 case KeyEvent.KEYCODE_DPAD_DOWN:
 	    			 	Log.d(TAG, "stopScan");
 	 					stopScan(true);
+	    			 break;
+	    			 
+	    		 case KeyEvent.KEYCODE_CHANNEL_UP:
+	    			 	mychannelUp();
+	    			 break;
+	    		 case KeyEvent.KEYCODE_CHANNEL_DOWN:
+	    				mychannelDown();
 	    			 break;
 	    	}
 
@@ -217,6 +186,74 @@ public class TVTest extends TVActivity{
 	        return super.onKeyDown(keyCode, event);
 	    }
 	  
+	  int dtv_prog_number = 0; 
+	  int atv_prog_number = 0;
+	  void mychannelUp(){
+		  Log.d(TAG, "channelUp");
+			TVConst.SourceInput sinput  = this.getCurInputSource();
+			Log.d(TAG, " ************" + sinput.ordinal());
+			
+			if(sinput == TVConst.SourceInput.SOURCE_DTV){
+				TVProgram prog  = null;
+				Log.d(TAG, "mychannelUp "+dtv_prog_number);
+				prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(dtv_prog_number));
+				if(prog!=null){	
+					playProgram(new TVProgramNumber(dtv_prog_number));
+					Log.d(TAG, "************play program");
+					showProgramEPG(prog);
+				}
+				myTextView_number.setText(" "+ sinput.ordinal() + dtv_prog_number);
+				dtv_prog_number ++ ;
+			}else
+			if(sinput == TVConst.SourceInput.SOURCE_ATV){
+				TVProgram prog  = null;
+				Log.d(TAG, "mychannelUp "+atv_prog_number);
+				prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(atv_prog_number));
+				if(prog!=null){	
+					playProgram(new TVProgramNumber(atv_prog_number));
+					Log.d(TAG, "************play program");
+				}
+				myTextView_number.setText(" "+ sinput.ordinal() + atv_prog_number);
+				atv_prog_number ++ ;
+			}
+			
+		
+	  }
+	  
+	  void mychannelDown(){
+		  Log.d(TAG, "mychannelDown");
+			TVConst.SourceInput sinput  = this.getCurInputSource();
+			Log.d(TAG, " ************" + sinput.ordinal());
+			
+			if(sinput == TVConst.SourceInput.SOURCE_DTV){
+				
+				TVProgram prog  = null;
+				Log.d(TAG, "mychannelUp "+dtv_prog_number);
+				prog = TVProgram.selectByNumber(this, TVProgram.TYPE_TV, new TVProgramNumber(dtv_prog_number));
+				if(prog!=null){	
+					playProgram(new TVProgramNumber(dtv_prog_number));
+					Log.d(TAG, "************play program");
+					showProgramEPG(prog);
+				}
+				myTextView_number.setText(" "+ sinput.ordinal() + dtv_prog_number);
+				if(dtv_prog_number > 1)
+				dtv_prog_number -- ;
+			}else
+			if(sinput == TVConst.SourceInput.SOURCE_ATV){
+				TVProgram prog  = null;
+				Log.d(TAG, "mychannelUp "+atv_prog_number);
+				prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(atv_prog_number));
+				if(prog!=null){	
+					playProgram(new TVProgramNumber(atv_prog_number));
+					Log.d(TAG, "%%%00000000000000000000000000000000 ");
+					showProgramEPG(prog);
+				}
+				myTextView_number.setText(" "+ sinput.ordinal() + atv_prog_number);
+				if(atv_prog_number > 1)
+					atv_prog_number -- ;
+			}
+	  }
+ 
 	public void onMessage(TVMessage msg){
 		Log.d(TAG, "message "+msg.getType());
 		switch (msg.getType()) {

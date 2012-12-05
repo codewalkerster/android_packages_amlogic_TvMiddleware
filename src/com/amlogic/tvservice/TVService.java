@@ -826,7 +826,18 @@ public class TVService extends Service{
 		stopScan(false);
 
 		channelParams = null;
-		
+		if(sp.getTvMode() == TVScanParams.TV_MODE_ATV){
+		//stop_tv() and change of source  
+        //close tvin device and wait for finish 
+			device.stopATV();
+	        reqInputSource = TVConst.SourceInput.SOURCE_MPEG;
+	        try {
+	               Thread.sleep(2000);
+		    } catch (InterruptedException e) {
+				   // TODO Auto-generated catch block
+				   e.printStackTrace();
+		    }
+		}
 		synchronized(this){
 			device.freeFrontend();
 			isScanning = true;
