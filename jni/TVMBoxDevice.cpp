@@ -52,6 +52,7 @@ static jfieldID  gChanParamsSymID;
 static jfieldID  gChanParamsBWID;
 static jfieldID  gEventFEParamsID;
 static jfieldID  gEventFEStatusID;
+static jfieldID  gEventSourceID;
 
 static TVDevice* get_dev(JNIEnv *env, jobject obj)
 {
@@ -214,6 +215,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 
 	LOGE("dev_set_input_source %d", src);
 	evt = create_event(env, obj, EVENT_SET_INPUT_SOURCE_OK);
+
+	env->SetIntField(evt, gEventSourceID, src);
 
 	on_event(obj, evt);
 }
@@ -515,6 +518,7 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gEventInitID      = env->GetMethodID(gEventClass, "<init>", "(Lcom/amlogic/tvservice/TVDevice;I)V");
 	gEventFEParamsID  = env->GetFieldID(gEventClass, "feParams", "Lcom/amlogic/tvutil/TVChannelParams;");
 	gEventFEStatusID  = env->GetFieldID(gEventClass, "feStatus", "I");
+	gEventSourceID    = env->GetFieldID(gEventClass, "source", "I");
 	gChanParamsClass  = env->FindClass("com/amlogic/tvutil/TVChannelParams");
 	gChanParamsClass  = (jclass)env->NewGlobalRef((jobject)gChanParamsClass);
 	gChanParamsModeID = env->GetFieldID(gChanParamsClass, "mode", "I");

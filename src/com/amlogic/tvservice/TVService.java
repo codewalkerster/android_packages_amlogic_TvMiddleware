@@ -922,41 +922,51 @@ public class TVService extends Service implements TVConfig.Update{
 
 	/*Solve the events from the device.*/
 	private void resolveDeviceEvent(TVDevice.Event event){
+		TVConst.SourceInput source;
+
 		switch(event.type){
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_OK:
-				Log.e(TAG, "set input source to "+reqInputSource.name()+" ok");
-				inputSource = reqInputSource;
-				if(isInTVMode()){
-					if(status == TVStatus.STATUS_SET_INPUT_SOURCE) {
-						TVProgram p = null;
+				source = TVConst.SourceInput.values()[event.source];
 
-						if(inputSource == TVConst.SourceInput.SOURCE_DTV){
-							if(dtvTVPlayParams == null && dtvRadioPlayParams == null){
-								/*Get a valid program*/
-								p = TVProgram.selectFirstValid(this, TVProgram.TYPE_DTV);
-								if(p != null){
-									if(p.getType() == TVProgram.TYPE_TV)
-										dtvTVPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
-									else
-										dtvRadioPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+				Log.e(TAG, "set input source to "+source.name()+" ok");
+				if(source == reqInputSource){
+					inputSource = reqInputSource;
+					if(isInTVMode()){
+						if(status == TVStatus.STATUS_SET_INPUT_SOURCE) {
+							TVProgram p = null;
+
+							if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+								if(dtvTVPlayParams == null && dtvRadioPlayParams == null){
+									/*Get a valid program*/
+									p = TVProgram.selectFirstValid(this, TVProgram.TYPE_DTV);
+									if(p != null){
+										if(p.getType() == TVProgram.TYPE_TV)
+											dtvTVPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+										else
+											dtvRadioPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+									}
+								}
+							}else if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+								if(atvPlayParams == null){
+									/*Get a valid program*/
+									p = TVProgram.selectFirstValid(this, TVProgram.TYPE_ATV);
+									if(p != null)
+										atvPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
 								}
 							}
-						}else if(inputSource == TVConst.SourceInput.SOURCE_ATV){
-							if(atvPlayParams == null){
-								/*Get a valid program*/
-								p = TVProgram.selectFirstValid(this, TVProgram.TYPE_ATV);
-								if(p != null)
-									atvPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
-							}
-						}
 
-						/*Play program*/
-						playCurrentProgram();
+							/*Play program*/
+							playCurrentProgram();
+						}
 					}
 				}
+				/*Send message*/
+				sendMessage(TVMessage.inputSourceChanged(event.source));
 				break;
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_FAILED:
-				Log.e(TAG, "set input source to "+reqInputSource.name()+" failed");
+				source = TVConst.SourceInput.values()[event.source];
+
+				Log.e(TAG, "set input source to "+source.name()+" failed");
 				break;
 			case TVDevice.Event.EVENT_FRONTEND:
 				if(isInTVMode()){

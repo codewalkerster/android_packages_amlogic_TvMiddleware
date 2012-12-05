@@ -36,6 +36,7 @@ abstract public class TVDevice{
 		public TVChannelParams feParams;
 		public int             feStatus;
 		public DTVRecordParams recParams;
+		public int             source;
 
 		public Event(int type){
 			this.type = type;

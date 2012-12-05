@@ -45,6 +45,8 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_TIME_UPDATE       = 17;
 	/**事件信息更新*/
 	public static final int TYPE_EVENT_UPDATE      = 18;
+	/**输入源切换*/
+	public static final int TYPE_INPUT_SOURCE_CHANGED = 19;
 
 	private static final String TAG="TVMessage";
 	private int type;
@@ -60,6 +62,7 @@ public class TVMessage implements Parcelable{
 	private int scanCurChanLocked;	// 0 unlocked, 1 locked
 	private String scanProgramName; // Maybe null to indicate that no new program in this update
 	private int scanProgramType;
+	private int inputSource;
 
 	private int flags;
 	private static final int FLAG_PROGRAM_ID = 1;
@@ -67,6 +70,7 @@ public class TVMessage implements Parcelable{
 	private static final int FLAG_BOOKING_ID = 4;
 	private static final int FLAG_CONFIG     = 8;
 	private static final int FLAG_SCAN       = 16;
+	private static final int FLAG_INPUT_SOURCE = 32;
 
 	public static final Parcelable.Creator<TVMessage> CREATOR = new Parcelable.Creator<TVMessage>(){
 		public TVMessage createFromParcel(Parcel in) {
@@ -90,6 +94,9 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_CONFIG) != 0){
 			cfgName  = in.readString();
 			cfgValue = new TVConfigValue(in);
+		}
+		if((flags & FLAG_INPUT_SOURCE) != 0){
+			inputSource = in.readInt();
 		}
 		if ((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS) {
 			scanProgress = in.readInt();
@@ -116,6 +123,10 @@ public class TVMessage implements Parcelable{
 			dest.writeString(cfgName);
 			cfgValue.writeToParcel(dest, flag);
 		}
+		if((flags & FLAG_INPUT_SOURCE) != 0){
+			dest.writeInt(inputSource);
+		}
+
 		if((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS){
 			dest.writeInt(scanProgress);
 			dest.writeInt(scanTotalChanCount);
@@ -493,6 +504,16 @@ public class TVMessage implements Parcelable{
 	public static TVMessage eventUpdate(){
 		TVMessage msg = new TVMessage();
 		msg.type = TYPE_EVENT_UPDATE;
+
+		return msg;
+	}
+
+	public static TVMessage inputSourceChanged(int src){
+		TVMessage msg = new TVMessage();
+
+		msg.type = TYPE_INPUT_SOURCE_CHANGED;
+		msg.flags = FLAG_INPUT_SOURCE;
+		msg.inputSource = src;
 
 		return msg;
 	}
