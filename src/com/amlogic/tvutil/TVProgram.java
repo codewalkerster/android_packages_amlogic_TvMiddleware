@@ -771,11 +771,37 @@ public class TVProgram{
 	}
 
 	/**
+	 *取得音频总数
+	 *@return 返回音频总数
+	 */
+	public int getAudioCount(){
+		if(audioes == null)
+			return 0;
+
+		return audioes.length;
+	}
+
+	/**
 	 *取得Program音频相关信息
 	 *@return 返回音频相关信息
 	 */
 	public Audio getAudio(){
 		return getAudio(null);
+	}
+
+	/**
+	 *取得Program音频相关信息
+	 *@param id 音频ID
+	 *@return 返回音频相关信息
+	 */
+	public Audio getAudio(int id){
+		if(audioes==null || audioes.length==0)
+			return null;
+
+		if(id >= audioes.length)
+			id = 0;
+
+		return audioes[id];
 	}
 
 	/**
@@ -799,22 +825,7 @@ public class TVProgram{
 		return audioes[0];
 	}
 
-	/**
-	 *取得Program字幕相关信息
-	 *@return 返回字幕相关信息
-	 */
-	public Subtitle getSubtitle(){
-		return getSubtitle(null);
-	}
-
-	/**
-	 *取得Program字幕相关信息
-	 *@param lang 字幕语言
-	 *@return 返回字幕相关信息
-	 */
-	public Subtitle getSubtitle(String lang){
-		int i;
-
+	private void selectSubtitle(){
 		if(subtitles==null){
 			String cmd1, cmd2;
 			Cursor c1, c2;
@@ -893,8 +904,55 @@ public class TVProgram{
 				}
 			}
 		}
+	}
+
+	/**
+	 *取得字幕总数
+	 *@return 返回字幕总数
+	 */
+	public int getSubtitleCount(){
+		if(subtitles == null)
+			return 0;
+
+		return subtitles.length;
+	}
+
+	/**
+	 *取得Program字幕相关信息
+	 *@return 返回字幕相关信息
+	 */
+	public Subtitle getSubtitle(){
+		return getSubtitle(null);
+	}
+
+	/**
+	 *取得Program字幕相关信息
+	 *@param id 字幕ID
+	 *@return 返回字幕相关信息
+	 */
+	public Subtitle getSubtitle(int id){
+		selectSubtitle();
 
 		if(subtitles==null)
+			return null;
+
+		if(id >= subtitles.length)
+			id = 0;
+
+		return subtitles[0];
+	}
+
+	/**
+	 *取得Program字幕相关信息
+	 *@param lang 字幕语言
+	 *@return 返回字幕相关信息
+	 */
+	public Subtitle getSubtitle(String lang){
+		int i;
+
+		selectSubtitle();
+
+		if(subtitles==null || subtitles.length==0)
 			return null;
 
 		if(lang!=null){
@@ -907,22 +965,7 @@ public class TVProgram{
 		return subtitles[0];
 	}
 
-	/**
-	 *取得Program teletext图文相关信息
-	 *@return 返回teletext相关信息
-	 */
-	public Teletext getTeletext(){
-		return getTeletext(null);
-	}
-
-	/**
-	 *取得Program teletext图文相关信息
-	 *@param lang Teletext语言
-	 *@return 返回teletext相关信息
-	 */
-	public Teletext getTeletext(String lang){
-		int i;
-
+	private void selectTeletext(){
 		if(teletexts==null){
 			String cmd;
 			Cursor c;
@@ -961,8 +1004,55 @@ public class TVProgram{
 				c.close();
 			}
 		}
+	}
 
-		if(teletexts==null)
+	/**
+	 *取得图文信息总数
+	 *@return 返回图文信息总数
+	 */
+	public int getTeletextCount(){
+		if(teletexts == null)
+			return 0;
+
+		return teletexts.length;
+	}
+
+	/**
+	 *取得Program teletext图文相关信息
+	 *@return 返回teletext相关信息
+	 */
+	public Teletext getTeletext(){
+		return getTeletext(null);
+	}
+
+	/**
+	 *取得Program teletext图文相关信息
+	 *@param id 图文ID
+	 *@return 返回teletext相关信息
+	 */
+	public Teletext getTeletext(int id){
+		selectTeletext();
+
+		if(teletexts == null)
+			return null;
+
+		if(id >= teletexts.length)
+			id = 0;
+
+		return teletexts[id];
+	}
+
+	/**
+	 *取得Program teletext图文相关信息
+	 *@param lang Teletext语言
+	 *@return 返回teletext相关信息
+	 */
+	public Teletext getTeletext(String lang){
+		int i;
+
+		selectTeletext();
+
+		if(teletexts==null || teletexts.length==0)
 			return null;
 
 		if(lang!=null){

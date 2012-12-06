@@ -107,7 +107,11 @@ abstract public class TVActivity extends Activity
         super.onDestroy();
     }
 
-    private void resetSubtitle(int mode){
+	private void resetSubtitle(int mode){
+		resetSubtitle(mode, -1);
+	}
+
+    private void resetSubtitle(int mode, int sub_id){
 		if(subtitleView == null)
 			return;
 
@@ -132,7 +136,14 @@ abstract public class TVActivity extends Activity
 		int pid = -1, id1 = -1, id2 = -1, pm = -1;
 
 		if(mode == SUBTITLE_SUB){
-    		TVProgram.Subtitle sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+    		TVProgram.Subtitle sub;
+    		
+    		if(sub_id >= 0){
+    			sub = prog.getSubtitle(sub_id);
+			}else{
+    			sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+			}
+
     		if(sub == null)
     			return;
 
@@ -151,7 +162,14 @@ abstract public class TVActivity extends Activity
 					break;
 			}
 		}else if(mode == SUBTITLE_TT){
-			TVProgram.Teletext tt = prog.getTeletext(getStringConfig("tv:teletext:language"));
+			TVProgram.Teletext tt;
+			
+			if(sub_id >= 0){
+				tt = prog.getTeletext(sub_id);
+			}else{
+				tt = prog.getTeletext(getStringConfig("tv:teletext:language"));
+			}
+
 			if(tt == null)
 				return;
 
@@ -249,14 +267,14 @@ abstract public class TVActivity extends Activity
 
 			Log.d(TAG, "tv:subtitle:language changed -> "+lang);
 			if(currSubtitleMode == SUBTITLE_SUB){
-				resetSubtitle(SUBTITLE_SUB);
+				//resetSubtitle(SUBTITLE_SUB);
 			}
 		}else if(name.equals("tv:teletext:language")){
 			String lang = val.getString();
 
 			Log.d(TAG, "tv:teletext:language changed -> "+lang);
 			if(currSubtitleMode == SUBTITLE_TT){
-				resetSubtitle(SUBTITLE_TT);
+				//resetSubtitle(SUBTITLE_TT);
 			}
 		}
 	}
@@ -443,7 +461,7 @@ abstract public class TVActivity extends Activity
      *得到当前信号源
      *@return 返回当前信号源
      */
-    public TVConst.SourceInput   getCurInputSource(){
+    public TVConst.SourceInput getCurInputSource(){
     	return client.getCurInputSource();
     }
 
@@ -461,6 +479,24 @@ abstract public class TVActivity extends Activity
     public void stopPlaying() {
         client.stopPlaying();
     }
+
+	/**
+	 *切换字幕
+	 *@param id 字幕ID
+	 */
+    public void switchSubtitle(int id){
+    	if(currSubtitleMode == SUBTITLE_SUB){
+    		resetSubtitle(id);
+		}
+	}
+
+	/**
+	 *切换音频
+	 *@param id 音频ID
+	 */
+	public void switchAudio(int id){
+		client.switchAudio(id);
+	}
 
     /**
      *开始时移播放

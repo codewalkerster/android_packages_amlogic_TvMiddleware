@@ -47,6 +47,9 @@ interface ITVService{
 	//停止播放
 	void stopPlaying();
 
+	//切换音频
+	void switchAudio(int id);
+
 	//开始时移播放
 	void startTimeshifting();
 

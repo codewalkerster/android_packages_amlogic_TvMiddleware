@@ -46,7 +46,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_SCAN_EVENT      = 1965;
 	private static final int MSG_SET_PROGRAM_TYPE = 1966;
 	private static final int MSG_CONFIG_CHANGED  = 1967;
-
+	private static final int MSG_SWITCH_AUDIO    = 1968;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -199,6 +199,11 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 
+		public void switchAudio(int id){
+			Message msg = handler.obtainMessage(MSG_SWITCH_AUDIO, new Integer(id));
+			handler.sendMessage(msg);
+		}
+
 		public void startTimeshifting(){
 			Message msg = handler.obtainMessage(MSG_START_TIMESHIFTING);
                         handler.sendMessage(msg);
@@ -318,6 +323,9 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_CONFIG_CHANGED:
 					resolveConfigChanged((String)msg.obj);
+					break;
+				case MSG_SWITCH_AUDIO:
+					resolveSwitchAudio((Integer)msg.obj);
 					break;
 			}
 		}
@@ -1052,7 +1060,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 				Log.d(TAG, "tv:audio:language changed -> "+lang);
 
-				if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+				/*if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 					if(status == TVStatus.STATUS_PLAY_DTV){
 						TVProgram p = TVProgram.selectByID(this, programID);
 						if(p != null){
@@ -1060,18 +1068,44 @@ public class TVService extends Service implements TVConfig.Update{
 							int apid, afmt;
 
 							audio = p.getAudio(lang);
-							apid = audio.getPID();
-							afmt = audio.getFormat();
+							if(audio != null){
+								apid = audio.getPID();
+								afmt = audio.getFormat();
 
-							if(!checkProgramBlock() && (apid != programAudioPID)){
-								device.switchDTVAudio(apid, afmt);
-								programAudioPID = apid;
+								if(!checkProgramBlock() && (apid != programAudioPID)){
+									device.switchDTVAudio(apid, afmt);
+									programAudioPID = apid;
+								}
 							}
+						}
+					}
+				}*/
+			}
+		}catch(Exception e){
+		}
+	}
+
+	/*Switch audio*/
+	private void resolveSwitchAudio(int id){
+		if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+			if(status == TVStatus.STATUS_PLAY_DTV){
+				TVProgram p = TVProgram.selectByID(this, programID);
+				if(p != null){
+					TVProgram.Audio audio;
+					int apid, afmt;
+
+					audio = p.getAudio(id);
+					if(audio != null){
+						apid = audio.getPID();
+						afmt = audio.getFormat();
+
+						if(!checkProgramBlock() && (apid != programAudioPID)){
+							device.switchDTVAudio(apid, afmt);
+							programAudioPID = apid;
 						}
 					}
 				}
 			}
-		}catch(Exception e){
 		}
 	}
 

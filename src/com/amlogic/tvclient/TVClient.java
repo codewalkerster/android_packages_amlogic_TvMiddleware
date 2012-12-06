@@ -264,6 +264,19 @@ abstract public class TVClient
         }
     }
 
+	/**
+	 *切换音频
+	 *@param id 音频ID
+	 */
+    public synchronized void switchAudio(int id){
+    	if(service != null) {
+            try {
+                service.switchAudio(id);
+            } catch(RemoteException e) {
+            }
+        }
+	}
+
     /**
      *开始时移播放
      */
