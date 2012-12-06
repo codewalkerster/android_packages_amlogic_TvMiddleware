@@ -2,6 +2,8 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+include $(ANDROID_BUILD_TOP)/device/amlogic/$(TARGET_PRODUCT)/BoardConfig.mk
+
 LOCAL_SRC_FILES := $(call all-java-files-under, src/com/amlogic/tvutil)
 LOCAL_SRC_FILES += $(call all-java-files-under, src/com/amlogic/tvclient)
 LOCAL_SRC_FILES += $(call all-java-files-under, src/com/amlogic/tvsubtitle)
@@ -47,6 +49,8 @@ intermediates := $(call local-intermediates-dir, COMMON)
 GEN_PATH := $(intermediates)/src/src/com/amlogic/tvservice
 GEN := $(GEN_PATH)/TVDeviceImpl.java
 GEN_SRC_PATH := $(LOCAL_PATH)/src/com/amlogic/tvservice
+
+
 
 #BOARD_HAVE_TV := true
 ifeq ($(BOARD_HAVE_TV), true)
