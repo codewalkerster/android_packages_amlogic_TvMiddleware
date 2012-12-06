@@ -179,13 +179,13 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         //native_play_atv();
         tv.StartTV((int)TVConst.SourceInput.SOURCE_ATV.ordinal(),  0 , 0 , 0 , 0);
     }
-
-    public void stopATV() {
+	
+	public void stopATV() {
         //native_stop_atv();
-        Log.v(TAG,"stopATV");
-        tv.StopTV((int)TVConst.SourceInput.SOURCE_ATV.ordinal());
+        Log.v(TAG,"temp not handle stop atv");
+        //tv.StopTV((int)TVConst.SourceInput.SOURCE_ATV.ordinal());
     }
-
+	
     public void playDTV(int vpid, int vfmt, int apid, int afmt) {
         //native_play_dtv(vpid, vfmt, apid, afmt);
         Log.v(TAG,"SourceInput SOURCE_DTV" + (int)TVConst.SourceInput.SOURCE_DTV.ordinal());
