@@ -863,8 +863,8 @@ public class TVService extends Service implements TVConfig.Update{
 		synchronized(this){
 			isScanning = false;
 		}
-
-		playCurrentProgram();
+		//temp cancel playCurrentProgram();
+		//playCurrentProgram();
 	}
 
 	/*Start recording.*/

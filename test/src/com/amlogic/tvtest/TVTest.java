@@ -4,7 +4,9 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.TextView;
 import android.os.Bundle;
-import android.graphics.Rect;
+import android.os.Message;
+
+import com.amlogic.tvservice.TVDevice;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVProgram;
@@ -22,6 +24,9 @@ public class TVTest extends TVActivity{
 	private int curTvMode = TVScanParams.TV_MODE_ATV;
 	 private TextView  myTextView;
 	 private TextView  myTextView_number;
+	 
+	 TVPlayer tvplayer ;
+			 
 	public void onCreate(Bundle savedInstanceState){
 		Log.d(TAG, "onCreate");
 
@@ -29,9 +34,17 @@ public class TVTest extends TVActivity{
 		setContentView(R.layout.test);
 		 myTextView   =  (TextView)findViewById(R.id.proname);
 		 myTextView.setText(this.getResources().getString(R.string.warning));
-
-		openVideo();
+		 
 		 myTextView_number  =  (TextView)findViewById(R.id.proname1);
+		 
+		 tvplayer = new TVPlayer(){
+			@Override
+			public void onEvent(Event event) {
+				// TODO Auto-generated method stub
+				
+			}
+			};
+		 
 	}
 	
 	
@@ -44,7 +57,7 @@ public class TVTest extends TVActivity{
 
 	public void onConnected(){
 		Log.d(TAG, "connected");
-
+		openVideo();
 		TVScanParams sp;
 
 		setVideoWindow(new Rect(100, 100, 500, 500));
@@ -136,8 +149,8 @@ public class TVTest extends TVActivity{
 		             
 	    		case KeyEvent.KEYCODE_7:
 	    			Log.v(TAG,"setInputSource SOURCE_ATV)");
-	    			 setInputSource(TVConst.SourceInput.SOURCE_ATV);
-		         	
+	    			 //setInputSource(TVConst.SourceInput.SOURCE_ATV);
+	    			 tvplayer.setInputSource(TVConst.SourceInput.SOURCE_ATV);
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_8:
@@ -210,7 +223,10 @@ public class TVTest extends TVActivity{
 				Log.d(TAG, "mychannelUp "+atv_prog_number);
 				prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(atv_prog_number));
 				if(prog!=null){	
-					playProgram(new TVProgramNumber(atv_prog_number));
+					//playProgram(new TVProgramNumber(atv_prog_number));
+					
+					TVChannelParams tvcParams =  TVChannelParams.analogParams(prog.getChannel().getParams().getFrequency(),0,0);
+					tvplayer.setFrontend(tvcParams);
 					Log.d(TAG, "************play program");
 				}
 				myTextView_number.setText(" "+ sinput.ordinal() + atv_prog_number);
@@ -244,9 +260,9 @@ public class TVTest extends TVActivity{
 				Log.d(TAG, "mychannelUp "+atv_prog_number);
 				prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(atv_prog_number));
 				if(prog!=null){	
-					playProgram(new TVProgramNumber(atv_prog_number));
-					Log.d(TAG, "%%%00000000000000000000000000000000 ");
-					showProgramEPG(prog);
+					TVChannelParams tvcParams =  TVChannelParams.analogParams(prog.getChannel().getParams().getFrequency(),0,0);
+					tvplayer.setFrontend(tvcParams);
+					Log.d(TAG, "************play program");
 				}
 				myTextView_number.setText(" "+ sinput.ordinal() + atv_prog_number);
 				if(atv_prog_number > 1)
