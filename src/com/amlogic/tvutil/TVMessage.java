@@ -153,6 +153,9 @@ public class TVMessage implements Parcelable{
 		return type;
 	}
 
+	public int getSource(){
+		return inputSource;
+	}
 	/**
 	 *取得消息对应服务记录ID
 	 *@return 返回服务记录ID
