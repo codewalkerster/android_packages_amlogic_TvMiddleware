@@ -289,6 +289,7 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.v(TAG,"onSourceSwitchStatusChange:  " + input.toString() + state);
         
         Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+        myEvent.source = input.ordinal();
         onEvent(myEvent);
     }
 
