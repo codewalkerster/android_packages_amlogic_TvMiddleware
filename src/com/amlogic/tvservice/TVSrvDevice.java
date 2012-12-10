@@ -121,8 +121,12 @@ abstract public class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         tv.INIT_TV();
         if(params.mode == TVChannelParams.MODE_QAM)
             tv.SetFrontEnd(params.mode,params.frequency,params.symbolRate,params.modulation);
+		else
         if(params.mode == TVChannelParams.MODE_ANALOG)
             tv.SetFrontEnd(params.mode,params.frequency,params.standard,0);
+	    else
+        if(params.mode == TVChannelParams.MODE_OFDM)
+            tv.SetFrontEnd(params.mode,params.frequency,params.bandwidth,0);
     }
 
     public TVChannelParams getFrontend() {
