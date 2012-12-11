@@ -12,11 +12,11 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Comparator;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-
 import android.os.RemoteCallbackList;
-import android.amlogic.Tv.tvin_info_t;
+import android.os.RemoteException;
 import android.content.Context;
 import android.util.Log;
 import com.amlogic.tvutil.ITVCallback;
@@ -24,7 +24,7 @@ import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
 
 /**
- *TV 閰嶇疆绠＄悊
+ *TV 配置管理
  */
 public class TVConfig{
 	private static final String TAG="TVConfig";
@@ -32,30 +32,29 @@ public class TVConfig{
 	private static final String CFG_END_FLAG="config:end:flag";
 	private static final String CFG_FILE_DEFAULT_NAME="tv_default.cfg";
 
-	/**閰嶇疆椤逛笉瀛樺湪寮傚父*/
+	/**配置项不存在异常*/
 	public class NotExistException extends Exception{
 	}
 
-	/**閰嶇疆椤圭被鍨嬩笉鍖归厤*/
+	/**配置项类型不匹配*/
 	public class TypeException extends Exception{
 	}
 
-	/**閰嶇疆鏂囦欢閿欒*/
+	/**配置文件错误*/
 	public class FileException extends Exception{
 	}
 
-	public class TVException extends Exception{
-	}
+	/**配置项目值更新接口*/
 	public interface Update{
 		public void onUpdate(String name, TVConfigValue value);
 	}
 
-	
+	/**配置项目值读取接口*/
 	public interface Read{
 		public TVConfigValue read(String name);
 	}
 
-	
+	/**配置项*/
 	private class TVConfigEntry{
 		private TVConfigValue value;
 		private Update update;
@@ -65,7 +64,7 @@ public class TVConfig{
 		private TVConfigEntry parent;
 	}
 
-	/**鏍归厤缃」*/
+	/**根配置项*/
 	private TVConfigEntry root;
 
 	private void loadConfigFile(InputStream is) throws Exception{
@@ -163,36 +162,38 @@ public class TVConfig{
 			String val = "";
 
 			try{
-				switch(ent.value.getType()){
-					case TVConfigValue.TYPE_STRING:
-						val = "\""+ent.value.getString()+"\"";
-						break;
-					case TVConfigValue.TYPE_BOOL:
-						val = ent.value.getBoolean()?"true":"false";
-						break;
-					case TVConfigValue.TYPE_INT:
-						val = new Integer(ent.value.getInt()).toString();
-						break;
-					case TVConfigValue.TYPE_INT_ARRAY:
-						StringBuilder sb = new StringBuilder();
-						int v[] = ent.value.getIntArray();
-						int i;
-						for(i = 0; i < v.length; i++){
-							if(i != 0)
-								sb.append(",");
-							sb.append(new Integer(v[i]).toString());
-						}
-						val = sb.toString();
-						break;
-				}
+				if(ent.read==null){
+					switch(ent.value.getType()){
+						case TVConfigValue.TYPE_STRING:
+							val = "\""+ent.value.getString()+"\"";
+							break;
+						case TVConfigValue.TYPE_BOOL:
+							val = ent.value.getBoolean()?"true":"false";
+							break;
+						case TVConfigValue.TYPE_INT:
+							val = new Integer(ent.value.getInt()).toString();
+							break;
+						case TVConfigValue.TYPE_INT_ARRAY:
+							StringBuilder sb = new StringBuilder();
+							int v[] = ent.value.getIntArray();
+							int i;
+							for(i = 0; i < v.length; i++){
+								if(i != 0)
+									sb.append(",");
+								sb.append(new Integer(v[i]).toString());
+							}
+							val = sb.toString();
+							break;
+					}
 
-				ConfigString cstr = new ConfigString(pname, val);
-				list.add(cstr);
+					ConfigString cstr = new ConfigString(pname, val);
+					list.add(cstr);
+				}
 			}catch(Exception e){
 			}
 		}
 
-		if(ent.children != null){
+		if(ent.children != null && ent.read == null){
 			Iterator iter = ent.children.entrySet().iterator();
 			while(iter.hasNext()){
 				Map.Entry map_entry = (Map.Entry) iter.next();
@@ -213,7 +214,7 @@ public class TVConfig{
 	}
 
 	/**
-	 *灏嗛厤缃繚瀛樺埌鏂囦欢
+	 *将配置保存到文件
 	 */
 	public synchronized void save(Context context){
 		ArrayList<ConfigString> list = new ArrayList<ConfigString>();
@@ -257,7 +258,7 @@ public class TVConfig{
 	}
 
 	/**
-	 *鏋勯�鍑芥暟
+	 *构造函数
 	 */
 	public TVConfig(Context context){
 		root = new TVConfigEntry();
@@ -351,87 +352,23 @@ public class TVConfig{
 
 		return curr;
 	}
-	
+
 	/**
-	 * 
-	 * @param name
-	 * @param intArray
-	 * @return
-	 * @throws Exception
+	 *获取配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
 	 */
-//	public synchronized TVConfigValue get(String name,TVConfigValue intArrayValue) throws Exception{
-//		TVConfigEntry ent = getEntry(name);
-//		
-//		TVConfigValue myIntArray = null;
-//		if (intArrayValue != null) {
-//			int intArrayCustomValue[] = intArrayValue.getIntArray();
-//			switch (intArrayCustomValue.length) {
-//			case 0:
-//				Log.e("TVConfig", "########No definition method#######");
-//				break;
-//			case 1:
-//				myIntArray = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name,intArrayCustomValue[0]));
-//				break;
-//			case 2:
-//				myIntArray = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name,intArrayCustomValue[0],intArrayCustomValue[1]));
-//				break;
-//			case 3:
-//				Log.e("TVConfig", "########No definition method#######");
-//				break;
-//			case 4:
-//				Log.e("TVConfig", "########No definition method#######");
-//				break;
-//			case 5:
-//				Log.e("TVConfig", "########No definition method#######");
-//				break;
-//			case 6:
-//				Log.e("TVConfig", "########No definition method#######");
-//				break;
-//
-//			default:
-//				break;
-//			}
-//		}
-//		return myIntArray;
-//	}
-	/**
-	 *鑾峰彇閰嶇疆椤圭殑鍊�	 *@param name 閰嶇疆椤圭殑鍚嶅瓧
-	 *@return 杩斿洖閰嶇疆椤圭殑鍊�	 */
 	public synchronized TVConfigValue get(String name) throws Exception{
 		TVConfigEntry ent = getEntry(name);
-		TVConfigValue myvalue = null;
-		
-		/*****************tv setting***********************/
-		if(ent.value == null){
-			if(TVDeviceImpl.tv == null)
-				throw new TVException();
-//			int val = TVDeviceImpl.tv.GetCurrentSourceInput();
-			int val = 0;
-			if (name.equals("GetAudioBalance")
-					||name.equals("GetAudioSoundMode")
-					||name.equals("GetAudioTrebleVolume")
-					||name.equals("GetAudioBassVolume")
-					||name.equals("GetAudioSupperBassVolume")
-					||name.equals("GetAudioSRSSurround")
-					||name.equals("GetAudioSrsDialogClarity")
-					||name.equals("GetAudioSrsTruBass")) {
-				myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
-				return myvalue;
-			}else {
-				myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name,val));
-				return myvalue;
-			}
-		}
-		
-		
-		/**************************************************/
+
 		return new TVConfigValue(ent.value);
 	}
 
 	/**
-	 *鑾峰彇boolean鍨嬮厤缃」鐨勫�
-	 *@param name 閰嶇疆椤圭殑鍚嶅瓧
-	 *@return 杩斿洖閰嶇疆椤圭殑鍊�	 */
+	 *获取boolean型配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
+	 */
 	public boolean getBoolean(String name) throws Exception{
 		TVConfigValue v = get(name);
 
@@ -442,9 +379,10 @@ public class TVConfig{
 	}
 
 	/**
-	 *鑾峰彇int鍨嬮厤缃」鐨勫�
-	 *@param name 閰嶇疆椤圭殑鍚嶅瓧
-	 *@return 杩斿洖閰嶇疆椤圭殑鍊�	 */
+	 *获取int型配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
+	 */
 	public int getInt(String name) throws Exception{
 		TVConfigValue v = get(name);
 
@@ -455,9 +393,10 @@ public class TVConfig{
 	}
 
 	/**
-	 *鑾峰彇String鍨嬮厤缃」鐨勫�
-	 *@param name 閰嶇疆椤圭殑鍚嶅瓧
-	 *@return 杩斿洖閰嶇疆椤圭殑鍊�	 */
+	 *获取String型配置项的值
+	 *@param name 配置项的名字
+	 *@return 返回配置项的值
+	 */
 	public String getString(String name) throws Exception{
 		TVConfigValue v = get(name);
 
@@ -469,102 +408,28 @@ public class TVConfig{
 
 
 	/**
-	 *璁惧畾閰嶇疆椤圭殑鍊�	 *@param name 閰嶇疆椤圭殑鍚嶅瓧
-	 *@param value 鏂拌瀹氬�
+	 *设定配置项的值
+	 *@param name 配置项的名字
+	 *@param value 新设定值
 	 */
 	public synchronized void set(String name, TVConfigValue value) throws Exception{
 		TVConfigEntry ent = getEntry(name);
+
 		if((ent.value != null) && (ent.value.getType() != TVConfigValue.TYPE_UNKNOWN) && (ent.value.getType() != value.getType()))
 			throw new TypeException();
 
 		ent.value = value;
-		/*****************tv setting***********************/
-//		if(ent.value == null){
-			if(TVDeviceImpl.tv == null)
-				throw new TVException();
-			
-			int type = value.getType();
-			switch(type){
-				case TVConfigValue.TYPE_INT:
-					int userValue = value.getInt();
-//					int val = TVDeviceImpl.tv.GetCurrentSourceInput();
-					int val = 0;
-					int status3D = TVDeviceImpl.tv.Get3DMode();
-					tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
-					
-					int fmt = sig_fmt.fmt.ordinal();
-					int ON = 1;
-					if (name.equals("SetSharpness")) {
-						TVDeviceImpl.tv.TvITFExecute(name,userValue,val,ON,status3D);
-					}else if (name.equals("SetSaturation")||name.equals("SetDisplayMode")||name.equals("SetHue")) {
-						TVDeviceImpl.tv.TvITFExecute(name,userValue,val,fmt);
-					}else if (name.equals("SetAudioSoundMode")
-							||name.equals("SetAudioBalance")
-							||name.equals("SetAudioTrebleVolume")
-							||name.equals("SetAudioBassVolume")
-							||name.equals("SetAudioSupperBassVolume")
-							||name.equals("SetAudioSRSSurround")
-							||name.equals("SetAudioSrsDialogClarity")
-							||name.equals("SetAudioSrsTruBass")) {
-						TVDeviceImpl.tv.TvITFExecute(name,userValue);
-					}else {
-						TVDeviceImpl.tv.TvITFExecute(name,userValue,val);
-					}
-					
-					break;
-				case TVConfigValue.TYPE_BOOL:
-					boolean boolValue = value.getBoolean();
-					break;
-				case TVConfigValue.TYPE_STRING:
-					String  strValue =  value.getString();
-					break;
-				case TVConfigValue.TYPE_INT_ARRAY:
-					if(value.getIntArray() != null){
-						int intArrayValue[] = value.getIntArray();
-					}
-					break;
-	//			case TVConfigValue.TYPE_CUSTOM_INT_ARRAY:
-	//				if (value.getIntArray() != null) {
-	//					int intArrayCustomValue[] = value.getIntArray();
-	//					switch (intArrayCustomValue.length) {
-	//					case 0:
-	//						Log.e("TVConfig", "########No definition method#######");
-	//						break;
-	//					case 1:
-	//						Log.e("TVConfig", "########No definition method#######");
-	//						break;
-	//					case 2:
-	//						TVDeviceImpl.tv.TvITFExecute(name,intArrayCustomValue[0],intArrayCustomValue[1]);
-	//						break;
-	//					case 3:
-	//						Log.e("TVConfig", "########No definition method#######");
-	//						break;
-	//					case 4:
-	//						Log.e("TVConfig", "########No definition method#######");
-	//						break;
-	//					case 5:
-	//						Log.e("TVConfig", "########No definition method#######");
-	//						break;
-	//					case 6:
-	//						Log.e("TVConfig", "########No definition method#######");
-	//						break;
-	//					default:
-	//						break;
-	//					}
-	//				}
-			}
-//			return;
-//		}
-		/**************************************************/
-		
+
 		do{
 			if(ent.update != null){
 				ent.update.onUpdate(name, value);
 			}
+
 			if(ent.callbacks != null){
 				final int N = ent.callbacks.beginBroadcast();
 				TVMessage msg = TVMessage.configChanged(name, value);
 				for (int i = 0; i < N; i++){
+					Log.d(TAG, "config "+name+" callback "+i);
 					ent.callbacks.getBroadcastItem(i).onMessage(msg);
 				}
 				ent.callbacks.finishBroadcast();
@@ -575,7 +440,9 @@ public class TVConfig{
 
 
 	/**
-	 *娉ㄥ唽杩滅▼閰嶇疆椤瑰洖璋�	 *@param name 閰嶇疆椤瑰悕绉�	 *@param cb 鍥炶皟
+	 *注册远程配置项回调
+	 *@param name 配置项名称
+	 *@param cb 回调
 	 */
 	public synchronized void registerRemoteCallback(String name, ITVCallback cb) throws Exception{
 		TVConfigEntry ent = getEntry(name);
@@ -584,10 +451,14 @@ public class TVConfig{
 			ent.callbacks = new RemoteCallbackList<ITVCallback>();
 
 		ent.callbacks.register(cb);
+
+		Log.d(TAG, "registerRemoteCallback "+name);
 	}
 
 	/**
-	 *閲婃斁杩滅▼閰嶇疆椤瑰洖璋�	 *@param name 閰嶇疆椤瑰悕绉�	 *@param cb 鍥炶皟
+	 *释放远程配置项回调
+	 *@param name 配置项名称
+	 *@param cb 回调
 	 */
 	public synchronized void unregisterRemoteCallback(String name, ITVCallback cb) throws Exception{
 		if(cb == null)

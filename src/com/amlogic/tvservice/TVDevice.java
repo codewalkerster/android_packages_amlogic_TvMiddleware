@@ -6,7 +6,7 @@ import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
 
-abstract public class TVDevice{
+abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 
 	public class DTVRecordParams{
 		public File file;

@@ -1123,6 +1123,8 @@ public class TVService extends Service implements TVConfig.Update{
 			epgScanner.setSource(0, 0, mode);
 
 			config.registerUpdate("tv:audio:language", this);
+			config.registerUpdate("setting", device);
+			config.registerRead("setting", device);
 		}catch(Exception e){
 			Log.e(TAG, "intialize config failed");
 		}
