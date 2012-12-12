@@ -324,4 +324,46 @@ public class TVConst
         SOURCE_SVIDEO,
         SOURCE_MAX,
     }
+    
+    
+    
+    public static enum CC_ATV_AUDIO_STANDARD {
+        CC_ATV_AUDIO_STD_START(0),
+        CC_ATV_AUDIO_STD_DK(0),
+        CC_ATV_AUDIO_STD_I(1),
+        CC_ATV_AUDIO_STD_BG(2),
+        CC_ATV_AUDIO_STD_M(3),
+        CC_ATV_AUDIO_STD_L(4),
+        CC_ATV_AUDIO_STD_AUTO(5),
+        CC_ATV_AUDIO_STD_END(5);
+
+        private int val;
+
+        CC_ATV_AUDIO_STANDARD(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public static  enum CC_ATV_VIDEO_STANDARD {
+        CC_ATV_VIDEO_STD_START(0),
+        CC_ATV_VIDEO_STD_AUTO(0),
+        CC_ATV_VIDEO_STD_PAL(1),
+        CC_ATV_VIDEO_STD_NTSC(2),
+        CC_ATV_VIDEO_STD_SECAM(3),
+        CC_ATV_VIDEO_STD_END(3);
+
+        private int val;
+
+        CC_ATV_VIDEO_STANDARD(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
 }
