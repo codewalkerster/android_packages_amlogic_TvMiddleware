@@ -365,7 +365,8 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
         switch (mode)
         {
             case TVChannelParams.MODE_OFDM:
-
+                Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK MODE_OFDM");
+                tvChannelPara = TVChannelParams.dvbtParams(freq, para1);
                 break;
             case TVChannelParams.MODE_QAM:
                 Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK MODE_QAM");
