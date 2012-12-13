@@ -1,5 +1,7 @@
 package com.amlogic.tvservice;
 
+import com.amlogic.tvutil.TVConfigValue;
+import com.amlogic.tvutil.TVConfigValue.TypeException;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
@@ -173,6 +175,17 @@ abstract public class TVDeviceImpl extends TVDevice{
 			destroy = false;
 			native_device_destroy();
 		}
+	}
+
+    @Override
+    public void onUpdate(String name, TVConfigValue value)
+    {
+	}
+
+    @Override
+    public TVConfigValue read(String name)
+	{
+		return null;
 	}
 }
 
