@@ -12,6 +12,8 @@ import java.util.Date;
 import android.os.RemoteCallbackList;
 import android.util.Log;
 import com.amlogic.tvutil.TVConst;
+import com.amlogic.tvutil.TVConst.CC_ATV_AUDIO_STANDARD;
+import com.amlogic.tvutil.TVConst.CC_ATV_VIDEO_STANDARD;
 import com.amlogic.tvutil.TVProgramNumber;
 import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
@@ -790,8 +792,23 @@ public class TVService extends Service implements TVConfig.Update{
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
 		/** Set params from config */
 		try {
+		    int vidstd = config.getInt("tv:scan:atv:vidstd");
+		    int audstd = config.getInt("tv:scan:atv:audstd");
+		    
+		    if(vidstd < CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal() || 
+		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_END.ordinal()){
+		        Log.e(TAG,"vidstd is error");
+		    }
+		    if(vidstd < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal() || 
+                    vidstd > CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_END.ordinal()){
+                Log.e(TAG,"audstd is error");
+            }
+		        
+		    vidstd = TVChannelParams.ChangeVideoStd(vidstd);
+		    audstd = TVChannelParams.Change2AudioStd(vidstd, audstd);
+		    Log.v(TAG,"vidstd = "+vidstd + "   audstd = " +audstd);
 			tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"),
-				config.getInt("tv:scan:atv:vidstd"), config.getInt("tv:scan:atv:audstd"));
+			        vidstd, audstd);
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG, "Cannot read atv config !!!");

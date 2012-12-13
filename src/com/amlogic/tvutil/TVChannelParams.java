@@ -7,11 +7,13 @@ import com.amlogic.tvutil.TVConst.CC_ATV_VIDEO_STANDARD;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 /**
  *频道参数
  */
 public class TVChannelParams  implements Parcelable {
+    private static String TAG = "TVChannelParams";
 	public static final int FE_HAS_SIGNAL   = 0x01;
 	public static final int FE_HAS_CARRIER  = 0x02;
 	public static final int FE_HAS_VITERBI  = 0x04;
@@ -337,61 +339,77 @@ public class TVChannelParams  implements Parcelable {
         
     }
 	
+	public static int ChangeVideoStd(int data){
+	    int videostd = 0;
+        if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
+            Log.e(TAG,"video stb auto is not function");
+            videostd = 0;
+        }else
+        if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal())
+            videostd = COLOR_PAL;
+        else
+        if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC.ordinal())
+            videostd = COLOR_NTSC;
+        else
+        if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal())
+            videostd = COLOR_SECAM;
+        return videostd;
+    }
 	
-	public static int Enum2AudiaStb(CC_ATV_VIDEO_STANDARD video_std,CC_ATV_AUDIO_STANDARD audio_std) {
+	public static int Change2AudioStd(int video_std,int audio_std) {
 	    int tmpTunerStd = 0;;
 	   
-        if (audio_std.ordinal() >= 0) {
-            if(audio_std.ordinal() < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_START.ordinal()
-               || audio_std.ordinal() >CC_ATV_AUDIO_STANDARD. CC_ATV_AUDIO_STD_END.ordinal() ){
+        if (audio_std >= 0) {
+            if(audio_std < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_START.ordinal()
+               || audio_std >CC_ATV_AUDIO_STANDARD. CC_ATV_AUDIO_STD_END.ordinal() ){
                 //audio_std = ATVHandleAudioStdCfg();
             }
         }
-        if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO) {
+        if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()) {
             //tmpTunerStd |= CC_ATV_ADUIO_STANDARD.TUNER_COLOR_PAL;
-            if (audio_std ==CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK) {
+            if (audio_std ==CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
                 tmpTunerStd |= STD_PAL_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
                 tmpTunerStd |= STD_PAL_BG;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
                 tmpTunerStd |= STD_NTSC_M;
             }
-        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL) {
+        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal()) {
            // tmpTunerStd |= CC_ATV_ADUIO_STANDARDCOLOR_PAL;
-            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK) {
+            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
                 tmpTunerStd |= STD_PAL_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
                 tmpTunerStd |= STD_PAL_BG;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
                 tmpTunerStd |= STD_PAL_M;
             }
-        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC) {
+        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC.ordinal()) {
            // tmpTunerStd |= CC_ATV_ADUIO_STANDARD.COLOR_NTSC;
 
-            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK) {
+            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
                 tmpTunerStd |= STD_PAL_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
                 tmpTunerStd |= STD_PAL_BG;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
                 tmpTunerStd |= STD_NTSC_M;
             }
-        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM) {
+        } else if (video_std == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal()) {
            // tmpTunerStd |= TUNER_COLOR_SECAM;
-            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK) {
+            if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()) {
                 tmpTunerStd |= STD_SECAM_DK;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I.ordinal()) {
                 tmpTunerStd |= STD_PAL_I;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG.ordinal()) {
                 tmpTunerStd |= (STD_SECAM_B | STD_SECAM_G);
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M.ordinal()) {
                 tmpTunerStd |= STD_NTSC_M;
-            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L) {
+            } else if (audio_std == CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L.ordinal()) {
                 tmpTunerStd |= STD_SECAM_L;
             }
         }
