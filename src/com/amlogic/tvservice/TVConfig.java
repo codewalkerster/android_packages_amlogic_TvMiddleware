@@ -19,6 +19,7 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.content.Context;
 import android.util.Log;
+import android.os.Handler;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
@@ -31,6 +32,8 @@ public class TVConfig{
 	private static final String CFG_FILE_NAME="tv.cfg";
 	private static final String CFG_END_FLAG="config:end:flag";
 	private static final String CFG_FILE_DEFAULT_NAME="tv_default.cfg";
+
+	private Context context;
 
 	/**配置项不存在异常*/
 	public class NotExistException extends Exception{
@@ -216,7 +219,7 @@ public class TVConfig{
 	/**
 	 *将配置保存到文件
 	 */
-	public synchronized void save(Context context){
+	public synchronized void save(){
 		ArrayList<ConfigString> list = new ArrayList<ConfigString>();
 
 		getConfigStrings(list, null, root);
@@ -261,6 +264,8 @@ public class TVConfig{
 	 *构造函数
 	 */
 	public TVConfig(Context context){
+		this.context = context;
+
 		root = new TVConfigEntry();
 
 		InputStream is = null;
@@ -406,6 +411,20 @@ public class TVConfig{
 		return v.getString();
 	}
 
+	/*Save the configure data to file.*/
+	private boolean need_save = false;
+	private Handler save_handler = new Handler();
+	Runnable save_runnable = new Runnable(){
+		@Override
+		public void run() {
+			synchronized(TVConfig.this){
+				if(need_save){
+					need_save = false;
+					save();
+				}
+			}
+		}
+	};
 
 	/**
 	 *设定配置项的值
@@ -436,8 +455,17 @@ public class TVConfig{
 			}
 			ent = ent.parent;
 		}while(ent !=null);
-	}
 
+		/*Need to save the data*/
+		if(ent.read == null){
+			synchronized(this){
+				if(!need_save){
+					need_save = true;
+					save_handler.postDelayed(save_runnable, 200);
+				}
+			}
+		}
+	}
 
 	/**
 	 *注册远程配置项回调
