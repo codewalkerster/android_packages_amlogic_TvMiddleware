@@ -50,6 +50,9 @@ interface ITVService{
 	//切换音频
 	void switchAudio(int id);
 
+	//重新设定模拟电视制式
+	void resetATVFormat();
+
 	//开始时移播放
 	void startTimeshifting();
 

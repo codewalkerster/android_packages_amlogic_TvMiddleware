@@ -435,9 +435,53 @@ public class TVChannelParams  implements Parcelable {
 	    return null;
 	}
 
-	
-	    
-	    
+	/**
+	 *修改模拟音频
+	 *@return true 表示已经修改,false表示制式已经设置无需修改
+	 */
+	public boolean setATVAudio(int audio){
+		if(this.audio == audio)
+			return false;
+
+		this.audio = audio;
+		return true;
+	}
+
+	/**
+	 *修改模拟视频制式
+	 *@param fmt 视频制式
+	 *@return true 表示已经修改制式,false表示制式已经设置无需修改
+	 */
+	public boolean setATVVideoFormat(TVConst.CC_ATV_VIDEO_STANDARD fmt){
+		int std, afmt;
+
+		afmt = AudioStb2Enum(standard).ordinal();
+		std  = ChangeVideoStd(fmt.ordinal()) | Change2AudioStd(fmt.ordinal(), afmt);
+
+		if(std == standard)
+			return false;
+
+		standard = std;
+		return true;
+	}
+
+	/**
+	 *修改模拟音频制式
+	 *@param fmt 音频制式
+	 *@return true 表示已经修改制式,false表示制式已经设置无需修改
+	 */
+	public boolean setATVAudioFormat(TVConst.CC_ATV_AUDIO_STANDARD fmt){
+		int std, vfmt;
+
+		vfmt = VideoStb2Enum(standard).ordinal();
+		std  = ChangeVideoStd(vfmt) | Change2AudioStd(vfmt, fmt.ordinal());
+
+		if(std == standard)
+			return false;
+
+		standard = std;
+		return true;
+	}
 	
 	/**
 	 *取得参数模式

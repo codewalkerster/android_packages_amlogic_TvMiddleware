@@ -18,6 +18,8 @@ import com.amlogic.tvclient.TVClient;
 import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVProgramNumber;
 import com.amlogic.tvutil.TVProgram;
+import com.amlogic.tvutil.TVChannel;
+import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
@@ -495,7 +497,87 @@ abstract public class TVActivity extends Activity
 	 *@param id 音频ID
 	 */
 	public void switchAudio(int id){
-		client.switchAudio(id);
+		if(currProgramID == -1)
+			return;
+
+		TVProgram prog;
+		TVChannel chan; 
+
+		prog = TVProgram.selectByID(this, currProgramID);
+		if(prog == null)
+			return;
+
+		chan = prog.getChannel();
+		if(chan == null)
+			return;
+
+		if(chan.isAnalogMode()){
+			TVChannelParams params = chan.getParams();
+
+			if(params.setATVAudio(id)){
+				client.resetATVFormat();
+			}
+		}else{
+			client.switchAudio(id);
+		}
+	}
+
+	/**
+	 *切换模拟视频制式
+	 *@param fmt 视频制式
+	 */
+	public void switchATVVideoFormat(TVConst.CC_ATV_VIDEO_STANDARD fmt){
+		TVProgram prog;
+		TVChannel chan;
+		TVChannelParams params;
+
+		if(currProgramID == -1)
+			return;
+
+		prog = TVProgram.selectByID(this, currProgramID);
+		if(prog == null)
+			return;
+
+		chan = prog.getChannel();
+		if(chan == null)
+			return;
+
+		params = chan.getParams();
+		if(params == null && !params.isAnalogMode())
+			return;
+
+		if(params.setATVVideoFormat(fmt)){
+			client.resetATVFormat();
+		}
+	}
+
+	/**
+	 *切换模拟音频制式
+	 *@param fmt 音频制式
+	 */
+	public void switchATVAudioFormat(TVConst.CC_ATV_AUDIO_STANDARD fmt){
+		TVProgram prog;
+		TVChannel chan;
+		TVChannelParams params;
+
+		if(currProgramID == -1)
+			return;
+
+		prog = TVProgram.selectByID(this, currProgramID);
+		if(prog == null)
+			return;
+
+		chan = prog.getChannel();
+		if(chan == null)
+			return;
+
+		params = chan.getParams();
+		if(params == null && !params.isAnalogMode())
+			return;
+
+		if(params.setATVAudioFormat(fmt)){
+			client.resetATVFormat();
+		}
 	}
 
     /**

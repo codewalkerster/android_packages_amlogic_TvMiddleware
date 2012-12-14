@@ -47,8 +47,9 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_EPG_EVENT       = 1964;
 	private static final int MSG_SCAN_EVENT      = 1965;
 	private static final int MSG_SET_PROGRAM_TYPE = 1966;
-	private static final int MSG_CONFIG_CHANGED  = 1967;
-	private static final int MSG_SWITCH_AUDIO    = 1968;
+	private static final int MSG_CONFIG_CHANGED   = 1967;
+	private static final int MSG_SWITCH_AUDIO     = 1968;
+	private static final int MSG_RESET_ATV_FORMAT = 1969;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -206,6 +207,11 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 
+		public void resetATVFormat(){
+			Message msg = handler.obtainMessage(MSG_RESET_ATV_FORMAT);
+			handler.sendMessage(msg);
+		}
+
 		public void startTimeshifting(){
 			Message msg = handler.obtainMessage(MSG_START_TIMESHIFTING);
                         handler.sendMessage(msg);
@@ -328,6 +334,9 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_SWITCH_AUDIO:
 					resolveSwitchAudio((Integer)msg.obj);
+					break;
+				case MSG_RESET_ATV_FORMAT:
+					resolveResetATVFormat();
 					break;
 			}
 		}
@@ -1112,6 +1121,26 @@ public class TVService extends Service implements TVConfig.Update{
 				}
 			}
 		}
+	}
+
+	/*Reset ATV format*/
+	private void resolveResetATVFormat(){
+		if(inputSource != TVConst.SourceInput.SOURCE_ATV)
+			return;
+
+		TVProgram p = TVProgram.selectByID(this, programID);
+		if(p == null)
+			return;
+
+		TVChannel chan = p.getChannel();
+		if(chan == null)
+			return;
+
+		TVChannelParams params = chan.getParams();
+		if(params == null)
+			return;
+
+		device.resetATVFormat(params);
 	}
 
 	public IBinder onBind (Intent intent){

@@ -277,6 +277,18 @@ abstract public class TVClient
         }
 	}
 
+	/**
+	 *重新设定模拟电视制式
+	 */
+	public synchronized void resetATVFormat(){
+		if(service != null){
+			try{
+				service.resetATVFormat();
+			}catch(RemoteException e){
+			}
+		}
+	}
+
     /**
      *开始时移播放
      */

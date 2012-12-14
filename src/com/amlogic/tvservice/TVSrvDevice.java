@@ -226,6 +226,9 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
         tv.StartTV((int) TVConst.SourceInput.SOURCE_ATV.ordinal(), 0, 0, 0, 0);
     }
 
+	public void resetATVFormat(TVChannelParams params){
+	}
+
     public void stopATV()
     {
         // native_stop_atv();

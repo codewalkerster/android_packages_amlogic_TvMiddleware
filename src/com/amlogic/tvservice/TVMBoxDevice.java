@@ -111,6 +111,9 @@ abstract public class TVDeviceImpl extends TVDevice{
 		native_play_atv();
 	}
 
+	public void resetATVFormat(TVChannelParams params){
+	}
+
 	public void stopATV(){
 		native_stop_atv();
 	}

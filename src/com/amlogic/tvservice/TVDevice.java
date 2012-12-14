@@ -72,6 +72,8 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 
 	abstract public void playATV();
 
+	abstract public void resetATVFormat(TVChannelParams params);
+
 	abstract public void stopATV();
 
 	abstract public void playDTV(int vpid, int vfmt, int apid, int afmt);
