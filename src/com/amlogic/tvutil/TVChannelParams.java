@@ -180,9 +180,9 @@ public class TVChannelParams  implements Parcelable {
     public static final int STD_M         = STD_PAL_M    | STD_NTSC_M;
     public static final int STD_BG        = STD_PAL_BG   | STD_SECAM_B | STD_SECAM_G ;
 
-    public static final int COLOR_PAL   =0x01000000;
-    public static final int COLOR_NTSC  =0x02000000;
-    public static final int COLOR_SECAM =0x04000000;
+	public static final int COLOR_PAL   =0x04000000;
+    public static final int COLOR_NTSC  =0x08000000;
+    public static final int COLOR_SECAM =0x10000000;
     
 	public int mode;
 	public int frequency;
