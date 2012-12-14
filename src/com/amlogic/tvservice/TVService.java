@@ -800,24 +800,24 @@ public class TVService extends Service implements TVConfig.Update{
 		/** Configure scan */
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
 		/** Set params from config */
-		try {
+		try { 	  
 		    int vidstd = config.getInt("tv:scan:atv:vidstd");
 		    int audstd = config.getInt("tv:scan:atv:audstd");
 		    
 		    if(vidstd < CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal() || 
-		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_END.ordinal()){
+		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal()){
 		        Log.e(TAG,"vidstd is error");
 		    }
 		    if(vidstd < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal() || 
-                    vidstd > CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_END.ordinal()){
+                    vidstd > CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO.ordinal()){
                 Log.e(TAG,"audstd is error");
             }
 		        
-		    vidstd = TVChannelParams.ChangeVideoStd(vidstd);
-		    audstd = TVChannelParams.Change2AudioStd(vidstd, audstd);
-		    Log.v(TAG,"vidstd = "+vidstd + "   audstd = " +audstd);
+		    int modifyvidstd = TVChannelParams.ChangeVideoStd(vidstd);
+		    int modifyaudstd = TVChannelParams.Change2AudioStd(vidstd, audstd);
+		    Log.v(TAG,"vidstd = "+vidstd + "   audstd = " +audstd +" modifyvidstd = "+modifyvidstd + "   modifyaudstd = " +modifyaudstd);
 			tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"),
-			        vidstd, audstd);
+			        modifyvidstd, modifyaudstd);
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG, "Cannot read atv config !!!");
