@@ -433,6 +433,7 @@ public class TVConfig{
 	 */
 	public synchronized void set(String name, TVConfigValue value) throws Exception{
 		TVConfigEntry ent = getEntry(name);
+		TVConfigEntry org_ent = ent;
 
 		if((ent.value != null) && (ent.value.getType() != TVConfigValue.TYPE_UNKNOWN) && (ent.value.getType() != value.getType()))
 			throw new TypeException();
@@ -457,7 +458,7 @@ public class TVConfig{
 		}while(ent !=null);
 
 		/*Need to save the data*/
-		if(ent.read == null){
+		if(org_ent.read == null){
 			synchronized(this){
 				if(!need_save){
 					need_save = true;
