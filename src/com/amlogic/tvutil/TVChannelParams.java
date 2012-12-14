@@ -305,7 +305,7 @@ public class TVChannelParams  implements Parcelable {
 	}
 
 	
-	public static CC_ATV_AUDIO_STANDARD AudioStb2Enum(int data){
+	public static CC_ATV_AUDIO_STANDARD AudioStd2Enum(int data){
 	    if((data & STD_DK) == STD_DK){
 	        return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
 	    }else
@@ -324,7 +324,7 @@ public class TVChannelParams  implements Parcelable {
 	}
 	
 	   
-	public static CC_ATV_VIDEO_STANDARD VideoStb2Enum(int data){
+	public static CC_ATV_VIDEO_STANDARD VideoStd2Enum(int data){
         if((data & COLOR_PAL) == COLOR_PAL){
             return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL;
         }else
@@ -339,7 +339,7 @@ public class TVChannelParams  implements Parcelable {
         
     }
 	
-	public static int ChangeVideoStd(int data){
+	public static int Change2VideoStd(int data){
 	    int videostd = 0;
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
             Log.e(TAG,"video stb auto is not function");
@@ -417,6 +417,13 @@ public class TVChannelParams  implements Parcelable {
 	    return tmpTunerStd;
 	}
 	
+	public static int getTunerStd(int video_std,int audio_std){
+		int vdata = Change2VideoStd(video_std);
+		int adata = Change2AudioStd(video_std, audio_std);
+		
+		return (vdata|adata);
+	}
+	
 	static CC_ATV_AUDIO_STANDARD ATVHandleAudioStdCfg(String key) {
 	    if (key.equals( "DK") ) {
 	        return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
@@ -455,8 +462,8 @@ public class TVChannelParams  implements Parcelable {
 	public boolean setATVVideoFormat(TVConst.CC_ATV_VIDEO_STANDARD fmt){
 		int std, afmt;
 
-		afmt = AudioStb2Enum(standard).ordinal();
-		std  = ChangeVideoStd(fmt.ordinal()) | Change2AudioStd(fmt.ordinal(), afmt);
+		afmt = AudioStd2Enum(standard).ordinal();
+		std  = getTunerStd(fmt.ordinal(), afmt);
 
 		if(std == standard)
 			return false;
@@ -473,8 +480,8 @@ public class TVChannelParams  implements Parcelable {
 	public boolean setATVAudioFormat(TVConst.CC_ATV_AUDIO_STANDARD fmt){
 		int std, vfmt;
 
-		vfmt = VideoStb2Enum(standard).ordinal();
-		std  = ChangeVideoStd(vfmt) | Change2AudioStd(vfmt, fmt.ordinal());
+		vfmt = VideoStd2Enum(standard).ordinal();
+		std  = getTunerStd(vfmt, fmt.ordinal());
 
 		if(std == standard)
 			return false;

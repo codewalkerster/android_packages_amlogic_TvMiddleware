@@ -50,8 +50,11 @@ public class TVChannel{
 			this.params = TVChannelParams.dvbtParams(freq, bw);
 		}
 		else if(src == TVChannelParams.MODE_ANALOG){
-			int std = TVChannelParams.STD_PAL_I;
-			this.params = TVChannelParams.analogParams(freq,std, 0);
+			col = c.getColumnIndex("std");
+			int std = c.getInt(col);
+			col = c.getColumnIndex("aud_mode");
+			int aud_mode = c.getInt(col);
+			this.params = TVChannelParams.analogParams(freq,std, aud_mode);
 		}
 
 		this.fendID = 0;
