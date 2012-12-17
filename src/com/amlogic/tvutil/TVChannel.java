@@ -202,5 +202,64 @@ public class TVChannel{
 
 		return false;
 	}
+	
+	/**
+	 *修改模拟音频
+	 *@return true 表示已经修改,false表示制式已经设置无需修改
+	 */
+	public boolean setATVAudio(int audio){
+		boolean ret = false;
+		if(params!=null){
+			ret = params.setATVAudio(audio);
+		}
+		if (ret){
+			context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update ts_table set aud_mode=" + audio + " where db_id = " + id,
+				null, null);
+		}
+		
+		return ret;
+	}
+
+	/**
+	 *修改模拟视频制式
+	 *@param fmt 视频制式
+	 *@return true 表示已经修改制式,false表示制式已经设置无需修改
+	 */
+	public boolean setATVVideoFormat(TVConst.CC_ATV_VIDEO_STANDARD fmt){
+		boolean ret = false;
+		if(params!=null){
+			ret = params.setATVVideoFormat(fmt);
+		}
+		if (ret){
+			context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update ts_table set std=" + params.getStandard() + " where db_id = " + id,
+				null, null);
+		}
+		
+		return ret;
+	}
+
+	/**
+	 *修改模拟音频制式
+	 *@param fmt 音频制式
+	 *@return true 表示已经修改制式,false表示制式已经设置无需修改
+	 */
+	public boolean setATVAudioFormat(TVConst.CC_ATV_AUDIO_STANDARD fmt){
+		boolean ret = false;
+		if(params!=null){
+			ret = params.setATVAudioFormat(fmt);
+		}
+		if (ret){
+			context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update ts_table set std=" + params.getStandard() + " where db_id = " + id,
+				null, null);
+		}
+		
+		return ret;
+	}
 }
 
