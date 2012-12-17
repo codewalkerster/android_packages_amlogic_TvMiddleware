@@ -360,8 +360,8 @@ public class TVChannelParams  implements Parcelable {
 	    int tmpTunerStd = 0;;
 	   
         if (audio_std >= 0) {
-            if(audio_std < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_START.ordinal()
-               || audio_std >CC_ATV_AUDIO_STANDARD. CC_ATV_AUDIO_STD_END.ordinal() ){
+            if(audio_std < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()
+               || audio_std >CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO.ordinal() ){
                 //audio_std = ATVHandleAudioStdCfg();
             }
         }
