@@ -813,15 +813,11 @@ public class TVService extends Service implements TVConfig.Update{
                 Log.e(TAG,"audstd is error");
             }
 		        
-		   /* int modifyvidstd = TVChannelParams.Change2VideoStd(vidstd);
-		    int modifyaudstd = TVChannelParams.Change2AudioStd(vidstd, audstd);
-		    Log.v(TAG,"vidstd = "+vidstd + "   audstd = " +audstd +" modifyvidstd = "+modifyvidstd + "   modifyaudstd = " +modifyaudstd);
-			tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"),
-			        modifyvidstd, modifyaudstd);*/
-					
+
 			int std = TVChannelParams.getTunerStd(vidstd, audstd);
-                      Log.v(TAG,"std = "+std);
+            Log.v(TAG,"std = "+std);
              tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"), std);
+
 
 		} catch (Exception e) {
 			e.printStackTrace();
