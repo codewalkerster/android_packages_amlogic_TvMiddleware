@@ -49,8 +49,7 @@ abstract public class TVScanner{
 		/** Atv set */
 		private int minFreq;
 		private int maxFreq;
-		private int videoStd;
-		private int audioStd;
+		private int tunerStd;
 		/** Dtv set */
 		private int demuxID;
 		private int frequencyList[];	
@@ -64,11 +63,10 @@ abstract public class TVScanner{
 			this.frequencyList = freqList;
 		}
 
-		public void setAtvParams(int minf, int maxf, int vstd, int astd) {
+		public void setAtvParams(int minf, int maxf, int tunerStd) {
 			this.minFreq = minf;
 			this.maxFreq = maxf;
-			this.videoStd = vstd;
-			this.audioStd = astd;
+			this.tunerStd = tunerStd;
 		}
 
 	};

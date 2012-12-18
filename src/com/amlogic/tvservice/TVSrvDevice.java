@@ -227,6 +227,9 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
     }
 
 	public void resetATVFormat(TVChannelParams params){
+		 Log.v(TAG, "resetATVFormat");
+        if (params.mode == TVChannelParams.MODE_QAM)
+            tv.SetFrontEnd(params.mode, params.frequency, params.symbolRate, params.modulation);
 	}
 
     public void stopATV()
@@ -378,7 +381,7 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
             case TVChannelParams.MODE_ANALOG:
                 // *****************temp default set pat I************************
                 Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK MODE_ANALOG");
-                tvChannelPara = TVChannelParams.analogParams(freq, TVChannelParams.STD_PAL_I, 0);
+                tvChannelPara = TVChannelParams.analogParams(freq, para1, 0);
                 break;
         }
 

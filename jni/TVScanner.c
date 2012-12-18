@@ -171,7 +171,7 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "bandwidth", "I"), pd->cur_tp.fend_para.terrestrial.para.u.ofdm.bandwidth);
     (*env)->SetIntField(env,cp,\
-                        (*env)->GetFieldID(env, gChanParamClass, "audio", "I"), pd->cur_tp.fend_para.analog.para.u.analog.soundsys);
+                        (*env)->GetFieldID(env, gChanParamClass, "audio", "I"), pd->cur_tp.fend_para.analog.para.u.analog.audmode);
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "standard", "I"), pd->cur_tp.fend_para.analog.para.u.analog.std);
     (*env)->SetObjectField(env,event,\
@@ -644,7 +644,7 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSate
 /**\brief Get the start scan params*/
 static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_CreatePara_t *start_para)
 {
-	jfieldID amode, min_freq, max_freq, start_freq, direction, vid_std, aud_std;
+	jfieldID amode, min_freq, max_freq, start_freq, direction, std;
 	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id;
 	int java_mode;
 	
@@ -655,8 +655,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	max_freq = (*env)->GetFieldID(env,objclass, "maxFreq", "I"); 
 	start_freq = (*env)->GetFieldID(env,objclass, "startFreq", "I"); 
 	direction = (*env)->GetFieldID(env,objclass, "direction", "I"); 
-	vid_std = (*env)->GetFieldID(env,objclass, "videoStd", "I"); 
-	aud_std = (*env)->GetFieldID(env,objclass, "audioStd", "I"); 
+	std = (*env)->GetFieldID(env,objclass, "tunerStd", "I"); 
 	mode = (*env)->GetFieldID(env,objclass, "mode", "I"); 
 	dmode = (*env)->GetFieldID(env,objclass, "dtvMode", "I"); 
 	fend_id = (*env)->GetFieldID(env,objclass, "fendID", "I"); 
@@ -689,8 +688,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		}
 		
 		start_para->atv_para.direction = (*env)->GetIntField(env, para, direction);
-		start_para->atv_para.default_vid_std= (*env)->GetIntField(env, para, vid_std);
-		start_para->atv_para.default_aud_std= (*env)->GetIntField(env, para, aud_std);
+		start_para->atv_para.default_std= (*env)->GetIntField(env, para, std);
 		start_para->atv_para.afc_unlocked_step = 4000000;
 		start_para->atv_para.cvbs_unlocked_step = 1500000;
 		start_para->atv_para.cvbs_locked_step = 6000000;

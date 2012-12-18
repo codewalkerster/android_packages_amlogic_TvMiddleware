@@ -13,6 +13,8 @@ import com.amlogic.tvactivity.TVActivity;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVConst;
+import com.amlogic.tvutil.TVConst.CC_ATV_AUDIO_STANDARD;
+import com.amlogic.tvutil.TVConst.CC_ATV_VIDEO_STANDARD;
 import com.amlogic.tvutil.TVEvent;
 import java.text.SimpleDateFormat;
 
@@ -95,7 +97,7 @@ public class TVTest extends TVActivity{
 		}		
 	}
 
-
+	int count = 0;
 	  public boolean onKeyDown(int keyCode, KeyEvent event) {
 		  TVProgram prog  = null;
 		  TVScanParams sp;	
@@ -131,7 +133,22 @@ public class TVTest extends TVActivity{
 		    				playProgram(new TVProgramNumber(9));
 		    				Log.d(TAG, "22222222222222222222222222222222222 ");
 		    			}*/
-		         	 ttGotoPreviousPage();
+		         	 // ttGotoPreviousPage();
+					 prog = TVProgram.selectByNumber(this, TVProgram.TYPE_ATV, new TVProgramNumber(count));
+					 if(prog!=null){	
+								
+						 TVChannelParams params = prog.getChannel().getParams();
+						 int std = params.getStandard();
+						 Log.v(TAG,"std" + std);
+						 CC_ATV_AUDIO_STANDARD audio_std = TVChannelParams.AudioStd2Enum(std);
+						 CC_ATV_VIDEO_STANDARD vidio_std = TVChannelParams.VideoStd2Enum(std);
+						 Log.v(TAG,"audio_std" + audio_std.ordinal()  +  "vidio_std" + vidio_std.ordinal() );
+						 audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG; 
+						 int changeSTD = TVChannelParams.getTunerStd(vidio_std.ordinal(),audio_std.ordinal()) ;
+						  Log.v(TAG,"changeSTD" + changeSTD );
+				
+					 	}
+					 count ++;
 		             break;
 		             
 	    		case KeyEvent.KEYCODE_7:
