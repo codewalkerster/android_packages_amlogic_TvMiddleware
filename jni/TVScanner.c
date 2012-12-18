@@ -689,7 +689,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		
 		start_para->atv_para.direction = (*env)->GetIntField(env, para, direction);
 		start_para->atv_para.default_std= (*env)->GetIntField(env, para, std);
-		start_para->atv_para.afc_unlocked_step = 4000000;
+		start_para->atv_para.afc_unlocked_step = 3000000;
 		start_para->atv_para.cvbs_unlocked_step = 1500000;
 		start_para->atv_para.cvbs_locked_step = 6000000;
 		start_para->atv_para.afc_range = 2000000;
