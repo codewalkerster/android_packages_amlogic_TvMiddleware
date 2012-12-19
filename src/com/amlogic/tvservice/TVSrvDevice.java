@@ -1,5 +1,6 @@
 package com.amlogic.tvservice;
 
+
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVConfigValue.TypeException;
@@ -13,14 +14,17 @@ import android.amlogic.Tv.SourceSwitchListener;
 import android.amlogic.Tv.SrcInput;
 import android.amlogic.Tv.StatusTVChangeListener;
 import android.amlogic.Tv.tvin_info_t;
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 
-public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, SourceSwitchListener
+public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, SourceSwitchListener
 {
     private boolean destroy;
     private String TAG = "TVDeviceImpl";
     public static Tv tv = null;
+    private Looper mylooper = null;
     public static final int NATVIVE_EVENT_FRONTEND = 1;
     public static final int NATVIVE_EVENT_PLAYER = 2;
     public static final int NATVIVE_EVENT_SIGNAL_OK = 1;
@@ -28,24 +32,85 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
 
     public static final int EVENT_FRONTEND = 1 << 1;
     public static final int EVENT_SOURCE_SWITCH = 1 << 2;
-
-    public TVDeviceImpl()
+    deviceHandler myHandler = null;
+	public TVDeviceImpl()
     {
         super();
-
-        destroy = false;
-        // native_device_init();
-
         tv = SingletonTv.getTvInstance();
         tv.SetStatusTVChangeListener(this);
         tv.SetSourceSwitchListener(this);
         // tv.INIT_TV();
 
     }
+    
+    public TVDeviceImpl(Looper looper)
+    {
+        super();
+        mylooper = looper;
+    
+        tv = SingletonTv.getTvInstance();
+        tv.SetStatusTVChangeListener(this);
+        tv.SetSourceSwitchListener(this);
+        // tv.INIT_TV();
+        myHandler = new deviceHandler(looper);
+    }
 
-    public class TVException extends Exception{
+    public class TVException extends Exception
+    {
+    }
+
+    private class deviceHandler extends Handler
+    {
+
+        public deviceHandler(Looper looper)
+        {
+            super(looper);
+
+        }
+
+        @Override
+        public void handleMessage(Message msg)
+        {
+            switch (msg.what)
+            {
+                case 1:
+                    
+                    Log.v(TAG, "deviceHandler handleMessage");
+                    Bundle bundle = msg.getData();
+                    int type = bundle.getInt("type");
+                    int state = bundle.getInt("state");
+                    int mode = bundle.getInt("mode");
+                    int freq = bundle.getInt("freq");
+                    int para1 = bundle.getInt("para1");
+                    int para2 = bundle.getInt("para2");
+
+                    if (type == NATVIVE_EVENT_FRONTEND)
+                    { // frontEnd
+                        Log.v(TAG, "handleMessage onStatusDTVChange:  " + type + "  " + state + "  " + mode + "  " + freq + "  " + para1 + "  "
+                                + para2);
+                        Event myEvent = new Event(Event.EVENT_FRONTEND);
+                        if (state == NATVIVE_EVENT_SIGNAL_OK)
+                        {
+                            Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK");
+                            myEvent.feStatus = TVChannelParams.FE_HAS_LOCK;
+                        }
+                        else if (state == NATVIVE_EVENT_SIGNAL_NOT_OK)
+                        {
+                            Log.v(TAG, "NATVIVE_EVENT_SIGNAL_NOT_OK");
+                            myEvent.feStatus = TVChannelParams.FE_TIMEDOUT;
+                        }
+                        myEvent.feParams = fpara2chanpara(mode, freq, para1, para2);
+                        
+                        onEvent(myEvent);
+                    }
+
+                    break;
+            }
+        }
     }
     
+  
+
     public void setInputSource(TVConst.SourceInput source)
     {
         // native_set_input_source(source.ordinal());
@@ -226,11 +291,12 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
         tv.StartTV((int) TVConst.SourceInput.SOURCE_ATV.ordinal(), 0, 0, 0, 0);
     }
 
-	public void resetATVFormat(TVChannelParams params){
-		 Log.v(TAG, "resetATVFormat");
+    public void resetATVFormat(TVChannelParams params)
+    {
+        Log.v(TAG, "resetATVFormat");
         if (params.mode == TVChannelParams.MODE_QAM)
             tv.SetFrontEnd(params.mode, params.frequency, params.symbolRate, params.modulation);
-	}
+    }
 
     public void stopATV()
     {
@@ -333,26 +399,42 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
     {
         // TODO Auto-generated method stub
         Log.v(TAG, "onStatusDTVChange:  " + type + "  " + state + "  " + mode + "  " + freq + "  " + para1 + "  " + para2);
-        Message msg;
-
         if (type == NATVIVE_EVENT_FRONTEND)
-        { // frontEnd
-            Event myEvent = new Event(Event.EVENT_FRONTEND);
-            if (state == NATVIVE_EVENT_SIGNAL_OK)
+        {
+            // frontEnd
+            if (mode == TVChannelParams.MODE_ANALOG)
             {
-                Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK");
-                myEvent.feStatus = TVChannelParams.FE_HAS_LOCK;
+                myHandler.removeMessages(1);
+                Message msg = myHandler.obtainMessage(1);
+                Bundle bundle = new Bundle();
+                bundle.putInt("type", type);
+                bundle.putInt("state", state);
+                bundle.putInt("mode", mode);
+                bundle.putInt("freq", freq);
+                bundle.putInt("para1", para1);
+                bundle.putInt("para2", para2);
+                msg.setData(bundle);
+                myHandler.sendMessageDelayed(msg, 1000);
             }
-            else if (state == NATVIVE_EVENT_SIGNAL_NOT_OK)
+            else
             {
-                Log.v(TAG, "NATVIVE_EVENT_SIGNAL_NOT_OK");
-                myEvent.feStatus = TVChannelParams.FE_TIMEDOUT;
+                Event myEvent = new Event(Event.EVENT_FRONTEND);
+                if (state == NATVIVE_EVENT_SIGNAL_OK)
+                {
+                    Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK");
+                    myEvent.feStatus = TVChannelParams.FE_HAS_LOCK;
+                }
+                else if (state == NATVIVE_EVENT_SIGNAL_NOT_OK)
+                {
+                    Log.v(TAG, "NATVIVE_EVENT_SIGNAL_NOT_OK");
+                    myEvent.feStatus = TVChannelParams.FE_TIMEDOUT;
+                }
+
+                myEvent.feParams = fpara2chanpara(mode, freq, para1, para2);
+                onEvent(myEvent);
             }
-
-            myEvent.feParams = fpara2chanpara(mode, freq, para1, para2);
-
-            onEvent(myEvent);
         }
+
     }
 
     public void onSourceSwitchStatusChange(SrcInput input, int state)
@@ -371,16 +453,16 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
         switch (mode)
         {
             case TVChannelParams.MODE_OFDM:
-                Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK MODE_OFDM");
+                Log.v(TAG, " MODE_OFDM");
                 tvChannelPara = TVChannelParams.dvbtParams(freq, para1);
                 break;
             case TVChannelParams.MODE_QAM:
-                Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK MODE_QAM");
+                Log.v(TAG, " MODE_QAM");
                 tvChannelPara = TVChannelParams.dvbcParams(freq, para2, para1);
                 break;
             case TVChannelParams.MODE_ANALOG:
-                // *****************temp default set pat I************************
-                Log.v(TAG, "NATVIVE_EVENT_SIGNAL_OK MODE_ANALOG");
+
+                Log.v(TAG, " MODE_ANALOG");
                 tvChannelPara = TVChannelParams.analogParams(freq, para1, 0);
                 break;
         }
@@ -395,7 +477,7 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
         /*****************tv setting***********************/
         Log.v(TAG, "SET " + name + ": " + value);
         String configType = "Set";
-        if(TVDeviceImpl.tv == null)
+        if (TVDeviceImpl.tv == null)
             try
             {
                 throw new TVException();
@@ -404,16 +486,17 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
             {
                 e.printStackTrace();
             }
-        
+
         int pos = name.indexOf(":");
-        if(pos == -1)
-            Log.e(TAG,"set name fail");
-        name = name.substring(pos +1);
-        name =  configType + name;
-        Log.v(TAG, "SET NEW " + name );
-        
+        if (pos == -1)
+            Log.e(TAG, "set name fail");
+        name = name.substring(pos + 1);
+        name = configType + name;
+        Log.v(TAG, "SET NEW " + name);
+
         int type = value.getType();
-        switch(type){
+        switch (type)
+        {
             case TVConfigValue.TYPE_INT:
                 int userValue = 0;
                 try
@@ -425,35 +508,34 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-//                int val = 0;
+                // int val = 0;
                 int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
                 int status3D = TVDeviceImpl.tv.Get3DMode();
                 tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
-                
+
                 int fmt = sig_fmt.fmt.ordinal();
                 int ON = 1;
-                if (name.equals("SetSharpness")) {
-                    TVDeviceImpl.tv.TvITFExecute(name,userValue,val,ON,status3D);
-                }else if ( name.equals("SetSaturation")
-                         ||name.equals("SetDisplayMode")
-                         ||name.equals("SetHue")) {
-                    TVDeviceImpl.tv.TvITFExecute(name,userValue,val,fmt);
-                }else if (name.equals("SetAudioSoundMode")
-                        ||name.equals("SetAudioBalance")
-                        ||name.equals("SetAudioTrebleVolume")
-                        ||name.equals("SetAudioBassVolume")
-                        ||name.equals("SetAudioSupperBassVolume")
-                        ||name.equals("SetAudioSRSSurround")
-                        ||name.equals("SetAudioSrsDialogClarity")
-                        ||name.equals("SetAudioSrsTruBass")) {
-                    TVDeviceImpl.tv.TvITFExecute(name,userValue);
-                }else {
-                    TVDeviceImpl.tv.TvITFExecute(name,userValue,val);
+                if (name.equals("SetSharpness"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, val, ON, status3D);
                 }
-                
-                break;
-            }
+                else if (name.equals("SetSaturation") || name.equals("SetDisplayMode") || name.equals("SetHue"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, val, fmt);
+                }
+                else if (name.equals("SetAudioSoundMode") || name.equals("SetAudioBalance") || name.equals("SetAudioTrebleVolume")
+                        || name.equals("SetAudioBassVolume") || name.equals("SetAudioSupperBassVolume") || name.equals("SetAudioSRSSurround")
+                        || name.equals("SetAudioSrsDialogClarity") || name.equals("SetAudioSrsTruBass"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue);
+                }
+                else
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, val);
+                }
 
+                break;
+        }
 
     }
 
@@ -462,7 +544,7 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
     {
         // TODO Auto-generated method stub
         /*****************tv setting***********************/
-        Log.v(TAG, "GET : " + name );
+        Log.v(TAG, "GET : " + name);
         String configType = "Get";
         if (TVDeviceImpl.tv == null)
             try
@@ -475,40 +557,30 @@ public class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, So
                 e.printStackTrace();
             }
         int pos = name.indexOf(":");
-        if(pos == -1)
-            Log.e(TAG,"set name fail");
-        name = name.substring(pos +1);
+        if (pos == -1)
+            Log.e(TAG, "set name fail");
+        name = name.substring(pos + 1);
         name = configType + name;
-        Log.v(TAG, "GET NEW " + name );
+        Log.v(TAG, "GET NEW " + name);
         TVConfigValue myvalue = null;
         int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
-//        int val = 0;
-        if        (name.equals("GetAudioBalance") 
-                || name.equals("GetAudioSoundMode")
-                || name.equals("GetAudioTrebleVolume")
-                || name.equals("GetAudioBassVolume") 
-                || name.equals("GetAudioSupperBassVolume") 
-                || name.equals("GetAudioSRSSurround")
-                || name.equals("GetAudioSrsDialogClarity") 
-                || name.equals("GetAudioSrsTruBass"))
+        // int val = 0;
+        if (name.equals("GetAudioBalance") || name.equals("GetAudioSoundMode") || name.equals("GetAudioTrebleVolume")
+                || name.equals("GetAudioBassVolume") || name.equals("GetAudioSupperBassVolume") || name.equals("GetAudioSRSSurround")
+                || name.equals("GetAudioSrsDialogClarity") || name.equals("GetAudioSrsTruBass"))
         {
-            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute( name));
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
             return myvalue;
         }
         else
         {
-            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute( name, val));
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name, val));
             return myvalue;
         }
-     
-    }
-
-    @Override
-    public void onEvent(Event event)
-    {
-        // TODO Auto-generated method stub
 
     }
+
+   
 }
 
 class SingletonTv
@@ -524,4 +596,3 @@ class SingletonTv
         return instance;
     }
 }
-

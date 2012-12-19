@@ -25,6 +25,7 @@ import com.amlogic.tvutil.TVChannel;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvdataprovider.TVDataProvider;
+import android.os.Looper;
 
 public class TVService extends Service implements TVConfig.Update{
 	private static final String TAG = "TVService";
@@ -1180,9 +1181,8 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	public void onCreate(){
-		super.onCreate();
-
-		device = new TVDeviceImpl(){
+		super.onCreate();	
+		device = new TVDeviceImpl( this.getMainLooper()){
 			/*Device event handler*/
 			public void onEvent(TVDevice.Event event){
 				Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
