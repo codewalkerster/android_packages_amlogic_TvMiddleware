@@ -5,9 +5,13 @@ import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.ITVCallback;
+import com.amlogic.tvutil.TVStatus;
 
 //TV Service接口
 interface ITVService{
+	//取得当前状态
+	TVStatus getStatus();
+
 	//注册消息回调
 	void registerCallback(ITVCallback cb);
 

@@ -15,6 +15,7 @@ import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.ITVCallback;
+import com.amlogic.tvutil.TVStatus;
 
 /**
  *TV客户端
@@ -93,6 +94,23 @@ abstract public class TVClient
      *@param msg TVService发送的消息
      */
     abstract public void onMessage(TVMessage msg);
+
+	/**
+	 *取得当前状态
+	 *@return 返回当前状态
+	 */
+    public synchronized TVStatus getStatus(){
+    	TVStatus s = null;
+
+		if(service != null){
+			try {
+				s = service.getStatus();
+			} catch(RemoteException e) {
+			}
+		}
+
+		return s;
+	}
 
 	/**
 	 *设定视频窗口大小

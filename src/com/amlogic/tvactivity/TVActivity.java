@@ -24,6 +24,7 @@ import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
+import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvsubtitle.TVSubtitleView;
 
 /**
@@ -77,6 +78,12 @@ abstract public class TVActivity extends Activity
             	connected = true;
             	initSubtitle();
             	updateVideoWindow();
+
+            	TVStatus s = client.getStatus();
+            	currProgramNo   = s.programNo;
+            	currProgramType = s.programType;
+            	currProgramID   = s.programID;
+
                 onConnected();
                 break;
             case MSG_DISCONNECTED:
