@@ -1196,7 +1196,7 @@ public class TVProgram{
 		Cursor c;
 
 		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and ";
-		cmd += " ((start < "+begin+" and end > "+end+") ||";
+		cmd += " ((start < "+begin+" and end > "+begin+") ||";
 		cmd += " (start >= "+begin+" and start < "+end+"))";
 		cmd += " order by evt_table.start";
 
