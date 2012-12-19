@@ -47,12 +47,16 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_EVENT_UPDATE      = 18;
 	/**输入源切换*/
 	public static final int TYPE_INPUT_SOURCE_CHANGED = 19;
+	/**请求播放节目号*/
+	public static final int TYPE_PROGRAM_NUMBER    = 20;
 
 	private static final String TAG="TVMessage";
 	private int type;
 	private int programID;
 	private int channelID;
 	private int bookingID;
+	private int programType;
+	private TVProgramNumber programNo;
 	private String cfgName;
 	private TVConfigValue cfgValue;
 	private int scanProgress; // 0-100
@@ -70,7 +74,8 @@ public class TVMessage implements Parcelable{
 	private static final int FLAG_BOOKING_ID = 4;
 	private static final int FLAG_CONFIG     = 8;
 	private static final int FLAG_SCAN       = 16;
-	private static final int FLAG_INPUT_SOURCE = 32;
+	private static final int FLAG_INPUT_SOURCE   = 32;
+	private static final int FLAG_PROGRAM_NUMBER = 64;
 
 	public static final Parcelable.Creator<TVMessage> CREATOR = new Parcelable.Creator<TVMessage>(){
 		public TVMessage createFromParcel(Parcel in) {
@@ -91,6 +96,10 @@ public class TVMessage implements Parcelable{
 			channelID = in.readInt();
 		if((flags & FLAG_BOOKING_ID) != 0)
 			bookingID = in.readInt();
+		if((flags & FLAG_PROGRAM_NUMBER) != 0){
+			programNo = new TVProgramNumber(in);
+			programType = in.readInt();
+		}
 		if((flags & FLAG_CONFIG) != 0){
 			cfgName  = in.readString();
 			cfgValue = new TVConfigValue(in);
@@ -119,6 +128,10 @@ public class TVMessage implements Parcelable{
 			dest.writeInt(channelID);
 		if((flags & FLAG_BOOKING_ID) != 0)
 			dest.writeInt(bookingID);
+		if((flags & FLAG_PROGRAM_NUMBER) != 0){
+			programNo.writeToParcel(dest, flag);
+			dest.writeInt(programType);
+		}
 		if((flags & FLAG_CONFIG) != 0){
 			dest.writeString(cfgName);
 			cfgValue.writeToParcel(dest, flag);
@@ -165,6 +178,28 @@ public class TVMessage implements Parcelable{
 			throw new UnsupportedOperationException();
 
 		return programID;
+	}
+
+	/**
+	 *取得节目号
+	 *@return 返回节目号
+	 */
+	public TVProgramNumber getProgramNumber(){
+		if((flags & FLAG_PROGRAM_NUMBER) != FLAG_PROGRAM_NUMBER)
+			throw new UnsupportedOperationException();
+
+		return programNo;
+	}
+
+	/**
+	 *取得节目类型
+	 *@return 返回节目类型
+	 */
+	public int getProgramType(){
+		if((flags & FLAG_PROGRAM_NUMBER) != FLAG_PROGRAM_NUMBER)
+			throw new UnsupportedOperationException();
+
+		return programType;
 	}
 
 	/**
@@ -354,6 +389,21 @@ public class TVMessage implements Parcelable{
 		msg.flags = FLAG_PROGRAM_ID;
 		msg.type = TYPE_PROGRAM_STOP;
 		msg.programID = programID;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个ProgramNumber消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programNumber(int type, TVProgramNumber no){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_NUMBER;
+		msg.type = TYPE_PROGRAM_NUMBER;
+		msg.programType = type;
+		msg.programNo = no;
 
 		return msg;
 	}

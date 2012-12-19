@@ -740,6 +740,9 @@ public class TVService extends Service implements TVConfig.Update{
 
 		programNum = prog.getNumber();
 
+		/*Send program number message.*/
+		sendMessage(TVMessage.programNumber(getCurProgramType(), programNum));
+
 		/*Check if the input source needed reset.*/
 		try{
 			if(config.getBoolean("tv:mix_atv_dtv")){
@@ -1000,7 +1003,7 @@ public class TVService extends Service implements TVConfig.Update{
 								epgScanner.enterChannel(channelID);
 							}
 						}
-						if((status == TVStatus.STATUS_SET_FRONTEND) && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+						if((status == TVStatus.STATUS_SET_FRONTEND)/* && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0*/){
 							/*Play AV.*/
 							playCurrentProgramAV();
 						}

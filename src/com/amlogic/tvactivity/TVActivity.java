@@ -43,6 +43,8 @@ abstract public class TVActivity extends Activity
     private VideoView videoView;
     private TVSubtitleView subtitleView;
     private boolean connected = false;
+    private int currProgramType;
+    private TVProgramNumber currProgramNo;
     private int currProgramID = -1;
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
@@ -230,12 +232,27 @@ abstract public class TVActivity extends Activity
 
 	/*On program started*/
     private void onProgramStart(int prog_id){
+    	TVProgram prog;
+
     	Log.d(TAG, "onProgramStart");
 
     	currProgramID = prog_id;
 
+		/*Stop the program number.*/
+    	prog = TVProgram.selectByID(this, prog_id);
+    	if(prog != null){
+    		currProgramType = prog.getType();
+    		currProgramNo = prog.getNumber();
+		}
+
 		/*Start subtitle*/
 		resetSubtitle(SUBTITLE_SUB);
+	}
+
+	/*On program number*/
+	private void onProgramNumber(int type, TVProgramNumber no){
+		currProgramType = type;
+		currProgramNo = no;
 	}
 
 	/*On program stopped*/
@@ -243,6 +260,7 @@ abstract public class TVActivity extends Activity
 		Log.d(TAG, "onProgramStop");
 
 		currProgramID = -1;
+		currProgramNo = null;
 
     	/*Stop subtitle.*/
     	resetSubtitle(SUBTITLE_SUB);
@@ -284,6 +302,9 @@ abstract public class TVActivity extends Activity
 	/*Solve the TV message*/
     private void solveMessage(TVMessage msg){
     	switch(msg.getType()){
+			case TVMessage.TYPE_PROGRAM_NUMBER:
+				onProgramNumber(msg.getProgramType(), msg.getProgramNumber());
+				break;
 			case TVMessage.TYPE_PROGRAM_START:
 				onProgramStart(msg.getProgramID());
 				break;
@@ -936,5 +957,29 @@ abstract public class TVActivity extends Activity
     public int getFrontendBER() {
         return client.getFrontendBER();
     }
+
+	/**
+	 *取得当前正在播放的节目ID
+	 *@return 返回正在播放的节目ID
+	 */
+    public int getCurrentProgramID(){
+    	return currProgramID;
+	}
+
+	/**
+	 *取得当前设定的节目类型
+	 *@return 返回当前设定的节目类型
+	 */
+	public int getCurrentProgramType(){
+		return currProgramType;
+	}
+
+	/**
+	 *取得当前设定的节目号
+	 *@return 返回当前设定的节目号
+	 */
+	public TVProgramNumber getCurrentProgramNumber(){
+		return currProgramNo;
+	}
 }
 
