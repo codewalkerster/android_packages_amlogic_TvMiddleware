@@ -3,8 +3,11 @@ package com.amlogic.tvservice;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
+
+
 import java.io.File;
-import android.util.Log;
+
+
 
 abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 
@@ -46,6 +49,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	public TVDevice(){
 	}
 
+	
 	abstract public void setInputSource(TVConst.SourceInput source);
 
 	abstract public TVConst.SourceInput getCurInputSource();
