@@ -7,6 +7,7 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
+import android.os.Looper;
 
 abstract public class TVDeviceImpl extends TVDevice{
 
