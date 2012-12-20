@@ -911,6 +911,8 @@ public class TVProgram{
 	 *@return 返回字幕总数
 	 */
 	public int getSubtitleCount(){
+		selectSubtitle();
+
 		if(subtitles == null)
 			return 0;
 
@@ -1011,6 +1013,8 @@ public class TVProgram{
 	 *@return 返回图文信息总数
 	 */
 	public int getTeletextCount(){
+		selectTeletext();
+
 		if(teletexts == null)
 			return 0;
 
