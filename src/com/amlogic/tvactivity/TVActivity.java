@@ -527,6 +527,7 @@ abstract public class TVActivity extends Activity
 			return;
 
 		if(params.setATVVideoFormat(fmt)){
+			chan.setATVVideoFormat(fmt);
 			client.resetATVFormat();
 		}
 	}
@@ -557,6 +558,7 @@ abstract public class TVActivity extends Activity
 			return;
 
 		if(params.setATVAudioFormat(fmt)){
+			chan.setATVAudioFormat(fmt);
 			client.resetATVFormat();
 		}
 	}

@@ -294,8 +294,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     public void resetATVFormat(TVChannelParams params)
     {
         Log.v(TAG, "resetATVFormat");
-        if (params.mode == TVChannelParams.MODE_QAM)
-            tv.SetFrontEnd(params.mode, params.frequency, params.symbolRate, params.modulation);
+        if (params.mode == TVChannelParams.MODE_ANALOG)
+            tv.SetFrontEnd(params.mode, params.frequency, params.standard, 0);
     }
 
     public void stopATV()
