@@ -106,7 +106,7 @@ public class TVDatabase extends SQLiteOpenHelper
 					" 751.25  759.25  767.25  775.25  783.25  791.25  799.25  807.25   715.25  823.25  831.25  839.25  847.25  855.25  863.25  871.25   " +
 					" 879.25  887.25  895.25  903.25  911.25  919.25  927.25  935.25  943.25  951.25 													" 
         ),
-		new TVRegion("Default DVB-C-FRANCE", TVChannelParams.MODE_OFDM,
+		new TVRegion("Default DVB-T FRANCE", TVChannelParams.MODE_OFDM,
 					" 177.5   7   184.5   7  191.5  7  198.5  7  205.5  7  212.5  7  219.5  7  226.5  7    " +
 					" 474  8  482  8  490  8  498  8  506  8  514  8  522  8  530  8  " +
 					" 538  8  546  8  554  8  562  8  570  8  578  8  586  8  594  8  " +

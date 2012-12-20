@@ -882,11 +882,26 @@ public class TVService extends Service implements TVConfig.Update{
 						String[] flist = freqs.split(" ");
 						
 						if (flist !=null && flist.length > 0) {
-							freqList = new int[flist.length];
-							/** get each frequency */
-							for (int i=0; i<freqList.length; i++) {
-								freqList[i] = Integer.parseInt(flist[i]);
+
+							if(region.startsWith("Default DVB-T")){
+								channelList = new TVChannelParams[flist.length/2];
+								/** get each frequency and bandwidth */
+								for (int i=0; i<channelList.length; i++) {
+									if(i%2 == 0){
+										channelList[i/2].frequency = Integer.parseInt(flist[i]) * 1000 * 1000;
+									}else{
+										channelList[i/2].bandwidth = Integer.parseInt(flist[i]);
+									}
+								}								
 							}
+							else{
+								channelList = new TVChannelParams[flist.length];
+								/** get each frequency */
+								for (int i=0; i<channelList.length; i++) {
+									channelList[i].frequency = Integer.parseInt(flist[i]);
+								}
+							}
+							
 						}
 					}
 				}
