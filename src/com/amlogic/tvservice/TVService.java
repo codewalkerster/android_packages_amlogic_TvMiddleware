@@ -825,7 +825,7 @@ public class TVService extends Service implements TVConfig.Update{
 			return;
 		}
 		
-		int[] freqList = null;
+		TVChannelParams[] channelList = null;
 		if (sp.getTvMode() != TVScanParams.TV_MODE_ATV &&
 			sp.getDtvMode() == TVScanParams.DTV_MODE_ALLBAND) {
 			String region;
@@ -862,7 +862,7 @@ public class TVService extends Service implements TVConfig.Update{
 			}
 		} 
 		
-		tsp.setDtvParams(0, freqList);
+		tsp.setDtvParams(0, channelList);
 
 		/** No exceptions, start scan */
 		stopPlaying();
