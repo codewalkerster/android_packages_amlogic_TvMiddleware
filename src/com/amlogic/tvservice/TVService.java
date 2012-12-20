@@ -825,10 +825,12 @@ public class TVService extends Service implements TVConfig.Update{
 
 	/*Start channel scanning.*/
 	private void resolveStartScan(TVScanParams sp){
+		Log.d(TAG, "resolveStartScan");
+
 		/*if(!isInTVMode())
 			return;
 		*/
-		
+	
 		/** Configure scan */
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
 		/** Set params from config */
