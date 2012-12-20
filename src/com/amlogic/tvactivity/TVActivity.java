@@ -33,9 +33,6 @@ import com.amlogic.tvsubtitle.TVSubtitleView;
 abstract public class TVActivity extends Activity
 {
     private static final String TAG = "TVActivity";
-    private static final int MSG_CONNECTED    = 1949;
-    private static final int MSG_DISCONNECTED = 1950;
-    private static final int MSG_MESSAGE      = 1951;
 
 	private static final int SUBTITLE_NONE = 0;
     private static final int SUBTITLE_SUB  = 1;
@@ -44,9 +41,6 @@ abstract public class TVActivity extends Activity
     private VideoView videoView;
     private TVSubtitleView subtitleView;
     private boolean connected = false;
-    private int currProgramType;
-    private TVProgramNumber currProgramNo;
-    private int currProgramID = -1;
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
     private int currTeletextPID = -1;
@@ -55,46 +49,20 @@ abstract public class TVActivity extends Activity
 
     private TVClient client = new TVClient() {
         public void onConnected() {
-            Message msg = handler.obtainMessage(MSG_CONNECTED);
-            handler.sendMessage(msg);
+        	connected = true;
+        	initSubtitle();
+        	updateVideoWindow();
+        	TVActivity.this.onConnected();
         }
 
         public void onDisconnected() {
-            Message msg = handler.obtainMessage(MSG_DISCONNECTED);
-            handler.sendMessage(msg);
+        	connected = false;
+        	TVActivity.this.onDisconnected();
         }
 
         public void onMessage(TVMessage m) {
-            Message msg = handler.obtainMessage(MSG_MESSAGE, m);
-            handler.sendMessage(msg);
-        }
-    };
-
-    private Handler handler = new Handler() {
-        public void handleMessage(Message msg) {
-            Log.d(TAG, "handle message "+msg.what);
-            switch(msg.what) {
-            case MSG_CONNECTED:
-            	connected = true;
-            	initSubtitle();
-            	updateVideoWindow();
-
-            	TVStatus s = client.getStatus();
-            	currProgramNo   = s.programNo;
-            	currProgramType = s.programType;
-            	currProgramID   = s.programID;
-
-                onConnected();
-                break;
-            case MSG_DISCONNECTED:
-            	connected = false;
-                onDisconnected();
-                break;
-            case MSG_MESSAGE:
-            	solveMessage((TVMessage)msg.obj);
-                onMessage((TVMessage)msg.obj);
-                break;
-            }
+        	solveMessage(m);
+        	TVActivity.this.onMessage(m);
         }
     };
 
@@ -137,10 +105,12 @@ abstract public class TVActivity extends Activity
 			return;
 		}
 
-		if(currProgramID == -1)
+		int prog_id = client.getCurrentProgramID();
+
+		if(prog_id == -1)
 			return;
 
-		TVProgram prog = TVProgram.selectByID(this, currProgramID);
+		TVProgram prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -243,31 +213,13 @@ abstract public class TVActivity extends Activity
 
     	Log.d(TAG, "onProgramStart");
 
-    	currProgramID = prog_id;
-
-		/*Stop the program number.*/
-    	prog = TVProgram.selectByID(this, prog_id);
-    	if(prog != null){
-    		currProgramType = prog.getType();
-    		currProgramNo = prog.getNumber();
-		}
-
 		/*Start subtitle*/
 		resetSubtitle(SUBTITLE_SUB);
-	}
-
-	/*On program number*/
-	private void onProgramNumber(int type, TVProgramNumber no){
-		currProgramType = type;
-		currProgramNo = no;
 	}
 
 	/*On program stopped*/
 	private void onProgramStop(int prog_id){
 		Log.d(TAG, "onProgramStop");
-
-		currProgramID = -1;
-		currProgramNo = null;
 
     	/*Stop subtitle.*/
     	resetSubtitle(SUBTITLE_SUB);
@@ -309,9 +261,6 @@ abstract public class TVActivity extends Activity
 	/*Solve the TV message*/
     private void solveMessage(TVMessage msg){
     	switch(msg.getType()){
-			case TVMessage.TYPE_PROGRAM_NUMBER:
-				onProgramNumber(msg.getProgramType(), msg.getProgramNumber());
-				break;
 			case TVMessage.TYPE_PROGRAM_START:
 				onProgramStart(msg.getProgramID());
 				break;
@@ -525,13 +474,15 @@ abstract public class TVActivity extends Activity
 	 *@param id 音频ID
 	 */
 	public void switchAudio(int id){
-		if(currProgramID == -1)
+		int prog_id = client.getCurrentProgramID();
+
+		if(prog_id == -1)
 			return;
 
 		TVProgram prog;
 		TVChannel chan; 
 
-		prog = TVProgram.selectByID(this, currProgramID);
+		prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -555,14 +506,15 @@ abstract public class TVActivity extends Activity
 	 *@param fmt 视频制式
 	 */
 	public void switchATVVideoFormat(TVConst.CC_ATV_VIDEO_STANDARD fmt){
+		int prog_id = client.getCurrentProgramID();
 		TVProgram prog;
 		TVChannel chan;
 		TVChannelParams params;
 
-		if(currProgramID == -1)
+		if(prog_id == -1)
 			return;
 
-		prog = TVProgram.selectByID(this, currProgramID);
+		prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -584,14 +536,15 @@ abstract public class TVActivity extends Activity
 	 *@param fmt 音频制式
 	 */
 	public void switchATVAudioFormat(TVConst.CC_ATV_AUDIO_STANDARD fmt){
+		int prog_id = client.getCurrentProgramID();
 		TVProgram prog;
 		TVChannel chan;
 		TVChannelParams params;
 
-		if(currProgramID == -1)
+		if(prog_id == -1)
 			return;
 
-		prog = TVProgram.selectByID(this, currProgramID);
+		prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -970,7 +923,7 @@ abstract public class TVActivity extends Activity
 	 *@return 返回正在播放的节目ID
 	 */
     public int getCurrentProgramID(){
-    	return currProgramID;
+    	return client.getCurrentProgramID();
 	}
 
 	/**
@@ -978,7 +931,7 @@ abstract public class TVActivity extends Activity
 	 *@return 返回当前设定的节目类型
 	 */
 	public int getCurrentProgramType(){
-		return currProgramType;
+		return client.getCurrentProgramType();
 	}
 
 	/**
@@ -986,7 +939,7 @@ abstract public class TVActivity extends Activity
 	 *@return 返回当前设定的节目号
 	 */
 	public TVProgramNumber getCurrentProgramNumber(){
-		return currProgramNo;
+		return client.getCurrentProgramNumber();
 	}
 }
 

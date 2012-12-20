@@ -22,15 +22,26 @@ public class TVStatus implements Parcelable{
 	};
 
 	public void readFromParcel(Parcel in){
+		int have_no;
+
 		programType = in.readInt();
 		programID = in.readInt();
-		programNo = new TVProgramNumber(in);
+
+		have_no = in.readInt();
+		if(have_no != 0){
+			programNo = new TVProgramNumber(in);
+		}
 	}
 
 	public void writeToParcel(Parcel dest, int flag){
 		dest.writeInt(programType);
 		dest.writeInt(programID);
-		programNo.writeToParcel(dest, flag);
+		if(programNo == null){
+			dest.writeInt(0);
+		}else{
+			dest.writeInt(1);
+			programNo.writeToParcel(dest, flag);
+		}
 	}
 
 	public TVStatus(Parcel in){
