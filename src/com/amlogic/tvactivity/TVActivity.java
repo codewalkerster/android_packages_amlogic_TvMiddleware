@@ -465,7 +465,7 @@ abstract public class TVActivity extends Activity
 	 */
     public void switchSubtitle(int id){
     	if(currSubtitleMode == SUBTITLE_SUB){
-    		resetSubtitle(id);
+    		resetSubtitle(SUBTITLE_SUB, id);
 		}
 	}
 
