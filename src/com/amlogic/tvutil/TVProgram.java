@@ -35,6 +35,8 @@ public class TVProgram{
 	private TVChannel channel;
 	private boolean skip;
 	private boolean lock;
+	private boolean scrambled;
+	private boolean favorite;
 
 	/**
 	 *Service中的基础元素信息
@@ -344,6 +346,12 @@ public class TVProgram{
 
 		col = c.getColumnIndex("lock");
 		this.lock = (c.getInt(col)!=0);
+
+		col = c.getColumnIndex("scrambled_flag");
+		this.scrambled = (c.getInt(col)!=0);
+
+		col = c.getColumnIndex("favor");
+		this.favorite = (c.getInt(col)!=0);
 
 		int pid, fmt;
 
@@ -1100,7 +1108,23 @@ public class TVProgram{
 	}
 
 	/**
-	 *取得节目加锁标志
+	 *取得加扰标志
+	 *@return true 表示节目加扰，false表示节目为清流
+	 */
+	public boolean getScrambledFlag(){
+		return scrambled;
+	}
+
+	/**
+	 *取得节目喜爱标志
+	 *@return true 表示节目设置了喜爱标志，false表示节目未设置喜爱标志
+	 */
+	public boolean getFavoriteFlag(){
+		return favorite;
+	}
+
+	/**
+	 *修改节目加锁标志
 	 *@param f 加锁标志
 	 */
 	public void setLockFlag(boolean f){
@@ -1116,7 +1140,7 @@ public class TVProgram{
 	}
 
 	/**
-	 *取得节目加锁标志
+	 *修改节目加锁标志
 	 *@param f 跳过标志
 	 */
 	public void setSkipFlag(boolean f){
@@ -1125,6 +1149,22 @@ public class TVProgram{
 		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
 				null,
 				"update srv_table set skip = "+(f?1:0)+" where srv_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *修改节目喜爱标志
+	 *@param f 跳过标志
+	 */
+	public void setFavoriteFlag(boolean f){
+		skip = f;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update srv_table set favor = "+(f?1:0)+" where srv_table.db_id = " + id,
 				null, null);
 		if(c != null){
 			c.close();
