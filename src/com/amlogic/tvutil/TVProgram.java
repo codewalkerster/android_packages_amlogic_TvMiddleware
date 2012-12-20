@@ -334,6 +334,8 @@ public class TVProgram{
 			this.type = TYPE_TV;
 		else if(type == 2)
 			this.type = TYPE_RADIO;
+		else if(type == 3)
+			this.type = TYPE_ATV;
 		else
 			this.type = TYPE_DATA;
 
