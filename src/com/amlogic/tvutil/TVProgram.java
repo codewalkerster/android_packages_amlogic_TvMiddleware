@@ -941,7 +941,7 @@ public class TVProgram{
 		if(id >= subtitles.length)
 			id = 0;
 
-		return subtitles[0];
+		return subtitles[id];
 	}
 
 	/**
