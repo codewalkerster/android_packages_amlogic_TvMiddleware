@@ -353,9 +353,10 @@ public class TVChannelParams  implements Parcelable {
 	    int videostd = 0;
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
             if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
-            Log.e(TAG,"video stb auto is not function,replace CC_ATV_VIDEO_STD_PAL");
-            //*********************************temp******************
-            videostd = COLOR_PAL;
+				Log.e(TAG,"video stb auto is not function,replace CC_ATV_VIDEO_STD_PAL");
+				//*********************************temp******************
+				videostd = COLOR_PAL;
+			}
         }else
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal())
             videostd = COLOR_PAL;
@@ -369,7 +370,7 @@ public class TVChannelParams  implements Parcelable {
     }
 	
 	public static int Change2AudioStd(int video_std,int audio_std) {
-	    int tmpTunerStd = 0;;
+	    int tmpTunerStd = 0;
 	   
         if (audio_std >= 0) {
             if(audio_std < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()
