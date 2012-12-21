@@ -76,11 +76,13 @@ abstract public class TVActivity extends Activity
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
 
-        if(subtitleView == null) {
+        if(subtitleView != null) {
         	unregisterConfigCallback("tv:subtitle:enable");
         	unregisterConfigCallback("tv:subtitle:language");
         	unregisterConfigCallback("tv:teletext:language");
-        }
+        	subtitleView.dispose();
+        	subtitleView = null;
+		}
 
         client.disconnect(this);
         super.onDestroy();
