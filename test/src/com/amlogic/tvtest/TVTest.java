@@ -98,6 +98,7 @@ public class TVTest extends TVActivity{
 	}
 
 	int count = 0;
+       int video = 0;
 	int audio = 0;
 	 CC_ATV_VIDEO_STANDARD vidio_std;
 	  public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -108,49 +109,86 @@ public class TVTest extends TVActivity{
             	 ttGotoNextPage();
 				break;
 	            case KeyEvent.KEYCODE_1:
-	            if(!isInTeletextMode())
-		    		 	 ttShow();
-					 else
-					 	 ttHide();
+//	            if(!isInTeletextMode())
+//		    		 	 ttShow();
+//					 else
+//					 	 ttHide();
+	            
+	            if(this.getCurrentProgramID() != -1)
+                {
+                    prog = TVProgram.selectByNumber(this, this.getCurrentProgramType(),   this.getCurrentProgramNumber());
+                    if(prog!=null)
+                   {
+                        Log.v(TAG,"prog is not null");
+                             int std = prog.getChannel().getParams().getStandard();
+                             Log.v(TAG,"std:" + std);
+                             if(prog.getChannel().getParams().isAnalogMode())
+                             {
+                                 int data = 0;
+                                
+                                     data = video ++;
+                                
+                                     CC_ATV_VIDEO_STANDARD video_std = null ;
+                                    if(data == 0)
+                                        video_std = CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_NTSC;
+                                    if(data == 1){
+                                        video_std = CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL;
+                                        video = 0;
+                                    }
+                                     Log.v(TAG,"video_std:" + video_std + "data" + data);
+                                 
+                                   switchATVVideoFormat(video_std);
+                             }
+                        
+                    
+                    }else
+                        Log.v(TAG,"prog is null");
+                }
+	            
 	                break;
 	            case KeyEvent.KEYCODE_2:
-	            	// setInputSource(TVConst.SourceInput.SOURCE_HDMI1);
-					 Log.v(TAG,"getCurrentProgramID:" + this.getCurrentProgramID() + "this.getCurrentProgramType() " + this.getCurrentProgramType());
-					if(this.getCurrentProgramID() != -1)
-					{
-						prog = TVProgram.selectByNumber(this, this.getCurrentProgramType(),   this.getCurrentProgramNumber());
-						if(prog!=null)
-					   {
-								 int std = prog.getChannel().getParams().getStandard();
-								 Log.v(TAG,"std:" + std);
-								 if(prog.getChannel().getParams().isAnalogMode())
-								 {
-									 int data = 0;
-									
-										 data = audio ++;
-									
-										CC_ATV_AUDIO_STANDARD audio_std = null ;
-										if(data == 0)
-											audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
-										if(data == 1)
-											audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I;
-										if(data == 2)
-											audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG;
-										if(data  == 3)
-											audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M;
-										if(data == 4)
-											audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L;
-										if(data == 5)
-											audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO;
-										 Log.v(TAG,"audio_std:" + audio_std + "data" + data);
-									 
-									    switchATVAudioFormat(audio_std);
-									     prog.getChannel().setATVAudioFormat(audio_std);
-								 }
-							
-						
-						}
-					}
+//	            	 setInputSource(TVConst.SourceInput.SOURCE_HDMI1);
+	                Log.v(TAG,"getCurrentProgramID:" + this.getCurrentProgramID() + "this.getCurrentProgramType() " + this.getCurrentProgramType());
+                    if(this.getCurrentProgramID() != -1)
+                    {
+                        prog = TVProgram.selectByNumber(this, this.getCurrentProgramType(),   this.getCurrentProgramNumber());
+                        if(prog!=null)
+                       {
+                            Log.v(TAG,"prog is not null");
+                                 int std = prog.getChannel().getParams().getStandard();
+                                 Log.v(TAG,"std:" + std);
+                                 if(prog.getChannel().getParams().isAnalogMode())
+                                 {
+                                     int data = 0;
+                                    
+                                         data = audio ++;
+                                    
+                                        CC_ATV_AUDIO_STANDARD audio_std = null ;
+                                        if(data == 0)
+                                            audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
+                                        if(data == 1)
+                                            audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I;
+                                        if(data == 2)
+                                            audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG;
+                                        if(data  == 3){
+                                            audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M;
+											audio = 0; 
+										}
+                                        //if(data == 4)
+										//	audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L;
+                                       // if(data == 5){
+                                       //     audio_std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO;
+									   //	}
+                                         Log.v(TAG,"audio_std:" + audio_std + "data" + data);
+                                     
+                                       switchATVAudioFormat(audio_std);
+                                 }
+                            
+                        
+                        }else
+                            Log.v(TAG,"prog is null");
+                    }
+                    
 	                break;
 	           
 	            	  

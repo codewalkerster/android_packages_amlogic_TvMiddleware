@@ -352,8 +352,10 @@ public class TVChannelParams  implements Parcelable {
 	public static int Change2VideoStd(int data){
 	    int videostd = 0;
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
-            Log.e(TAG,"video stb auto is not function");
-            videostd = 0;
+            if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
+            Log.e(TAG,"video stb auto is not function,replace CC_ATV_VIDEO_STD_PAL");
+            //*********************************temp******************
+            videostd = COLOR_PAL;
         }else
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal())
             videostd = COLOR_PAL;

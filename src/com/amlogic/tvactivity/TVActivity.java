@@ -528,8 +528,9 @@ abstract public class TVActivity extends Activity
 		if(params == null && !params.isAnalogMode())
 			return;
 
-		if(params.setATVVideoFormat(fmt)){
-			chan.setATVVideoFormat(fmt);
+		//if(params.setATVVideoFormat(fmt)){
+		if(chan.setATVVideoFormat(fmt)){
+			Log.v(TAG,"setATVVideoFormat");
 			client.resetATVFormat();
 		}
 	}
@@ -559,8 +560,9 @@ abstract public class TVActivity extends Activity
 		if(params == null && !params.isAnalogMode())
 			return;
 
-		if(params.setATVAudioFormat(fmt)){
-			chan.setATVAudioFormat(fmt);
+		//if(params.setATVAudioFormat(fmt)){
+		if(chan.setATVAudioFormat(fmt)){
+			Log.v(TAG,"setATVAudioFormat");
 			client.resetATVFormat();
 		}
 	}
