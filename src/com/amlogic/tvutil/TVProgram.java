@@ -1160,7 +1160,7 @@ public class TVProgram{
 	 *@param f 跳过标志
 	 */
 	public void setFavoriteFlag(boolean f){
-		skip = f;
+		favorite = f;
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
 				null,
