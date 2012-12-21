@@ -16,7 +16,7 @@ LOCAL_C_INCLUDES := external/libzvbi/src \
 	$(DVB_PATH)/include/am_mw \
 	$(DVB_PATH)/include/am_adp \
 	bionic/libc/include \
-	external/dvb/android/ndk/include
+	$(DVB_PATH)/android/ndk/include
 
 LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libskia liblog
 
@@ -37,7 +37,7 @@ LOCAL_C_INCLUDES := external/libzvbi/src \
 	$(DVB_PATH)/include/am_adp \
 	external/sqlite/dist \
 	bionic/libc/include \
-	external/dvb/android/ndk/include
+	$(DVB_PATH)/android/ndk/include
 
 LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libsqlite libskia liblog
 
@@ -61,7 +61,7 @@ LOCAL_C_INCLUDES := external/libzvbi/src \
 	packages/amlogic/LibPlayer/amcodec/include \
 	packages/amlogic/LibPlayer/amffmpeg \
 	packages/amlogic/LibPlayer/amplayer \
-	external/dvb/android/ndk/include
+	$(DVB_PATH)/android/ndk/include
 
 LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libskia liblog
 
@@ -82,7 +82,7 @@ LOCAL_C_INCLUDES := external/libzvbi/src \
 	$(DVB_PATH)/include/am_adp \
 	external/sqlite/dist \
 	bionic/libc/include \
-	external/dvb/android/ndk/include
+	$(DVB_PATH)/android/ndk/include
 
 LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libskia liblog
 
@@ -103,7 +103,7 @@ LOCAL_C_INCLUDES := external/libzvbi/src \
 	$(DVB_PATH)/include/am_adp \
 	external/sqlite/dist \
 	bionic/libc/include \
-	external/dvb/android/ndk/include
+	$(DVB_PATH)/android/ndk/include
 
 LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libskia liblog
 
