@@ -1038,12 +1038,14 @@ public class TVService extends Service implements TVConfig.Update{
 							/*Play AV.*/
 							playCurrentProgramAV();
 						}
-						if(channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+						if(!channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
 							Log.d(TAG, "signal resume");
 							sendMessage(TVMessage.signalResume(channelID));
-						}else if(!channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
+							channelLocked = true;
+						}else if(channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
 							Log.d(TAG, "signal lost");
 							sendMessage(TVMessage.signalLost(channelID));
+							channelLocked = false;
 						}
 					}
 				}
