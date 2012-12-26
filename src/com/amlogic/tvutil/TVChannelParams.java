@@ -306,20 +306,30 @@ public class TVChannelParams  implements Parcelable {
 
 	
 	public static CC_ATV_AUDIO_STANDARD AudioStd2Enum(int data){
-	    if((data & STD_DK) == STD_DK){
-	        return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
-	    }else
-        if((data & STD_PAL_I) == STD_PAL_I){
+	    CC_ATV_AUDIO_STANDARD std = null;
+	    if( ((data & STD_PAL_DK) == STD_PAL_DK) ||
+	        ((data & STD_SECAM_DK) == STD_SECAM_DK))
+	        std =  CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK;
+	    
+	    else
+        if((data & STD_PAL_I) == STD_PAL_I)
             return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_I;
-        }else
-        if((data & STD_BG) == STD_BG){
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG;
-        }
+       
+        else
+        if( ((data & STD_PAL_BG) == STD_PAL_BG) ||
+            ((data & STD_SECAM_B) == STD_SECAM_B)|| 
+            ((data & STD_SECAM_G) == STD_SECAM_G ))
+            std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_BG;
+        
     	else
-        if((data & STD_M) == STD_M){
-            return CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M;
-        }
-	    return null;
+	    if( ((data & STD_PAL_M) == STD_PAL_M) ||
+            ((data & STD_NTSC_M) == STD_NTSC_M))
+	        std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_M;
+	   
+	    else
+	    if( (data & STD_SECAM_L) == STD_SECAM_L)            
+	        std = CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_L;   
+	    return  std ;
 	    
 	}
 	
@@ -342,8 +352,11 @@ public class TVChannelParams  implements Parcelable {
 	public static int Change2VideoStd(int data){
 	    int videostd = 0;
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
-            Log.e(TAG,"video stb auto is not function");
-            videostd = 0;
+            if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
+				Log.e(TAG,"video stb auto is not function,replace CC_ATV_VIDEO_STD_PAL");
+				//*********************************temp******************
+				videostd = COLOR_PAL;
+			}
         }else
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal())
             videostd = COLOR_PAL;
@@ -357,7 +370,7 @@ public class TVChannelParams  implements Parcelable {
     }
 	
 	public static int Change2AudioStd(int video_std,int audio_std) {
-	    int tmpTunerStd = 0;;
+	    int tmpTunerStd = 0;
 	   
         if (audio_std >= 0) {
             if(audio_std < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal()

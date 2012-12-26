@@ -479,12 +479,16 @@ public class TVSubtitleView extends View {
 		native_sub_unlock();
 	}
 
-	protected void finalize() throws Throwable {
+	public void dispose(){
 		if(!destroy){
 			clear();
 			destroy = true;
 			native_sub_destroy();
 		}
+	}
+
+	protected void finalize() throws Throwable {
+		dispose();
 		super.finalize();
 	}  
 }

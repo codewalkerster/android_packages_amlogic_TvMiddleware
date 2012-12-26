@@ -23,7 +23,9 @@ import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVChannel;
 import com.amlogic.tvutil.TVMessage;
+import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvdataprovider.TVDataProvider;
+import android.os.Looper;
 
 public class TVService extends Service implements TVConfig.Update{
 	private static final String TAG = "TVService";
@@ -54,7 +56,7 @@ public class TVService extends Service implements TVConfig.Update{
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
 	
-	private void sendMessage(TVMessage msg){
+	private synchronized void sendMessage(TVMessage msg){
 		final int N = callbacks.beginBroadcast();
 		for (int i = 0; i < N; i++){
 			try{
@@ -67,6 +69,18 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	private final ITVService.Stub mBinder = new ITVService.Stub(){
+
+		public TVStatus getStatus(){
+			TVStatus s = new TVStatus();
+
+			synchronized(TVService.this){
+				s.programType = programType;
+				s.programNo   = programNum;
+				s.programID   = programID;
+			}
+
+			return s;
+		}
 
 		public int getFrontendStatus(){
 			int ret;
@@ -120,15 +134,19 @@ public class TVService extends Service implements TVConfig.Update{
 			return ret;
 		}
 
-		public synchronized void registerCallback(ITVCallback cb){
-			if(cb !=null){
-				callbacks.register(cb);
+		public void registerCallback(ITVCallback cb){
+			synchronized(TVService.this){
+				if(cb !=null){
+					callbacks.register(cb);
+				}
 			}
 		}
 
-		public synchronized void unregisterCallback(ITVCallback cb){
-			if(cb != null){
-				callbacks.unregister(cb);
+		public void unregisterCallback(ITVCallback cb){
+			synchronized(TVService.this){
+				if(cb != null){
+					callbacks.unregister(cb);
+				}
 			}
 		}
 
@@ -368,7 +386,7 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 	};
 
-	private enum TVStatus{
+	private enum TVRunningStatus{
 		STATUS_SET_INPUT_SOURCE,
 		STATUS_SET_FRONTEND,
 		STATUS_PLAY_ATV,
@@ -379,7 +397,7 @@ public class TVService extends Service implements TVConfig.Update{
 		STATUS_SCAN
 	}
 
-	private TVStatus status;
+	private TVRunningStatus status;
 	private TVConst.SourceInput inputSource;
 	private TVConst.SourceInput reqInputSource;
 	private TVConst.SourceInput lastTVSource;
@@ -392,6 +410,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private int programID = -1;
 	private int programVideoPID = -1;
 	private int programAudioPID = -1;
+	private int programType = TVProgram.TYPE_TV;
 	private TVProgramNumber programNum;
 	private boolean programBlocked = false;
 	private boolean channelLocked = false;
@@ -435,29 +454,31 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	private void stopPlaying(){
-		if(status == TVStatus.STATUS_PLAY_ATV){
+		if(status == TVRunningStatus.STATUS_PLAY_ATV){
 			device.stopATV();
 			sendMessage(TVMessage.programStop(programID));
-			status = TVStatus.STATUS_STOPPED;
-		}else if(status == TVStatus.STATUS_PLAY_DTV){
+			status = TVRunningStatus.STATUS_STOPPED;
+		}else if(status == TVRunningStatus.STATUS_PLAY_DTV){
 			device.stopDTV();
 			sendMessage(TVMessage.programStop(programID));
-			status = TVStatus.STATUS_STOPPED;
-		}else if(status == TVStatus.STATUS_TIMESHIFTING){
+			status = TVRunningStatus.STATUS_STOPPED;
+		}else if(status == TVRunningStatus.STATUS_TIMESHIFTING){
 			device.stopTimeshifting();
-			status = TVStatus.STATUS_STOPPED;
-		}else if(status == TVStatus.STATUS_PLAYBACK){
+			status = TVRunningStatus.STATUS_STOPPED;
+		}else if(status == TVRunningStatus.STATUS_PLAYBACK){
 			device.stopPlayback();
-			status = TVStatus.STATUS_STOPPED;
+			status = TVRunningStatus.STATUS_STOPPED;
 		}
 
-		programID = -1;
+		synchronized(this){
+			programID = -1;
+		}
 	}
 
 	private void stopScan(boolean store){
-		if(status == TVStatus.STATUS_SCAN){
+		if(status == TVRunningStatus.STATUS_SCAN){
 			scanner.stop(store);
-			status = TVStatus.STATUS_STOPPED;
+			status = TVRunningStatus.STATUS_STOPPED;
 
 			if(store){
 				atvPlayParams = null;
@@ -465,10 +486,12 @@ public class TVService extends Service implements TVConfig.Update{
 				dtvRadioPlayParams = null;
 			}
 
-			channelID  = -1;
-			programID  = -1;
-			programNum = null;
-			channelParams = null;
+			synchronized(this){
+				channelID  = -1;
+				programID  = -1;
+				programNum = null;
+				channelParams = null;
+			}
 		}
 	}
 
@@ -492,8 +515,8 @@ public class TVService extends Service implements TVConfig.Update{
 		if(!isInTVMode())
 			return false;
 
-		if((status == TVStatus.STATUS_TIMESHIFTING) ||
-				(status == TVStatus.STATUS_PLAYBACK))
+		if((status == TVRunningStatus.STATUS_TIMESHIFTING) ||
+				(status == TVRunningStatus.STATUS_PLAYBACK))
 			return true;
 
 		return false;
@@ -547,7 +570,9 @@ public class TVService extends Service implements TVConfig.Update{
 		
 			p = playParamsToProgram(atvPlayParams);
 			if(p != null){
-				programID = p.getID();
+				synchronized(this){
+					programID = p.getID();
+				}
 
 				if(!checkProgramBlock()){
 					Log.d(TAG, "play ATV "+programID);
@@ -556,7 +581,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 				sendMessage(TVMessage.programStart(programID));
 
-				status = TVStatus.STATUS_PLAY_ATV;
+				status = TVRunningStatus.STATUS_PLAY_ATV;
 			}
 		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 			TVProgram p;
@@ -567,7 +592,9 @@ public class TVService extends Service implements TVConfig.Update{
 			p = playParamsToProgram(getDTVPlayParams());
 			if(p != null){
 
-				programID = p.getID();
+				synchronized(this){
+					programID = p.getID();
+				}
 
 				/*Scan the program's EPG*/
 				epgScanner.enterProgram(programID);
@@ -603,7 +630,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 				sendMessage(TVMessage.programStart(programID));
 
-				status = TVStatus.STATUS_PLAY_DTV;
+				status = TVRunningStatus.STATUS_PLAY_DTV;
 			}
 		}
 	}
@@ -614,7 +641,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 			if(atvPlayParams == null){
-				status = TVStatus.STATUS_STOPPED;
+				status = TVRunningStatus.STATUS_STOPPED;
 				return;
 			}
 			p = playParamsToProgram(atvPlayParams);
@@ -627,7 +654,7 @@ public class TVService extends Service implements TVConfig.Update{
 				tp = dtvRadioPlayParams;
 			}
 			if(tp == null){
-				status = TVStatus.STATUS_STOPPED;
+				status = TVRunningStatus.STATUS_STOPPED;
 				return;
 			}
 			p = playParamsToProgram(tp);
@@ -636,8 +663,15 @@ public class TVService extends Service implements TVConfig.Update{
 		if(p == null)
 			return;
 
-		programNum = p.getNumber();
-		channelID = p.getChannel().getID();
+		synchronized(this){
+			programNum = p.getNumber();
+			programType = p.getType();
+			channelID = p.getChannel().getID();
+		}
+
+		/*Send program number message.*/
+		sendMessage(TVMessage.programNumber(getCurProgramType(), programNum));
+
 		fe_params = p.getChannel().getParams();
 
 		if((channelParams == null) || !channelParams.equals(fe_params)){
@@ -649,7 +683,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 			/*Reset the frontend.*/
 			device.setFrontend(fe_params);
-			status = TVStatus.STATUS_SET_FRONTEND;
+			status = TVRunningStatus.STATUS_SET_FRONTEND;
 			return;
 		}
 
@@ -677,7 +711,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 		device.setInputSource(src);
 
-		status = TVStatus.STATUS_SET_INPUT_SOURCE;
+		status = TVRunningStatus.STATUS_SET_INPUT_SOURCE;
 	}
 
 	/*Reset the program's type.*/
@@ -738,8 +772,6 @@ public class TVService extends Service implements TVConfig.Update{
 		if(chan == null)
 			return;
 
-		programNum = prog.getNumber();
-
 		/*Check if the input source needed reset.*/
 		try{
 			if(config.getBoolean("tv:mix_atv_dtv")){
@@ -793,10 +825,12 @@ public class TVService extends Service implements TVConfig.Update{
 
 	/*Start channel scanning.*/
 	private void resolveStartScan(TVScanParams sp){
+		Log.d(TAG, "resolveStartScan");
+
 		/*if(!isInTVMode())
 			return;
 		*/
-		
+	
 		/** Configure scan */
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
 		/** Set params from config */
@@ -876,7 +910,7 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 
 		scanner.scan(tsp);
-		status = TVStatus.STATUS_SCAN;
+		status = TVRunningStatus.STATUS_SCAN;
 	}
 
 	/*Stop scanning process.*/
@@ -955,7 +989,7 @@ public class TVService extends Service implements TVConfig.Update{
 				if(source == reqInputSource){
 					inputSource = reqInputSource;
 					if(isInTVMode()){
-						if(status == TVStatus.STATUS_SET_INPUT_SOURCE) {
+						if(status == TVRunningStatus.STATUS_SET_INPUT_SOURCE) {
 							TVProgram p = null;
 
 							if(inputSource == TVConst.SourceInput.SOURCE_DTV){
@@ -1000,16 +1034,18 @@ public class TVService extends Service implements TVConfig.Update{
 								epgScanner.enterChannel(channelID);
 							}
 						}
-						if((status == TVStatus.STATUS_SET_FRONTEND) && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+						if((status == TVRunningStatus.STATUS_SET_FRONTEND)/* && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0*/){
 							/*Play AV.*/
 							playCurrentProgramAV();
 						}
-						if(channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
+						if(!channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
 							Log.d(TAG, "signal resume");
 							sendMessage(TVMessage.signalResume(channelID));
-						}else if(!channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
+							channelLocked = true;
+						}else if(channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
 							Log.d(TAG, "signal lost");
 							sendMessage(TVMessage.signalLost(channelID));
+							channelLocked = false;
 						}
 					}
 				}
@@ -1076,7 +1112,7 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "tv:audio:language changed -> "+lang);
 
 				/*if(inputSource == TVConst.SourceInput.SOURCE_DTV){
-					if(status == TVStatus.STATUS_PLAY_DTV){
+					if(status == TVRunningStatus.STATUS_PLAY_DTV){
 						TVProgram p = TVProgram.selectByID(this, programID);
 						if(p != null){
 							TVProgram.Audio audio;
@@ -1103,7 +1139,7 @@ public class TVService extends Service implements TVConfig.Update{
 	/*Switch audio*/
 	private void resolveSwitchAudio(int id){
 		if(inputSource == TVConst.SourceInput.SOURCE_DTV){
-			if(status == TVStatus.STATUS_PLAY_DTV){
+			if(status == TVRunningStatus.STATUS_PLAY_DTV){
 				TVProgram p = TVProgram.selectByID(this, programID);
 				if(p != null){
 					TVProgram.Audio audio;
@@ -1149,9 +1185,8 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	public void onCreate(){
-		super.onCreate();
-
-		device = new TVDeviceImpl(){
+		super.onCreate();	
+		device = new TVDeviceImpl( this.getMainLooper()){
 			/*Device event handler*/
 			public void onEvent(TVDevice.Event event){
 				Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);

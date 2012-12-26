@@ -24,6 +24,7 @@ import com.amlogic.tvutil.TVPlayParams;
 import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
+import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvsubtitle.TVSubtitleView;
 
 /**
@@ -32,9 +33,6 @@ import com.amlogic.tvsubtitle.TVSubtitleView;
 abstract public class TVActivity extends Activity
 {
     private static final String TAG = "TVActivity";
-    private static final int MSG_CONNECTED    = 1949;
-    private static final int MSG_DISCONNECTED = 1950;
-    private static final int MSG_MESSAGE      = 1951;
 
 	private static final int SUBTITLE_NONE = 0;
     private static final int SUBTITLE_SUB  = 1;
@@ -43,7 +41,6 @@ abstract public class TVActivity extends Activity
     private VideoView videoView;
     private TVSubtitleView subtitleView;
     private boolean connected = false;
-    private int currProgramID = -1;
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
     private int currTeletextPID = -1;
@@ -52,40 +49,20 @@ abstract public class TVActivity extends Activity
 
     private TVClient client = new TVClient() {
         public void onConnected() {
-            Message msg = handler.obtainMessage(MSG_CONNECTED);
-            handler.sendMessage(msg);
+        	connected = true;
+        	initSubtitle();
+        	updateVideoWindow();
+        	TVActivity.this.onConnected();
         }
 
         public void onDisconnected() {
-            Message msg = handler.obtainMessage(MSG_DISCONNECTED);
-            handler.sendMessage(msg);
+        	connected = false;
+        	TVActivity.this.onDisconnected();
         }
 
         public void onMessage(TVMessage m) {
-            Message msg = handler.obtainMessage(MSG_MESSAGE, m);
-            handler.sendMessage(msg);
-        }
-    };
-
-    private Handler handler = new Handler() {
-        public void handleMessage(Message msg) {
-            Log.d(TAG, "handle message "+msg.what);
-            switch(msg.what) {
-            case MSG_CONNECTED:
-            	connected = true;
-            	initSubtitle();
-            	updateVideoWindow();
-                onConnected();
-                break;
-            case MSG_DISCONNECTED:
-            	connected = false;
-                onDisconnected();
-                break;
-            case MSG_MESSAGE:
-            	solveMessage((TVMessage)msg.obj);
-                onMessage((TVMessage)msg.obj);
-                break;
-            }
+        	solveMessage(m);
+        	TVActivity.this.onMessage(m);
         }
     };
 
@@ -99,11 +76,13 @@ abstract public class TVActivity extends Activity
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
 
-        if(subtitleView == null) {
+        if(subtitleView != null) {
         	unregisterConfigCallback("tv:subtitle:enable");
         	unregisterConfigCallback("tv:subtitle:language");
         	unregisterConfigCallback("tv:teletext:language");
-        }
+        	subtitleView.dispose();
+        	subtitleView = null;
+		}
 
         client.disconnect(this);
         super.onDestroy();
@@ -128,10 +107,12 @@ abstract public class TVActivity extends Activity
 			return;
 		}
 
-		if(currProgramID == -1)
+		int prog_id = client.getCurrentProgramID();
+
+		if(prog_id == -1)
 			return;
 
-		TVProgram prog = TVProgram.selectByID(this, currProgramID);
+		TVProgram prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -230,9 +211,9 @@ abstract public class TVActivity extends Activity
 
 	/*On program started*/
     private void onProgramStart(int prog_id){
-    	Log.d(TAG, "onProgramStart");
+    	TVProgram prog;
 
-    	currProgramID = prog_id;
+    	Log.d(TAG, "onProgramStart");
 
 		/*Start subtitle*/
 		resetSubtitle(SUBTITLE_SUB);
@@ -241,8 +222,6 @@ abstract public class TVActivity extends Activity
 	/*On program stopped*/
 	private void onProgramStop(int prog_id){
 		Log.d(TAG, "onProgramStop");
-
-		currProgramID = -1;
 
     	/*Stop subtitle.*/
     	resetSubtitle(SUBTITLE_SUB);
@@ -488,7 +467,7 @@ abstract public class TVActivity extends Activity
 	 */
     public void switchSubtitle(int id){
     	if(currSubtitleMode == SUBTITLE_SUB){
-    		resetSubtitle(id);
+    		resetSubtitle(SUBTITLE_SUB, id);
 		}
 	}
 
@@ -497,13 +476,15 @@ abstract public class TVActivity extends Activity
 	 *@param id 音频ID
 	 */
 	public void switchAudio(int id){
-		if(currProgramID == -1)
+		int prog_id = client.getCurrentProgramID();
+
+		if(prog_id == -1)
 			return;
 
 		TVProgram prog;
 		TVChannel chan; 
 
-		prog = TVProgram.selectByID(this, currProgramID);
+		prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -527,14 +508,15 @@ abstract public class TVActivity extends Activity
 	 *@param fmt 视频制式
 	 */
 	public void switchATVVideoFormat(TVConst.CC_ATV_VIDEO_STANDARD fmt){
+		int prog_id = client.getCurrentProgramID();
 		TVProgram prog;
 		TVChannel chan;
 		TVChannelParams params;
 
-		if(currProgramID == -1)
+		if(prog_id == -1)
 			return;
 
-		prog = TVProgram.selectByID(this, currProgramID);
+		prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -546,7 +528,9 @@ abstract public class TVActivity extends Activity
 		if(params == null && !params.isAnalogMode())
 			return;
 
-		if(params.setATVVideoFormat(fmt)){
+		//if(params.setATVVideoFormat(fmt)){
+		if(chan.setATVVideoFormat(fmt)){
+			Log.v(TAG,"setATVVideoFormat");
 			client.resetATVFormat();
 		}
 	}
@@ -556,14 +540,15 @@ abstract public class TVActivity extends Activity
 	 *@param fmt 音频制式
 	 */
 	public void switchATVAudioFormat(TVConst.CC_ATV_AUDIO_STANDARD fmt){
+		int prog_id = client.getCurrentProgramID();
 		TVProgram prog;
 		TVChannel chan;
 		TVChannelParams params;
 
-		if(currProgramID == -1)
+		if(prog_id == -1)
 			return;
 
-		prog = TVProgram.selectByID(this, currProgramID);
+		prog = TVProgram.selectByID(this, prog_id);
 		if(prog == null)
 			return;
 
@@ -575,7 +560,9 @@ abstract public class TVActivity extends Activity
 		if(params == null && !params.isAnalogMode())
 			return;
 
-		if(params.setATVAudioFormat(fmt)){
+		//if(params.setATVAudioFormat(fmt)){
+		if(chan.setATVAudioFormat(fmt)){
+			Log.v(TAG,"setATVAudioFormat");
 			client.resetATVFormat();
 		}
 	}
@@ -936,5 +923,29 @@ abstract public class TVActivity extends Activity
     public int getFrontendBER() {
         return client.getFrontendBER();
     }
+
+	/**
+	 *取得当前正在播放的节目ID
+	 *@return 返回正在播放的节目ID
+	 */
+    public int getCurrentProgramID(){
+    	return client.getCurrentProgramID();
+	}
+
+	/**
+	 *取得当前设定的节目类型
+	 *@return 返回当前设定的节目类型
+	 */
+	public int getCurrentProgramType(){
+		return client.getCurrentProgramType();
+	}
+
+	/**
+	 *取得当前设定的节目号
+	 *@return 返回当前设定的节目号
+	 */
+	public TVProgramNumber getCurrentProgramNumber(){
+		return client.getCurrentProgramNumber();
+	}
 }
 

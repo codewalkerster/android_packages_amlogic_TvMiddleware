@@ -7,6 +7,7 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
 import java.io.File;
 import android.util.Log;
+import android.os.Looper;
 
 abstract public class TVDeviceImpl extends TVDevice{
 
@@ -55,6 +56,14 @@ abstract public class TVDeviceImpl extends TVDevice{
 		destroy = false;
 		native_device_init();
 	}
+	
+	 public TVDeviceImpl(Looper looper)
+    {
+        super();
+		destroy = false;
+		native_device_init();
+    }
+	
 
 	private TVConst.SourceInput curInputSource = TVConst.SourceInput.SOURCE_DTV;
 
