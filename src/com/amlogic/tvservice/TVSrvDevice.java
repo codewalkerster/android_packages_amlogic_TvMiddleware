@@ -320,6 +320,12 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         tv.StopTV((int) TVConst.SourceInput.SOURCE_DTV.ordinal());
     }
 
+	public void ATVChannelFineTune(int fre)
+    {
+        Log.e(TAG, "*********ATVChannelFineTune");
+    }
+	
+	
     public void startRecording(DTVRecordParams params)
     {
         Log.e(TAG, "*********startRecording have not realize");
