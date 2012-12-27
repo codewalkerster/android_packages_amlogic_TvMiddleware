@@ -261,5 +261,27 @@ public class TVChannel{
 		
 		return ret;
 	}
+	
+	
+	/**
+     *修改ATV的频点
+     *@param fre是频点
+     *@return true 表示已经修改制式,false表示制式已经设置无需修改
+     */
+    public boolean setATVFreq(int freq){
+        boolean ret = false;
+        if(params!=null){
+            if(params.getMode() == TVChannelParams.MODE_ANALOG){
+                params.frequency = freq;
+                context.getContentResolver().query(TVDataProvider.WR_URL,
+                    null,
+                    "update ts_table set freq=" + params.frequency + " where db_id = " + id,
+                    null, null);
+            }
+        }
+        
+        return ret;
+    }
+	
 }
 
