@@ -52,6 +52,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_CONFIG_CHANGED   = 1967;
 	private static final int MSG_SWITCH_AUDIO     = 1968;
 	private static final int MSG_RESET_ATV_FORMAT = 1969;
+	private static final int MSG_FINE_TUNE        = 1970;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -284,6 +285,11 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_SEEK_TO, new Integer(pos));
                         handler.sendMessage(msg);
 		}
+
+		public void fineTune(int freq){
+			Message msg = handler.obtainMessage(MSG_FINE_TUNE, new Integer(freq));
+                        handler.sendMessage(msg);
+		}
 	};
 
 	/*Message handler*/
@@ -355,6 +361,9 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_RESET_ATV_FORMAT:
 					resolveResetATVFormat();
+					break;
+				case MSG_FINE_TUNE:
+					resolveFineTune((Integer)msg.obj);
 					break;
 			}
 		}
@@ -1178,6 +1187,22 @@ public class TVService extends Service implements TVConfig.Update{
 			return;
 
 		device.resetATVFormat(params);
+	}
+
+	/*Fine tune*/
+	private void resolveFineTune(int freq){
+
+		TVProgram p = TVProgram.selectByID(this, programID);
+		if(p == null)
+			return;
+
+		TVChannel chan = p.getChannel();
+		if(chan == null)
+			return;
+
+		if(chan.isAnalogMode()){
+			device.ATVChannelFineTune(freq);
+		}
 	}
 
 	public IBinder onBind (Intent intent){
