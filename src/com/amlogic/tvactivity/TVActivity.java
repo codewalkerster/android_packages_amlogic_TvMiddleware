@@ -76,11 +76,13 @@ abstract public class TVActivity extends Activity
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
 
-        if(subtitleView == null) {
+        if(subtitleView != null) {
         	unregisterConfigCallback("tv:subtitle:enable");
         	unregisterConfigCallback("tv:subtitle:language");
         	unregisterConfigCallback("tv:teletext:language");
-        }
+        	subtitleView.dispose();
+        	subtitleView = null;
+		}
 
         client.disconnect(this);
         super.onDestroy();
@@ -465,7 +467,7 @@ abstract public class TVActivity extends Activity
 	 */
     public void switchSubtitle(int id){
     	if(currSubtitleMode == SUBTITLE_SUB){
-    		resetSubtitle(id);
+    		resetSubtitle(SUBTITLE_SUB, id);
 		}
 	}
 
@@ -526,7 +528,9 @@ abstract public class TVActivity extends Activity
 		if(params == null && !params.isAnalogMode())
 			return;
 
-		if(params.setATVVideoFormat(fmt)){
+		//if(params.setATVVideoFormat(fmt)){
+		if(chan.setATVVideoFormat(fmt)){
+			Log.v(TAG,"setATVVideoFormat");
 			client.resetATVFormat();
 		}
 	}
@@ -556,7 +560,9 @@ abstract public class TVActivity extends Activity
 		if(params == null && !params.isAnalogMode())
 			return;
 
-		if(params.setATVAudioFormat(fmt)){
+		//if(params.setATVAudioFormat(fmt)){
+		if(chan.setATVAudioFormat(fmt)){
+			Log.v(TAG,"setATVAudioFormat");
 			client.resetATVFormat();
 		}
 	}
@@ -940,6 +946,14 @@ abstract public class TVActivity extends Activity
 	 */
 	public TVProgramNumber getCurrentProgramNumber(){
 		return client.getCurrentProgramNumber();
+	}
+
+	/**
+	 *模拟微调
+	 *@param freq  频率，单位为Hz
+	 */
+	public void fineTune(int freq){
+		client.fineTune(freq);
 	}
 }
 

@@ -19,6 +19,9 @@ public class TVEvent{
 	private int end;
 	private int dvbContent;
 	private int dvbViewAge;
+	private int sub_flag;
+	private String descr=null;
+	private String ext_descr=null;
 
 	TVEvent(Context context, Cursor c){
 		this.context = context;
@@ -45,6 +48,7 @@ public class TVEvent{
 
 		col = c.getColumnIndex("parental_rating");
 		this.dvbViewAge = c.getInt(col);
+
 	}
 
 	/**
@@ -139,4 +143,52 @@ public class TVEvent{
 	public int getDVBViewAge(){
 		return dvbViewAge;
 	}
+
+	/**
+	 *取得事件预约状态
+	 *@return 事件预约状态
+	 */
+	public int getSubFlag(){
+		return this.sub_flag;
+	}
+
+	/**
+	 *取得事件描述信息
+	 *@return 事件描述信息
+	 */
+	public String getEventDescr(){
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from evt_table where evt_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){	
+				int col = c.getColumnIndex("descr");
+				this.descr = c.getString(col);
+			}
+			c.close();
+		}
+		
+		return descr;
+	}
+	
+	/**
+	 *取得事件扩展描述信息
+	 *@return 事件扩展描述信息
+	 */
+	public String getEventExtDescr(){
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from evt_table where evt_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){	
+				int col = c.getColumnIndex("ext_descr");
+				this.ext_descr = c.getString(col);
+			}
+			c.close();
+		}
+		return ext_descr;
+	}
+
 }

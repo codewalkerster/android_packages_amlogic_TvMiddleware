@@ -199,5 +199,13 @@ abstract public class TVDeviceImpl extends TVDevice{
 	{
 		return null;
 	}
+	
+	 @Override
+    public void ATVChannelFineTune(int fre)
+	{
+		
+	}
+	
+	
 }
 
