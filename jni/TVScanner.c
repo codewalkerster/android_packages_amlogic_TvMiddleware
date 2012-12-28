@@ -474,7 +474,7 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
     jfieldID polar = 0;
     jfieldID mode = 0;
     AM_FENDCTRL_DVBFrontendParameters_t *fparam;
-    int i;
+    int i = 0;
 
     if(!ppfp) return -1;
 

@@ -288,6 +288,19 @@ public class TVChannelParams  implements Parcelable {
 	}
 
 	/**
+	 *创建ATSC参数
+	 *@param frequency 频率Hz为单位
+	 *@return 返回新创建的参数
+	 */
+	public static TVChannelParams atcsParams(int frequency){
+		TVChannelParams tp = new TVChannelParams(MODE_ATSC);
+
+		tp.frequency  = frequency;
+
+		return tp;
+	}	
+
+	/**
 	 *创建模拟参数
 	 *@param frequency 频率Hz为单位
 	 *@param std 视频标准
