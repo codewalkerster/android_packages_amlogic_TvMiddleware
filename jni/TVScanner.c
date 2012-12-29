@@ -474,7 +474,7 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
     jfieldID polar = 0;
     jfieldID mode = 0;
     AM_FENDCTRL_DVBFrontendParameters_t *fparam;
-    int i;
+    int i = 0;
 
     if(!ppfp) return -1;
 
@@ -515,10 +515,9 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
     return 0;
 }
 
-static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jintArray freqs, AM_FENDCTRL_DVBFrontendParameters_t **ppfp)
+static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jobjectArray freqs, AM_FENDCTRL_DVBFrontendParameters_t **ppfp)
 {
-    jfieldID freq = 0;
-    int *freq_list;
+    jfieldID freq = 0, bandwidth = 0; 	
     int i;
     AM_FENDCTRL_DVBFrontendParameters_t *pfp;
 
@@ -530,10 +529,13 @@ static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jintArray fr
     int size = (*env)->GetArrayLength(env, freqs);
     if(size<=0) return size;
 
-    freq_list = (*env)->GetIntArrayElements(env, freqs, 0);
-    if(freq_list == NULL) {
-        return 0;
-    }
+	jclass objclass=(*env)->FindClass(env, "com/amlogic/tvutil/TVChannelParams");
+
+	if(freq == 0) {
+		freq = (*env)->GetFieldID(env, objclass, "frequency", "I"); 
+		if (freq == 0) 
+			return -1;	
+	}
 
     if(!(*ppfp = calloc(size, sizeof(AM_FENDCTRL_DVBFrontendParameters_t))))
         return -1;
@@ -541,15 +543,23 @@ static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jintArray fr
     pfp = *ppfp;
     memset(pfp, 0, size * sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
     for (i = 0; i < size; i++,pfp++) {
+		jobject fend_para = ((*env)->GetObjectArrayElement(env, freqs, i));
+		
         pfp->m_type = src;
-        ((struct dvb_frontend_parameters*)pfp)->frequency = freq_list[i];
+        ((struct dvb_frontend_parameters*)pfp)->frequency = (*env)->GetIntField(env, fend_para, freq);
         switch (pfp->m_type) {
         case FE_QAM:
             ((struct dvb_frontend_parameters*)pfp)->u.qam.symbol_rate = 6875000;
             ((struct dvb_frontend_parameters*)pfp)->u.qam.modulation = QAM_64;
             break;
         case FE_OFDM:
-            ((struct dvb_frontend_parameters*)pfp)->u.ofdm.bandwidth = BANDWIDTH_8_MHZ;
+		if(bandwidth == 0) {
+			bandwidth=(*env)->GetFieldID(env, objclass, "bandwidth", "I"); 
+			if (bandwidth == 0) 
+				return -1; 
+		}
+			
+            ((struct dvb_frontend_parameters*)pfp)->u.ofdm.bandwidth = (*env)->GetIntField(env, fend_para, bandwidth);
             break;
         case FE_QPSK:
             break;
@@ -560,7 +570,6 @@ static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jintArray fr
         }
 
     }
-    (*env)->ReleaseIntArrayElements(env, freqs, freq_list, 0);
 
     return size;
 }
@@ -662,7 +671,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	dmx_id = (*env)->GetFieldID(env,objclass, "demuxID", "I"); 
 	source = (*env)->GetFieldID(env,objclass, "tsSourceID", "I"); 
 	chan_para = (*env)->GetFieldID(env,objclass, "startParams", "Lcom/amlogic/tvutil/TVChannelParams;"); 
-	freqs = (*env)->GetFieldID(env,objclass, "frequencyList", "[I"); 
+	freqs = (*env)->GetFieldID(env,objclass, "ChannelParamsList", "[Lcom/amlogic/tvutil/TVChannelParams;"); 
 	
 	start_para->fend_dev_id = (*env)->GetIntField(env, para, fend_id); 
 	java_mode = (*env)->GetIntField(env, para, mode); 
@@ -711,7 +720,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
             /* use the fe_type  specified by user */
             start_para->dtv_para.source = start_para->dtv_para.fe_paras[0].m_type;
         } else {
-            jintArray freq_list = (*env)->GetObjectField(env, para, freqs);
+            jobjectArray freq_list = (*env)->GetObjectField(env, para, freqs);
             start_para->dtv_para.fe_cnt = tv_scan_get_fe_paras(env, thiz, start_para->dtv_para.source,
                                           freq_list, &start_para->dtv_para.fe_paras);
         }

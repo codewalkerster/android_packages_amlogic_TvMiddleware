@@ -891,7 +891,7 @@ public class TVService extends Service implements TVConfig.Update{
 			return;
 		}
 		
-		int[] freqList = null;
+		TVChannelParams[] channelList = null;
 		if (sp.getTvMode() != TVScanParams.TV_MODE_ATV &&
 			sp.getDtvMode() == TVScanParams.DTV_MODE_ALLBAND) {
 			String region;
@@ -916,11 +916,56 @@ public class TVService extends Service implements TVConfig.Update{
 						String[] flist = freqs.split(" ");
 						
 						if (flist !=null && flist.length > 0) {
-							freqList = new int[flist.length];
-							/** get each frequency */
-							for (int i=0; i<freqList.length; i++) {
-								freqList[i] = Integer.parseInt(flist[i]);
+							int frequency = 0;
+							int bandwidth = 0;
+
+							if(sp.getTsSourceID() == TVChannelParams.MODE_QPSK){
+								channelList = new TVChannelParams[flist.length];
+								/** get each frequency */
+								for (int i=0; i<channelList.length; i++) {
+									frequency = Integer.parseInt(flist[i]);
+									channelList[i] = TVChannelParams.dvbsParams(frequency, 0);
+								}
 							}
+							else if(sp.getTsSourceID() == TVChannelParams.MODE_QAM){
+								channelList = new TVChannelParams[flist.length];
+								/** get each frequency */
+								for (int i=0; i<channelList.length; i++) {
+									frequency = Integer.parseInt(flist[i]);
+									channelList[i] = TVChannelParams.dvbcParams(frequency, 0, 0);
+								}
+							}
+							else if(sp.getTsSourceID() == TVChannelParams.MODE_OFDM){
+								channelList = new TVChannelParams[flist.length/2];
+								
+								/** get each frequency and bandwidth */
+								for (int i=0; i<flist.length; i++) {
+									
+									if(i%2 == 0){
+										frequency = Integer.parseInt(flist[i]);
+									}else{
+										bandwidth = Integer.parseInt(flist[i]);
+										channelList[i/2] = TVChannelParams.dvbtParams(frequency, bandwidth);
+									}
+								}								
+							}
+							else if(sp.getTsSourceID() == TVChannelParams.MODE_ATSC){
+								channelList = new TVChannelParams[flist.length];
+								/** get each frequency */
+								for (int i=0; i<channelList.length; i++) {
+									frequency = Integer.parseInt(flist[i]);
+									channelList[i] = TVChannelParams.atcsParams(frequency);
+								}
+							}
+							else if(sp.getTsSourceID() == TVChannelParams.MODE_ANALOG){
+								channelList = new TVChannelParams[flist.length];
+								/** get each frequency */
+								for (int i=0; i<channelList.length; i++) {
+									frequency = Integer.parseInt(flist[i]);
+									channelList[i] = TVChannelParams.analogParams(frequency, 0, 0);
+								}
+							}
+							
 						}
 					}
 				}
@@ -928,7 +973,7 @@ public class TVService extends Service implements TVConfig.Update{
 			}
 		} 
 		
-		tsp.setDtvParams(0, freqList);
+		tsp.setDtvParams(0, channelList);
 
 		/** No exceptions, start scan */
 		stopPlaying();
