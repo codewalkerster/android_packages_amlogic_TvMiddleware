@@ -529,7 +529,7 @@ static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jobjectArray
     int size = (*env)->GetArrayLength(env, freqs);
     if(size<=0) return size;
 
-	jclass objclass=(*env)->FindClass(env, "Lcom/amlogic/tvutil/TVChannelParams");
+	jclass objclass=(*env)->FindClass(env, "com/amlogic/tvutil/TVChannelParams");
 
 	if(freq == 0) {
 		freq = (*env)->GetFieldID(env, objclass, "frequency", "I"); 
