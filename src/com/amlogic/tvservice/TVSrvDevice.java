@@ -322,7 +322,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
 	public void ATVChannelFineTune(int fre)
     {
-        Log.e(TAG, "*********ATVChannelFineTune");
+        Log.d(TAG, "*********ATVChannelFineTune" + fre);
+        tv.Set_Atv_Channel_Fine_Tune(fre);
     }
 	
 	

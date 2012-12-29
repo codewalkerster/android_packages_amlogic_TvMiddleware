@@ -260,12 +260,7 @@ public class TVConfig{
 		}
 	}
 
-	/**
-	 *构造函数
-	 */
-	public TVConfig(Context context){
-		this.context = context;
-
+	private void init(){
 		root = new TVConfigEntry();
 
 		InputStream is = null;
@@ -305,6 +300,14 @@ public class TVConfig{
 				}
 			}
 		}
+	}
+
+	/**
+	 *构造函数
+	 */
+	public TVConfig(Context context){
+		this.context = context;
+		init();
 	}
 
 	private TVConfigEntry getEntry(String name) throws Exception{
@@ -511,6 +514,17 @@ public class TVConfig{
 		TVConfigEntry ent = getEntry(name);
 
 		ent.read = read;
+	}
+
+	/**
+	 *恢复缺省设置
+	 */
+	public synchronized void restore(){
+		File file = new File(context.getFilesDir(), CFG_FILE_NAME);
+		if(file.exists())
+			file.delete();
+
+		init();
 	}
 }
 

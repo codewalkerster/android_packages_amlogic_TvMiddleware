@@ -104,5 +104,8 @@ interface ITVService{
 
 	//模拟微调
 	void fineTune(int freq);
+
+	//恢复出厂设置
+	void restoreFactorySetting();
 }
 

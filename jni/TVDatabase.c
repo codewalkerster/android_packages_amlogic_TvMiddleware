@@ -31,7 +31,7 @@ static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jo
 			log_info("create tables");
 			AM_DB_GetHandle(&handle);
 			AM_DB_CreateTables(handle);
-			sqlite3_close(handle);
+			//sqlite3_close(handle);
 		}
 
 		(*env)->ReleaseStringUTFChars(env, name, str);
