@@ -53,6 +53,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_SWITCH_AUDIO     = 1968;
 	private static final int MSG_RESET_ATV_FORMAT = 1969;
 	private static final int MSG_FINE_TUNE        = 1970;
+	private static final int MSG_RESTORE_FACTORY_SETTING = 1971;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -233,62 +234,67 @@ public class TVService extends Service implements TVConfig.Update{
 
 		public void startTimeshifting(){
 			Message msg = handler.obtainMessage(MSG_START_TIMESHIFTING);
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void startRecording(int bookingID){
 			Message msg = handler.obtainMessage(MSG_START_RECORDING, new Integer(bookingID));
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void stopRecording(){
 			Message msg = handler.obtainMessage(MSG_STOP_RECORDING);
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void startPlayback(int bookingID){
 			Message msg = handler.obtainMessage(MSG_START_PLAYBACK);
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void startScan(TVScanParams sp){
 			Message msg = handler.obtainMessage(MSG_START_SCAN, sp);
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void stopScan(boolean store){
 			Message msg = handler.obtainMessage(MSG_STOP_SCAN, new Boolean(store));
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void pause(){
 			Message msg = handler.obtainMessage(MSG_PAUSE);
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void resume(){
 			Message msg = handler.obtainMessage(MSG_RESUME);
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void fastForward(int speed){
 			Message msg = handler.obtainMessage(MSG_FAST_FORWARD, new Integer(speed));
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void fastBackward(int speed){
 			Message msg = handler.obtainMessage(MSG_FAST_BACKWARD, new Integer(speed));
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void seekTo(int pos){
 			Message msg = handler.obtainMessage(MSG_SEEK_TO, new Integer(pos));
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
 		}
 
 		public void fineTune(int freq){
 			Message msg = handler.obtainMessage(MSG_FINE_TUNE, new Integer(freq));
-                        handler.sendMessage(msg);
+			handler.sendMessage(msg);
+		}
+
+		public void restoreFactorySetting(){
+			Message msg = handler.obtainMessage(MSG_RESTORE_FACTORY_SETTING);
+			handler.sendMessage(msg);
 		}
 	};
 
@@ -364,6 +370,9 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_FINE_TUNE:
 					resolveFineTune((Integer)msg.obj);
+					break;
+				case MSG_RESTORE_FACTORY_SETTING:
+					resolveRestoreFactorySetting();
 					break;
 			}
 		}
@@ -1203,6 +1212,27 @@ public class TVService extends Service implements TVConfig.Update{
 		if(chan.isAnalogMode()){
 			device.ATVChannelFineTune(freq);
 		}
+	}
+
+	/*Restore factory setting*/
+	private void resolveRestoreFactorySetting(){
+		stopPlaying();
+		stopScan(false);
+		stopRecording();
+
+		atvPlayParams = null;
+		dtvTVPlayParams = null;
+		dtvRadioPlayParams = null;
+
+		synchronized(this){
+			channelID  = -1;
+			programID  = -1;
+			programNum = null;
+			channelParams = null;
+		}
+
+		TVDataProvider.restore();
+		config.restore();
 	}
 
 	public IBinder onBind (Intent intent){

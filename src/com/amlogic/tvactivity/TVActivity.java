@@ -955,5 +955,12 @@ abstract public class TVActivity extends Activity
 	public void fineTune(int freq){
 		client.fineTune(freq);
 	}
+
+	/**
+	 *恢复出厂设置
+	 */
+	public void restoreFactorySetting(){
+		client.restoreFactorySetting();
+	}
 }
 

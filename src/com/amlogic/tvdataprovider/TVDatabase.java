@@ -129,6 +129,7 @@ public class TVDatabase extends SQLiteOpenHelper
 
 		if(curVer != DB_VERSION){
 			create = true;
+			file.delete();
 		}
 
 		native_db_setup(file.toString(), create, getWritableDatabase());
@@ -145,7 +146,7 @@ public class TVDatabase extends SQLiteOpenHelper
 				cv.clear();
 			}
 
-			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION);
+			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION).commit();
 		}
 	}
 

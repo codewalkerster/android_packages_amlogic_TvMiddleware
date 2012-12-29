@@ -744,5 +744,17 @@ abstract public class TVClient
             }
 		}
 	}
+
+	/**
+	 *恢复出厂设置
+	 */
+	public void restoreFactorySetting(){
+		if(service != null){
+			try{
+				service.restoreFactorySetting();
+			}catch(RemoteException e){
+			}
+		}
+	}
 }
 
