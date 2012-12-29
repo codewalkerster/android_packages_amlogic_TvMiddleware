@@ -563,8 +563,22 @@ public class TVService extends Service implements TVConfig.Update{
 	private boolean checkProgramBlock(){
 		boolean ret = false;
 
-		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
-		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+		try{
+			if(config.getBoolean("tv:check_program_lock")){
+				TVProgram prog = TVProgram.selectByID(this, programID);
+
+				if(prog != null){
+					if(prog.getLockFlag())
+						ret = true;
+				}
+			}
+		}catch(Exception e){
+		}
+
+		if(!ret){
+			if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+			}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+			}
 		}
 
 		if(ret != programBlocked){
@@ -1149,6 +1163,13 @@ public class TVService extends Service implements TVConfig.Update{
 						}
 					}
 				}*/
+			}else if(name.equals("tv:check_program_lock")){
+				boolean enable = config.getBoolean("tv:check_program_lock");
+				if(!enable){
+					if((status == TVRunningStatus.STATUS_PLAY_ATV) || (status == TVRunningStatus.STATUS_PLAY_DTV)){
+						playCurrentProgramAV();
+					}
+				}
 			}
 		}catch(Exception e){
 		}
@@ -1253,6 +1274,9 @@ public class TVService extends Service implements TVConfig.Update{
 		config = new TVConfig(this);
 
 		try{
+			/*Must check the program lock*/
+			config.set("tv:check_program_lock", new TVConfigValue(true));
+
 			String modeStr = config.getString("tv:dtv:mode");
 			int mode = TVChannelParams.getModeFromString(modeStr);
 			if(mode == -1)
@@ -1260,6 +1284,7 @@ public class TVService extends Service implements TVConfig.Update{
 			epgScanner.setSource(0, 0, mode);
 
 			config.registerUpdate("tv:audio:language", this);
+			config.registerUpdate("tv:check_program_lock", this);
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
 		}catch(Exception e){
