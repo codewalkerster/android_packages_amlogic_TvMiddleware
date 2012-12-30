@@ -1062,7 +1062,7 @@ public class TVService extends Service implements TVConfig.Update{
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_OK:
 				source = TVConst.SourceInput.values()[event.source];
 
-				Log.e(TAG, "set input source to "+source.name()+" ok");
+				Log.d(TAG, "set input source to "+source.name()+" ok");
 				if(source == reqInputSource){
 					inputSource = reqInputSource;
 					if(isInTVMode()){
