@@ -4,9 +4,12 @@ import java.lang.UnsupportedOperationException;
 
 import com.amlogic.tvutil.TVConst.CC_ATV_AUDIO_STANDARD;
 import com.amlogic.tvutil.TVConst.CC_ATV_VIDEO_STANDARD;
+import com.amlogic.tvdataprovider.TVDataProvider;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.database.Cursor;
+import android.content.Context;
 import android.util.Log;
 
 /**
@@ -316,6 +319,86 @@ public class TVChannelParams  implements Parcelable {
 
 		return tp;
 	}
+
+	/**
+	 *创建当前所有通道参数
+	 *@param region 区域	 
+	 *@param mode 通道模式
+	 *@return 返回新创建的参数
+	 */
+	public static TVChannelParams[] channelCurAllbandParams(Context context, String region, int mode){
+		TVChannelParams[] channelList = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
+				"select * from region_table where name='" + region + "' and source=" + mode,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int col = c.getColumnIndex("frequencies");
+				String freqs = c.getString(col);
+				
+				if (freqs != null && freqs.length() > 0) {
+					String[] flist = freqs.split(" ");
+					
+					if (flist !=null && flist.length > 0) {
+						int frequency = 0;
+						int bandwidth = 0;
+
+						if(mode == TVChannelParams.MODE_QPSK){
+							channelList = new TVChannelParams[flist.length];
+							/** get each frequency */
+							for (int i=0; i<channelList.length; i++) {
+								frequency = Integer.parseInt(flist[i]);
+								channelList[i] = TVChannelParams.dvbsParams(frequency, 0);
+							}
+						}
+						else if(mode == TVChannelParams.MODE_QAM){
+							channelList = new TVChannelParams[flist.length];
+							/** get each frequency */
+							for (int i=0; i<channelList.length; i++) {
+								frequency = Integer.parseInt(flist[i]);
+								channelList[i] = TVChannelParams.dvbcParams(frequency, 0, 0);
+							}
+						}
+						else if(mode == TVChannelParams.MODE_OFDM){
+							channelList = new TVChannelParams[flist.length/2];
+							
+							/** get each frequency and bandwidth */
+							for (int i=0; i<flist.length; i++) {
+								
+								if(i%2 == 0){
+									frequency = Integer.parseInt(flist[i]);
+								}else{
+									bandwidth = Integer.parseInt(flist[i]);
+									channelList[i/2] = TVChannelParams.dvbtParams(frequency, bandwidth);
+								}
+							}								
+						}
+						else if(mode == TVChannelParams.MODE_ATSC){
+							channelList = new TVChannelParams[flist.length];
+							/** get each frequency */
+							for (int i=0; i<channelList.length; i++) {
+								frequency = Integer.parseInt(flist[i]);
+								channelList[i] = TVChannelParams.atcsParams(frequency);
+							}
+						}
+						else if(mode == TVChannelParams.MODE_ANALOG){
+							channelList = new TVChannelParams[flist.length];
+							/** get each frequency */
+							for (int i=0; i<channelList.length; i++) {
+								frequency = Integer.parseInt(flist[i]);
+								channelList[i] = TVChannelParams.analogParams(frequency, 0, 0);
+							}
+						}
+						
+					}
+				}
+			}
+			c.close();
+		}
+		
+		return channelList;
+	}	
 
 	
 	public static CC_ATV_AUDIO_STANDARD AudioStd2Enum(int data){
