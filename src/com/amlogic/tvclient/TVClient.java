@@ -784,5 +784,30 @@ abstract public class TVClient
 	public TVProgramNumber getCurrentProgramNumber(){
 		return currProgramNo;
 	}
+
+	/**
+	 *模拟微调
+	 *@param freq  频率，单位为Hz
+	 */
+	public void fineTune(int freq){
+		if(service != null){
+			try {
+				service.fineTune(freq);
+            } catch(RemoteException e) {
+            }
+		}
+	}
+
+	/**
+	 *恢复出厂设置
+	 */
+	public void restoreFactorySetting(){
+		if(service != null){
+			try{
+				service.restoreFactorySetting();
+			}catch(RemoteException e){
+			}
+		}
+	}
 }
 

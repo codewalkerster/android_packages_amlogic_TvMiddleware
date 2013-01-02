@@ -1293,5 +1293,199 @@ public class TVProgram{
 
 		return evts;
 	}
+
+	/**
+	 *列出喜爱节目组TVProgram
+	 *@param context 当前Context
+	 *@param no_skip 不列出设为skip的节目
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectByFavorite(Context context, boolean no_skip){
+		TVProgram p[] = null;
+		boolean where = false;
+		String cmd = "select * from srv_table ";
+	
+		cmd += "where favor = 1 ";
+		where = true;
+
+		if(no_skip){
+			if(where){
+				cmd += " and skip = 0 ";
+			}else{
+				cmd += " where skip = 0 ";
+			}
+		}
+
+		cmd += " order by chan_order";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *列出喜爱节目组TVProgram
+	 *@param context 当前Context
+	 *@param group_id 节目分组ID
+	 *@param no_skip 不列出设为skip的节目
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectByGroupMap(Context context, int group_id, boolean no_skip){
+		TVProgram p[] = null;
+		boolean where = false;
+		String cmd = "select * from srv_table left join grp_map_table on srv_table.db_id = grp_map_table.db_srv_id where grp_map_table.db_grp_id="+group_id ;
+	
+		where = true;
+
+		if(no_skip){
+			if(where){
+				cmd += " and srv_table.skip = 0 ";
+			}else{
+				cmd += " where srv_table.skip = 0 ";
+			}
+		}
+
+		cmd += " order by chan_order";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *添加节目到指定节目分组
+	 *@param id 节目分组ID
+	 */
+	public void addProgramToGroup(int id){
+		int group_id = id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"insert into grp_map_table  (db_srv_id, db_grp_id) values ("+ this.id +" ,"+group_id+")",
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *从指定节目分组删除当前节目
+	 *@param id 节目分组ID
+	 */
+	public void deleteFromGroup(int id){
+		int group_id = id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from grp_map_table where db_srv_id = "+ this.id +" and db_grp_id = " + group_id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *检测当前节目是否属于分组
+	 *@param id 节目分组ID
+	 *@return 返回布尔类型 true表示该节目属于分组 false表示不属于该分组
+	 */
+	public boolean checkGroup(int id){
+		boolean b=false;
+		String cmd = "select * from grp_map_table where db_srv_id = "+ this.id +" and db_grp_id = " +id ;
+	
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.getCount()>0){
+				b = true;
+			}
+			c.close();
+		}
+
+		return b;
+	}
+
+	/**
+	 *删除节目
+	 */	
+	public void deleteFromDb(){
+		int group_id = id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from grp_map_table where db_srv_id = "+ this.id ,
+				null, null);
+
+		c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from srv_table where db_id = "+ this.id ,
+				null, null);
+	
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *修改节目排序
+	 *@param pos 节目排序
+	 */
+	public void modifyChanOrder(int pos){
+		int group_id = id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update srv_table set chan_order = "+ pos,
+				null, null);
+
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
+	 *修改节目名称
+	 *@param name 节目名称
+	 */
+	public void setProgramName(String name){
+		this.name = name;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update srv_table set name = "+"\'"+name+"\'"+" where srv_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+	
 }
 

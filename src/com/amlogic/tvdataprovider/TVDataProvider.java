@@ -52,6 +52,21 @@ public class TVDataProvider extends ContentProvider{
 		}
 	}
 
+	public synchronized static void restore(){
+		db.getWritableDatabase().execSQL("delete from net_table");
+		db.getWritableDatabase().execSQL("delete from ts_table");
+		db.getWritableDatabase().execSQL("delete from srv_table");
+		db.getWritableDatabase().execSQL("delete from evt_table");
+		db.getWritableDatabase().execSQL("delete from rec_table");
+		db.getWritableDatabase().execSQL("delete from grp_table");
+		db.getWritableDatabase().execSQL("delete from grp_map_table");
+		db.getWritableDatabase().execSQL("delete from subtitle_table");
+		db.getWritableDatabase().execSQL("delete from teletext_table");
+		db.getWritableDatabase().execSQL("delete from dimension_table");
+		db.getWritableDatabase().execSQL("delete from sat_para_table");
+		db.getWritableDatabase().execSQL("delete from region_table");
+	}
+
 	@Override
 	public boolean onCreate()
 	{

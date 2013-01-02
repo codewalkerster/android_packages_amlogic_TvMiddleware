@@ -52,15 +52,15 @@ abstract public class TVScanner{
 		private int tunerStd;
 		/** Dtv set */
 		private int demuxID;
-		private int frequencyList[];	
+		private TVChannelParams ChannelParamsList[];
 
 		public TVScannerParams(TVScanParams sp) {
 			super(sp);
 		}
 
-		public void setDtvParams(int dmxID, int[] freqList) {
+		public void setDtvParams(int dmxID, TVChannelParams[] chanelList) {
 			this.demuxID = dmxID;
-			this.frequencyList = freqList;
+			this.ChannelParamsList = chanelList;
 		}
 
 		public void setAtvParams(int minf, int maxf, int tunerStd) {

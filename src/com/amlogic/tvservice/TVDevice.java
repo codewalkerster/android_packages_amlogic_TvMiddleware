@@ -100,5 +100,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	abstract public void seekTo(int pos);
 
 	abstract public void onEvent(Event event);
+	
+	abstract public void ATVChannelFineTune(int fre);
 }
 

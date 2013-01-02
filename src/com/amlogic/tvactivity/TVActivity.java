@@ -969,5 +969,20 @@ abstract public class TVActivity extends Activity
 	public TVProgramNumber getCurrentProgramNumber(){
 		return client.getCurrentProgramNumber();
 	}
+
+	/**
+	 *模拟微调
+	 *@param freq  频率，单位为Hz
+	 */
+	public void fineTune(int freq){
+		client.fineTune(freq);
+	}
+
+	/**
+	 *恢复出厂设置
+	 */
+	public void restoreFactorySetting(){
+		client.restoreFactorySetting();
+	}
 }
 

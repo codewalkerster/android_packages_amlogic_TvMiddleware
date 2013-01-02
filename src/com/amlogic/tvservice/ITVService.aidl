@@ -115,5 +115,11 @@ interface ITVService{
 
 	//取得信号BER
 	int getFrontendBER();
+
+	//模拟微调
+	void fineTune(int freq);
+
+	//恢复出厂设置
+	void restoreFactorySetting();
 }
 
