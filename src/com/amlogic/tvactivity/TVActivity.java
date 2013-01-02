@@ -25,6 +25,8 @@ import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVStatus;
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvsubtitle.TVSubtitleView;
 
 /**
@@ -573,20 +575,19 @@ abstract public class TVActivity extends Activity
     public void startTimeshifting() {
         client.startTimeshifting();
     }
-
-    /**
-     *开始录制
-     *@param bookingID 要录制节目的预约记录ID
+    
+     /**
+     *停止时移播放
      */
-    public void startRecording(int bookingID) {
-        client.startRecording(bookingID);
+    public void stopTimeshifting() {
+        client.stopTimeshifting();
     }
 
     /**
-     *开始录制当前节目
+     *开始录制当前正在播放的节目
      */
     public void startRecording() {
-        client.startRecording(-1);
+        client.startRecording();
     }
 
     /**
@@ -596,6 +597,13 @@ abstract public class TVActivity extends Activity
         client.stopRecording();
     }
 
+	/**
+     *获取当前录像信息
+     */
+	public DTVRecordParams getRecordingParams() {
+		return client.getRecordingParams();
+	}
+	
     /**
      *开始录制节目回放
      *@param bookingID 录制节目的预约记录ID
@@ -603,6 +611,20 @@ abstract public class TVActivity extends Activity
     public void startPlayback(int bookingID) {
         client.startPlayback(bookingID);
     }
+    
+     /**
+     *停止录制回放
+     */
+	public void stopPlayback() {
+		client.stopPlayback();
+	}
+		
+	/**
+     *获取当前回放信息
+     */
+	public DTVPlaybackParams getPlaybackParams() {
+		return client.getPlaybackParams();
+	}
 
     /**
      *开始搜索频道

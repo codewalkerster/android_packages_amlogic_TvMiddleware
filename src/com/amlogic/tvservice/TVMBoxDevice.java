@@ -5,6 +5,8 @@ import com.amlogic.tvutil.TVConfigValue.TypeException;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 import java.io.File;
 import android.util.Log;
 import android.os.Looper;
@@ -33,11 +35,13 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_switch_dtv_audio(int apid, int afmt);
 	private native void native_stop_dtv();
 	private native void native_start_recording(DTVRecordParams params);
-	private native DTVRecordParams native_stop_recording();
-	private native void native_start_timeshifting(DTVRecordParams params);
-	private native DTVRecordParams native_stop_timeshifting();
-	private native void native_start_playback(DTVRecordParams params);
+	private native void native_stop_recording();
+	private native DTVRecordParams native_get_recording_params();
+	private native void native_start_timeshifting(DTVPlaybackParams params);
+	private native void native_stop_timeshifting();
+	private native void native_start_playback(DTVPlaybackParams params);
 	private native void native_stop_playback();
+	private native DTVPlaybackParams native_get_playback_params();
 	private native void native_fast_forward(int speed);
 	private native void native_fast_backward(int speed);
 	private native void native_pause();
@@ -143,23 +147,32 @@ abstract public class TVDeviceImpl extends TVDevice{
 		native_start_recording(params);
 	}
 
-	public DTVRecordParams stopRecording(){
-		return native_stop_recording();
+	public void stopRecording(){
+		native_stop_recording();
+	}
+	
+	public DTVRecordParams getRecordingParams(){
+		return native_get_recording_params();
 	}
 
-	public void startTimeshifting(DTVRecordParams params){
+	public void startTimeshifting(DTVPlaybackParams params){
+		native_start_timeshifting(params);
 	}
 
-	public DTVRecordParams stopTimeshifting(){
-		return native_stop_timeshifting();
+	public void stopTimeshifting(){
+		native_stop_timeshifting();
 	}
 
-	public void startPlayback(DTVRecordParams params){
+	public void startPlayback(DTVPlaybackParams params){
 		native_start_playback(params);
 	}
 
 	public void stopPlayback(){
 		native_stop_playback();
+	}
+	
+	public DTVPlaybackParams getPlaybackParams(){
+		return native_get_playback_params();
 	}
 
 	public void pause(){

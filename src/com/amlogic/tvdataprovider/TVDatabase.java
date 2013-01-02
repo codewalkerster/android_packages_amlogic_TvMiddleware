@@ -13,7 +13,7 @@ import com.amlogic.tvutil.TVChannelParams;
 public class TVDatabase extends SQLiteOpenHelper
 {
 	private static final String TAG = "TVDatabase";
-	private static final int DB_VERSION = 1;
+	private static final int DB_VERSION = 2;
 	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
 
 	/*implemented by libjnidvbdatabase.so*/
@@ -126,8 +126,11 @@ public class TVDatabase extends SQLiteOpenHelper
 
 		File file = context.getDatabasePath(dbName);
 
+		Log.d(TAG, "database version: DB_VERSION "+DB_VERSION+", curVer "+curVer);
 		if(curVer != DB_VERSION){
 			create = true;
+			Log.d(TAG, "Database version changed, delete the current database.");
+			file.delete();
 		}
 
 		native_db_setup(file.toString(), create, getWritableDatabase());
@@ -144,7 +147,7 @@ public class TVDatabase extends SQLiteOpenHelper
 				cv.clear();
 			}
 
-			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION);
+			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION).commit();
 		}
 	}
 

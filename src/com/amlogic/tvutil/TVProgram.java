@@ -398,6 +398,10 @@ public class TVProgram{
 			this.audioes[i] = new Audio(pid, lang, fmt);
 		}
 	}
+	
+	public TVProgram(){
+	
+	}
 
 	/**
 	 *根据记录ID查找指定TVProgram
@@ -834,6 +838,14 @@ public class TVProgram{
 
 		return audioes[0];
 	}
+	
+	/**
+	 *取得Program所有音频相关信息
+	 *@return 返回所有音频相关信息
+	 */
+	public Audio[] getAllAudio(){
+		return audioes;
+	}
 
 	private void selectSubtitle(){
 		if(subtitles==null){
@@ -976,6 +988,15 @@ public class TVProgram{
 
 		return subtitles[0];
 	}
+	
+	/**
+	 *取得Program所有字幕相关信息
+	 *@return 返回所有字幕相关信息
+	 */
+	public Subtitle[] getAllSubtitle(){
+		selectSubtitle();
+		return subtitles;
+	}
 
 	private void selectTeletext(){
 		if(teletexts==null){
@@ -1077,6 +1098,15 @@ public class TVProgram{
 		}
 
 		return teletexts[0];
+	}
+	
+	/**
+	 *取得Program 所有teletext图文相关信息
+	 *@return 返回所有teletext相关信息
+	 */
+	public Teletext[] getAllTeletext(){
+		selectTeletext();
+		return teletexts;
 	}
 
 	/**

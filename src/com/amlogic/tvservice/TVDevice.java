@@ -3,28 +3,14 @@ package com.amlogic.tvservice;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
-
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 
 import java.io.File;
 
 
 
 abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
-
-	public class DTVRecordParams{
-		public File file;
-		public TVProgram.Video video;
-		public TVProgram.Audio audio[];
-		public TVProgram.Subtitle subtitle[];
-		public TVProgram.Teletext teletext[];
-		public int currAudio;
-		public int currSubtitle;
-		public int currTeletext;
-		public int recTotalSize;
-		public int recTotalTime;
-		public int recCurrPos;
-	}
-
 	public class Event{
 		public static final int EVENT_SET_INPUT_SOURCE_OK     = 0;
 		public static final int EVENT_SET_INPUT_SOURCE_FAILED = 1;
@@ -33,11 +19,12 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public static final int EVENT_FRONTEND                = 4;
 		public static final int EVENT_DTV_NO_DATA             = 5;
 		public static final int EVENT_DTV_CANNOT_DESCRAMLE    = 6;
-		public static final int EVENT_RECORD                  = 7;
+		public static final int EVENT_RECORD_END              = 7;
 
 		public int             type;
 		public TVChannelParams feParams;
 		public int             feStatus;
+		public int             recEndCode;
 		public DTVRecordParams recParams;
 		public int             source;
 
@@ -88,15 +75,19 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 
 	abstract public void startRecording(DTVRecordParams params);
 
-	abstract public DTVRecordParams stopRecording();
+	abstract public void stopRecording();
+	
+	abstract public DTVRecordParams getRecordingParams();
 
-	abstract public void startTimeshifting(DTVRecordParams params);
+	abstract public void startTimeshifting(DTVPlaybackParams params);
 
-	abstract public DTVRecordParams stopTimeshifting();
+	abstract public void stopTimeshifting();
 
-	abstract public void startPlayback(DTVRecordParams params);
+	abstract public void startPlayback(DTVPlaybackParams params);
 
 	abstract public void stopPlayback();
+	
+	abstract public DTVPlaybackParams getPlaybackParams();
 
 	abstract public void pause();
 

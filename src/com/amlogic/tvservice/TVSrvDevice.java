@@ -325,11 +325,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         // native_start_recording(params);
     }
 
-    public DTVRecordParams stopRecording()
+    public void stopRecording()
     {
         Log.e(TAG, "*********stopRecording have not realize");
         // return native_stop_recording();
-        return null;
     }
 
     public void startTimeshifting(DTVRecordParams params)
