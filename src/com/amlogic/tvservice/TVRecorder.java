@@ -24,14 +24,7 @@ import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
 
-abstract public class TVRecorder{
-	/** Record error codes */
-	public static final int REC_ERR_NONE        = 0; // Success, no error
-	public static final int REC_ERR_OPEN_FILE   = 1; // Cannot open output record file
-	public static final int REC_ERR_WRITE_FILE  = 2; // Cannot write data to record file
-	public static final int REC_ERR_ACCESS_FILE = 3; // Cannot access record file
-	public static final int REC_ERR_SYSTEM      = 4; // For other system reasons
-	
+abstract public class TVRecorder{	
 	/** Record status */
 	public static final int ST_IDLE         = 0;
 	public static final int ST_RECORDING    = 1;
@@ -200,7 +193,7 @@ abstract public class TVRecorder{
 					sql += fields[i];
 					sql += ",";
 				}
-				sql += "other_pids, from_storage) values(-1,-1,3,";
+				sql += "other_pids, from_storage, flag) values(-1,-1,3,";
 				while ((line=br.readLine())!=null && lineCount < fields.length) {
 					if (fields[lineCount].equals("start") || 
 						fields[lineCount].equals("duration") ||
@@ -229,7 +222,7 @@ abstract public class TVRecorder{
 					Log.d(TAG, "Invalid ri file, lines "+lineCount);
 				} else {
 					Log.d(TAG, "Insert a rec record to database");
-					sql += "'', '" + storagePath + "')";
+					sql += "'', '" + storagePath + "',"+TVBooking.ST_END+")";
 					context.getContentResolver().query(TVDataProvider.WR_URL, null, sql, null, null);
 				}
 			
@@ -441,7 +434,7 @@ abstract public class TVRecorder{
 	}
 	
 	public DTVRecordParams getRecordingParams(){
-		if (tvDevice != null) {
+		if (tvDevice != null && status != ST_IDLE) {
 			return tvDevice.getRecordingParams();
 		}
 		
@@ -460,6 +453,13 @@ abstract public class TVRecorder{
 		return (status != ST_IDLE);
 	}
 	
+	public boolean isTimeshifting(){
+		if (isRecording() && recordParams != null){
+			return recordParams.isTimeshift;
+		}
+		
+		return false;
+	}
 	
 	public void scanRecordsFromStorage() {
 		File[] files = new File("/mnt").listFiles();

@@ -53,6 +53,8 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_RECORDS_UPDATE    = 21;
 	/**请求停止当前录像*/
 	public static final int TYPE_STOP_RECORD_REQUEST = 22;
+	/**录像已结束*/
+	public static final int TYPE_RECORD_END        = 23;
 	
 	private static final String TAG="TVMessage";
 	private int type;
@@ -73,11 +75,21 @@ public class TVMessage implements Parcelable{
 	private int inputSource;
 	private int stopRecordRequestProgramID;
 	
+	
+	private int recordErrorCode;
+	public static final int REC_ERR_NONE        = 0; // Success, no error
+	public static final int REC_ERR_OPEN_FILE   = 1; // Cannot open output record file
+	public static final int REC_ERR_WRITE_FILE  = 2; // Cannot write data to record file
+	public static final int REC_ERR_ACCESS_FILE = 3; // Cannot access record file
+	public static final int REC_ERR_SYSTEM      = 4; // For other system reasons
+	
 	private int stopRecordRequestType;
 	/**停止录像以开始录制当前播放的频道*/
-	public static final int REQ_TYPE_RECORD_CURRENT = 1;
+	public static final int REQ_TYPE_RECORD_CURRENT  = 1;
+	/**停止录像以开始时移播放*/
+	public static final int REQ_TYPE_START_TIMESHIFT = 2;
 	/**停止录像以切换到指定频道播放*/
-	public static final int REQ_TYPE_SWITCH_PROGRAM = 2;
+	public static final int REQ_TYPE_SWITCH_PROGRAM  = 3;
 
 	private int flags;
 	private static final int FLAG_PROGRAM_ID = 1;
@@ -88,6 +100,7 @@ public class TVMessage implements Parcelable{
 	private static final int FLAG_INPUT_SOURCE   = 32;
 	private static final int FLAG_PROGRAM_NUMBER = 64;
 	private static final int FLAG_STOP_RECORD    = 128;
+	private static final int FLAG_RECORD_END     = 256;
 
 	public static final Parcelable.Creator<TVMessage> CREATOR = new Parcelable.Creator<TVMessage>(){
 		public TVMessage createFromParcel(Parcel in) {
@@ -132,6 +145,9 @@ public class TVMessage implements Parcelable{
 			stopRecordRequestType = in.readInt();
 			stopRecordRequestProgramID = in.readInt();
 		}
+		if((flags & FLAG_RECORD_END) != 0){
+			recordErrorCode = in.readInt();
+		}
 	}
 
 	public void writeToParcel(Parcel dest, int flag){
@@ -168,6 +184,9 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_STOP_RECORD) != 0){
 			dest.writeInt(stopRecordRequestType);
 			dest.writeInt(stopRecordRequestProgramID);
+		}
+		if((flags & FLAG_RECORD_END) != 0){
+			dest.writeInt(recordErrorCode);
 		}
 	}
 
@@ -341,6 +360,17 @@ public class TVMessage implements Parcelable{
 			throw new UnsupportedOperationException();
 
 		return stopRecordRequestProgramID;
+	}
+	
+	/**
+	 *取得录像结束的错误码
+	 *@return 返回错误码
+	 */
+	public int getRecordErrorCode() {
+		if((flags & FLAG_RECORD_END) != FLAG_RECORD_END)
+			throw new UnsupportedOperationException();
+
+		return recordErrorCode;
 	}
 
 	/**
@@ -626,6 +656,16 @@ public class TVMessage implements Parcelable{
 		msg.flags = FLAG_STOP_RECORD;
 		msg.stopRecordRequestType = requestType;
 		msg.stopRecordRequestProgramID = arg;
+
+		return msg;
+	}
+	
+	public static TVMessage recordEnd(int errCode){
+		TVMessage msg = new TVMessage();
+
+		msg.type = TYPE_RECORD_END;
+		msg.flags = FLAG_RECORD_END;
+		msg.recordErrorCode = errCode;
 
 		return msg;
 	}

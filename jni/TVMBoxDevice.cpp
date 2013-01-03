@@ -280,6 +280,36 @@ static jobject tsinfo_to_playback(JNIEnv *env, jobject object, AM_AV_TimeshiftIn
 	return obj;
 }
 
+static int getRecordError(int error)
+{
+	const int REC_ERR_NONE        = 0; // Success, no error
+	const int REC_ERR_OPEN_FILE   = 1; // Cannot open output record file
+	const int REC_ERR_WRITE_FILE  = 2; // Cannot write data to record file
+	const int REC_ERR_ACCESS_FILE = 3; // Cannot access record file
+	const int REC_ERR_SYSTEM      = 4; // For other system reasons
+	int ret;
+	
+	switch (error){
+		case AM_SUCCESS:
+			ret = REC_ERR_NONE;
+			break;
+		case AM_REC_ERR_CANNOT_OPEN_FILE:
+			ret = REC_ERR_OPEN_FILE;
+			break;
+		case AM_REC_ERR_CANNOT_WRITE_FILE:
+			ret = REC_ERR_WRITE_FILE;
+			break;
+		case AM_REC_ERR_CANNOT_ACCESS_FILE:
+			ret = REC_ERR_ACCESS_FILE;
+			break;
+		default:
+			ret = REC_ERR_SYSTEM;
+			break;
+	}
+	
+	return ret;
+}
+
 static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 {
 	TVDevice *dev = (TVDevice*)user_data;
@@ -342,7 +372,7 @@ static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 		event = create_event(env, dev->dev_obj, EVENT_RECORD_END);
 		recpara  = recendpara_to_para(env, dev->dev_obj, endpara);
 
-		env->SetIntField(event, gEventRecEndCodeID, endpara->error_code);
+		env->SetIntField(event, gEventRecEndCodeID, getRecordError(endpara->error_code));
 		env->SetObjectField(event, gEventRecParamsID, recpara);
 	
 		env->CallVoidMethod(dev->dev_obj, gOnEventID, event);

@@ -207,6 +207,32 @@ public class TVBooking{
 		return p;
 	}
 	
+	/**
+	 *根据预约状态查找指定的录像TVBooking
+	 *@param context 当前Context
+	 *@param id 记录ID
+	 *@return 返回对应的TVBooking对象，null表示不存在对应的对象
+	 */
+	public static TVBooking[] selectRecordBookingsByStatus(Context context, int st){
+		TVBooking bookings[] = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
+			"select * from booking_table where (flag & "+FL_RECORD+") != 0 and status="+st, 
+			null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				bookings = new TVBooking[c.getCount()];
+				do{
+					bookings[id++] = new TVBooking(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+		
+		return bookings;
+	}
+	
 	public static TVBooking[] selectAllPlayBookings(Context context){
 		TVBooking bookings[] = null;
 		
@@ -378,6 +404,10 @@ public class TVBooking{
 		return this.duration;
 	}
 	
+	public int getStatus(){
+		return this.status;
+	}
+	
 	public TVProgram getProgram(){
 		return this.program;
 	}
@@ -437,6 +467,13 @@ public class TVBooking{
 		Log.d(TAG, "Booking "+id+"' storage path updated to "+path);
 		String cmd = "update booking_table set from_storage='"+sqliteEscape(path)+"' where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+	}
+	
+	public void delete(){
+		String cmd = "delete from booking_table where db_id="+this.id;
+		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+		this.id = -1;
+		Log.d(TAG, "Booking "+id+" deleted");
 	}
 }
 

@@ -656,13 +656,19 @@ public class TVService extends Service implements TVConfig.Update{
 		TVProgram recordingProgram = recorder.getRecordingProgram();
 		if (recordingProgram != null){
 			if (recordingProgram.getID() == playingProgram.getID()){
-				Log.d(TAG, "Program "+recordingProgram.getID()+" is already recording.");
-			}else{
-				/**send message to clients to solve this conflict*/
-				sendMessage(TVMessage.stopRecordRequest(
-					TVMessage.REQ_TYPE_RECORD_CURRENT, 
-					playingProgram.getID()));
+				if (!isTimeshift){
+					Log.d(TAG, "Program "+recordingProgram.getID()+" is already recording.");
+					return;
+				}
+				else if (recorder.isTimeshifting()){
+					Log.d(TAG, "Program "+recordingProgram.getID()+" is already in timeshifting.");
+					return;
+				}	
 			}
+			/**send message to clients to solve this conflict*/
+			sendMessage(TVMessage.stopRecordRequest(
+				isTimeshift ? TVMessage.REQ_TYPE_START_TIMESHIFT : TVMessage.REQ_TYPE_RECORD_CURRENT, 
+				playingProgram.getID()));
 			return;
 		}
 		
@@ -1358,6 +1364,7 @@ public class TVService extends Service implements TVConfig.Update{
 			case TVDevice.Event.EVENT_RECORD_END:
 				Log.d(TAG, "Record end");
 				recorder.onRecordEvent(event);
+				sendMessage(TVMessage.recordEnd(event.recEndCode));
 				break;
 		}
 	}
