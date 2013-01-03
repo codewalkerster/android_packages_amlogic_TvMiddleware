@@ -12,6 +12,7 @@ public class DTVRecordParams implements Parcelable {
 	
 	private String recFilePath;
 	private String storagePath;
+	private int programID;
 	private int vidPid;
 	private int audPids[];
 	private int otherPids[];
@@ -33,12 +34,14 @@ public class DTVRecordParams implements Parcelable {
 		currRecordSize = in.readLong();
 		currRecordTime = in.readLong();
 		recTotalTime = in.readLong();
+		programID = in.readInt();
 	}
 
 	public void writeToParcel(Parcel dest, int flags){
 		dest.writeLong(currRecordSize);
 		dest.writeLong(currRecordTime);
 		dest.writeLong(recTotalTime);
+		dest.writeInt(programID);
 	}
 
 	public DTVRecordParams(Parcel in){
@@ -79,6 +82,12 @@ public class DTVRecordParams implements Parcelable {
 		recTotalTime = book.getDuration();
 		this.isTimeshift = isTimeshift;
 		
+		if (book.getProgram() != null){
+			programID = book.getProgram().getID();
+		}else{
+			programID = -1;
+		}
+		
 		currRecordSize = 0;
 		currRecordTime = 0;
 	}
@@ -105,6 +114,14 @@ public class DTVRecordParams implements Parcelable {
 	
 	public String getRecordFilePath(){
 		return recFilePath;
+	}
+	
+	public int getProgramID(){
+		return programID;
+	}
+	
+	public void setProgramID(int id){
+		programID = id;
 	}
 }
 

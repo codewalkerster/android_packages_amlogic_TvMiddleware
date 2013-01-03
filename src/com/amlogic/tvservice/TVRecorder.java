@@ -435,7 +435,16 @@ abstract public class TVRecorder{
 	
 	public DTVRecordParams getRecordingParams(){
 		if (tvDevice != null && status != ST_IDLE) {
-			return tvDevice.getRecordingParams();
+			DTVRecordParams para = tvDevice.getRecordingParams();
+			TVProgram p = getRecordingProgram();
+			if (para != null) {
+				if (p != null) {
+					para.setProgramID(p.getID());
+				} else {
+					para.setProgramID(-1);
+				}
+				return para;
+			}
 		}
 		
 		return null;

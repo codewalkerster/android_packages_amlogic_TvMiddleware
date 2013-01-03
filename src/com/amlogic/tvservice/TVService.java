@@ -706,7 +706,7 @@ public class TVService extends Service implements TVConfig.Update{
 		if (param.booking != null){
 			/* Start the recorder */
 			param.isTimeshift = isTimeshift;
-			param.fendLocked = (programID != -1);
+			param.fendLocked = isTimeshift ? true : (programID != -1);
 			recorder.startRecord(param);
 		}else{
 			/* can this case be ture ?? */
