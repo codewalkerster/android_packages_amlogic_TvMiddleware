@@ -1,5 +1,6 @@
 package com.amlogic.tvutil;
 
+import java.io.File;
 import java.util.Date;
 import java.util.ArrayList;
 import android.database.Cursor;
@@ -472,8 +473,19 @@ public class TVBooking{
 	public void delete(){
 		String cmd = "delete from booking_table where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
-		this.id = -1;
+		if ((flag & FL_RECORD) != 0){
+			Log.d(TAG, "Delete the record files for this booking...");
+			try{
+				File rfile = new File(recStoragePath + "/" + recFilePath);
+				rfile.delete();
+				File rifile = new File(recStoragePath + "/" + recFilePath.replace("amrec", "amri"));
+				rifile.delete();
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
 		Log.d(TAG, "Booking "+id+" deleted");
+		this.id = -1;
 	}
 }
 
