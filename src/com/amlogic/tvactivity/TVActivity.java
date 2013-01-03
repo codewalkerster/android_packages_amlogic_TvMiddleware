@@ -984,5 +984,12 @@ abstract public class TVActivity extends Activity
 	public void restoreFactorySetting(){
 		client.restoreFactorySetting();
 	}
+	
+	/**
+	 *播放上次播放的频道，如失败则播放第一个有效的频道
+	 */
+	public void playValid(){
+		client.playValid();
+	}
 }
 

@@ -809,5 +809,17 @@ abstract public class TVClient
 			}
 		}
 	}
+	
+	/**
+	 *播放上次播放的频道，如失败则播放第一个有效的频道
+	 */
+	public void playValid(){
+		if(service != null){
+			try{
+				service.playValid();
+			}catch(RemoteException e){
+			}
+		}
+	}
 }
 

@@ -121,5 +121,8 @@ interface ITVService{
 
 	//恢复出厂设置
 	void restoreFactorySetting();
+	
+	//播放上次播放的频道，如失败则播放第一个有效的频道
+	void playValid();
 }
 

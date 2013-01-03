@@ -38,28 +38,29 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_PLAY_PROGRAM  = 1950;
 	private static final int MSG_STOP_PLAYING  = 1951;
 	private static final int MSG_START_TIMESHIFTING = 1952;
-	private static final int MSG_START_PLAYBACK  = 1953;
-	private static final int MSG_START_SCAN      = 1954;
-	private static final int MSG_STOP_SCAN       = 1955;
-	private static final int MSG_START_RECORDING = 1956;
-	private static final int MSG_STOP_RECORDING  = 1957;
-	private static final int MSG_PAUSE           = 1958;
-	private static final int MSG_RESUME          = 1959;
-	private static final int MSG_FAST_FORWARD    = 1960;
-	private static final int MSG_FAST_BACKWARD   = 1961;
-	private static final int MSG_SEEK_TO         = 1962;
-	private static final int MSG_DEVICE_EVENT    = 1963;
-	private static final int MSG_EPG_EVENT       = 1964;
-	private static final int MSG_SCAN_EVENT      = 1965;
-	private static final int MSG_SET_PROGRAM_TYPE = 1966;
-	private static final int MSG_CONFIG_CHANGED   = 1967;
-	private static final int MSG_SWITCH_AUDIO     = 1968;
-	private static final int MSG_RESET_ATV_FORMAT = 1969;
-	private static final int MSG_FINE_TUNE        = 1970;
-	private static final int MSG_RESTORE_FACTORY_SETTING = 1971;
-	private static final int MSG_BOOK_EVENT       = 1972;
-	private static final int MSG_STOP_PLAYBACK    = 1973;
-	private static final int MSG_STOP_TIMESHIFTING = 1974;
+	private static final int MSG_STOP_TIMESHIFTING = 1953;
+	private static final int MSG_START_PLAYBACK  = 1954;
+	private static final int MSG_STOP_PLAYBACK    = 1955;
+	private static final int MSG_START_SCAN      = 1956;
+	private static final int MSG_STOP_SCAN       = 1957;
+	private static final int MSG_START_RECORDING = 1958;
+	private static final int MSG_STOP_RECORDING  = 1959;
+	private static final int MSG_PAUSE           = 1960;
+	private static final int MSG_RESUME          = 1961;
+	private static final int MSG_FAST_FORWARD    = 1962;
+	private static final int MSG_FAST_BACKWARD   = 1963;
+	private static final int MSG_SEEK_TO         = 1964;
+	private static final int MSG_DEVICE_EVENT    = 1965;
+	private static final int MSG_EPG_EVENT       = 1966;
+	private static final int MSG_SCAN_EVENT      = 1967;
+	private static final int MSG_BOOK_EVENT       = 1968;
+	private static final int MSG_SET_PROGRAM_TYPE = 1969;
+	private static final int MSG_CONFIG_CHANGED   = 1970;
+	private static final int MSG_SWITCH_AUDIO     = 1971;
+	private static final int MSG_RESET_ATV_FORMAT = 1972;
+	private static final int MSG_FINE_TUNE        = 1973;
+	private static final int MSG_RESTORE_FACTORY_SETTING = 1974;
+	private static final int MSG_PLAY_VALID       = 1975;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -332,6 +333,11 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_RESTORE_FACTORY_SETTING);
 			handler.sendMessage(msg);
 		}
+		
+		public void playValid(){
+			Message msg = handler.obtainMessage(MSG_PLAY_VALID);
+			handler.sendMessage(msg);
+		}
 	};
 
 	/*Message handler*/
@@ -418,6 +424,9 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_RESTORE_FACTORY_SETTING:
 					resolveRestoreFactorySetting();
+					break;
+				case MSG_PLAY_VALID:
+					resolvePlayValid();
 					break;
 			}
 		}
@@ -684,8 +693,11 @@ public class TVService extends Service implements TVConfig.Update{
 					600*1000,
 					param.booking.getVideo(),
 					auds!=null ? auds[0] : null);
+				/* Stop current play */
+				stopPlaying();
 				/* Start the playback */
 				device.startTimeshifting(dtp);
+				status = TVRunningStatus.STATUS_TIMESHIFTING;
 			}
 		}else{
 			int bookingID = TVBooking.bookProgram(this, playingProgram, TVBooking.FL_RECORD, time.getTime(), 0);
@@ -1054,7 +1066,7 @@ public class TVService extends Service implements TVConfig.Update{
 		/* Stop record */
 		stopRecording();
 		/* Stop playback */
-		device.stopTimeshifting();
+		stopPlaying();
 	}
 
 	/*Start DVR playback.*/
@@ -1072,8 +1084,11 @@ public class TVService extends Service implements TVConfig.Update{
 				booking.getDuration(),
 				booking.getVideo(),
 				auds!=null ? auds[0] : null);
+			/* Stop current play */
+			stopPlaying();
 			/* Start the playback */
 			device.startPlayback(dtp);
+			status = TVRunningStatus.STATUS_PLAYBACK;
 		}
 	}
 
@@ -1082,7 +1097,7 @@ public class TVService extends Service implements TVConfig.Update{
 		if(!isInTVMode())
 			return;
 		
-		device.stopPlayback();
+		stopPlaying();
 	}
 	
 	/*Start channel scanning.*/
@@ -1241,7 +1256,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolveStopRecording(){
 		stopRecording();
 	}
-
+	
 	/*Pause.*/
 	private void resolvePause(){
 		if(!isInFileMode())
@@ -1554,6 +1569,40 @@ public class TVService extends Service implements TVConfig.Update{
 
 		TVDataProvider.restore();
 		config.restore();
+	}
+	
+	/*Play a program.*/
+	private void resolvePlayValid(){
+		TVProgram p = null;
+
+		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+			if(atvPlayParams != null){
+				p = playParamsToProgram(atvPlayParams);
+			}
+		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+			TVPlayParams tp = getDTVPlayParams();
+			if(tp == null){
+				tp = dtvTVPlayParams;
+			}
+			if(tp == null){
+				tp = dtvRadioPlayParams;
+			}
+			if(tp != null){
+				p = playParamsToProgram(tp);
+			}
+		}
+
+		if (p == null){
+			Log.d(TAG, "Cannot play last played program, try first valid program.");
+			TVProgram fvp = TVProgram.selectFirstValid(this, getCurProgramType());
+			if (fvp != null){
+				TVPlayParams tp = TVPlayParams.playProgramByID(fvp.getID());
+				resolvePlayProgram(tp);
+			}
+		}else{
+			Log.d(TAG, "Play last program");
+			playCurrentProgram();
+		}
 	}
 
 	public IBinder onBind (Intent intent){
