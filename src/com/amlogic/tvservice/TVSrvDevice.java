@@ -6,6 +6,8 @@ import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVConfigValue.TypeException;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 import java.io.File;
 import android.util.Log;
 import android.amlogic.Tv;
@@ -338,19 +340,23 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.e(TAG, "*********stopRecording have not realize");
         // return native_stop_recording();
     }
+    
+    public DTVRecordParams getRecordingParams()
+    {
+    	return null;
+    }
 
-    public void startTimeshifting(DTVRecordParams params)
+    public void startTimeshifting(DTVPlaybackParams params)
     {
     }
 
-    public DTVRecordParams stopTimeshifting()
+    public void stopTimeshifting()
     {
         // return native_stop_timeshifting();
         Log.e(TAG, "*********stopTimeshifting have not realize");
-        return null;
     }
 
-    public void startPlayback(DTVRecordParams params)
+    public void startPlayback(DTVPlaybackParams params)
     {
         // native_start_playback(params);
         Log.e(TAG, "*********startPlayback have not realize");
@@ -360,6 +366,11 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // native_stop_playback();
         Log.e(TAG, "*********stopPlayback have not realize");
+    }
+    
+    public DTVPlaybackParams getPlaybackParams()
+    {
+    	return null;
     }
 
     public void pause()
