@@ -51,6 +51,12 @@ public class DTVRecordParams implements Parcelable {
 	public DTVRecordParams(){
 	}
 	
+	/**
+	 *从一个booking中创建录像启动参数
+	 *@param book 需要录制的预约录像
+	 *@param storagePath 用户选择的存储器路径
+	 *@param isTimeshift 是否为时移录像
+	 */
 	public DTVRecordParams(TVBooking book, String storagePath, boolean isTimeshift){
 		this.storagePath = storagePath;
 		TVProgram.Audio audios[] = book.getAllAudio();
@@ -100,22 +106,42 @@ public class DTVRecordParams implements Parcelable {
 		return CREATOR;
 	}
 
+	/**
+	 *获取当前录像时间
+	 *@return 返回当前录像时间，ms
+	 */
 	public long getCurrentRecordTime(){
 		return currRecordTime;
 	}
 
+	/**
+	 *获取总的录像时间
+	 *@return 返回总的录像时间，当为即时录像时该值为0
+	 */
 	public long getTotalRecordTime(){
 		return recTotalTime;
 	}
 
+	/**
+	 *获取当前录像文件长度
+	 *@return 返回录像文件长度
+	 */
 	public long getCurrentRecordSize(){
 		return currRecordSize;
 	}
 	
+	/**
+	 *获取当前录像文件全路径
+	 *@return 返回录像文件全路径
+	 */
 	public String getRecordFilePath(){
 		return recFilePath;
 	}
 	
+	/**
+	 *获取当前录像的Program ID
+	 *@return 返回当前录像的Program ID
+	 */
 	public int getProgramID(){
 		return programID;
 	}

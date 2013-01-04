@@ -211,7 +211,7 @@ public class TVBooking{
 	/**
 	 *根据预约状态查找指定的录像TVBooking
 	 *@param context 当前Context
-	 *@param id 记录ID
+	 *@param st 预约状态
 	 *@return 返回对应的TVBooking对象，null表示不存在对应的对象
 	 */
 	public static TVBooking[] selectRecordBookingsByStatus(Context context, int st){
@@ -234,6 +234,37 @@ public class TVBooking{
 		return bookings;
 	}
 	
+	/**
+	 *根据预约状态查找指定的预约播放
+	 *@param context 当前Context
+	 *@param st 预约状态
+	 *@return 返回对应的TVBooking对象，null表示不存在对应的对象
+	 */
+	public static TVBooking[] selectPlayBookingsByStatus(Context context, int st){
+		TVBooking bookings[] = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
+			"select * from booking_table where (flag & "+FL_PLAY+") != 0 and status="+st, 
+			null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				bookings = new TVBooking[c.getCount()];
+				do{
+					bookings[id++] = new TVBooking(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+		
+		return bookings;
+	}
+	
+	/**
+	 *查找所有预约播放
+	 *@param context 当前Context
+	 *@return 返回对应的TVBooking对象，null表示不存在该id所对应的对象
+	 */
 	public static TVBooking[] selectAllPlayBookings(Context context){
 		TVBooking bookings[] = null;
 		
@@ -253,6 +284,11 @@ public class TVBooking{
 		return bookings;
 	}
 	
+	/**
+	 *查找所有预约录像
+	 *@param context 当前Context
+	 *@return 返回对应的TVBooking对象，null表示不存在该id所对应的对象
+	 */
 	public static TVBooking[] selectAllRecordBookings(Context context){
 		TVBooking bookings[] = null;
 		
@@ -272,6 +308,17 @@ public class TVBooking{
 		return bookings;
 	}
 	
+	/**
+	 *预约一个Program
+	 *@param context 当前Context
+	 *@param program 需要预约的频道
+	 *@param flag 预约标志，可以为FL_RECORD|FL_PLAY
+	 *@param start 起始时间 ms
+	 *@param duration 持续时间 ms
+	 *@return 返回对应的TVBooking ID，< 0 表示预约失败
+	 *        ERR_PARAM: 预约参数错误
+	 *        ERR_CONFLICT: 预约时间段冲突
+	 */
 	public static int bookProgram(Context context, TVProgram program, int flag, long start, long duration){
 		if (program == null || start < 0 ||
 			((flag&FL_PLAY)==0 && (flag&FL_RECORD)==0)) {
@@ -285,6 +332,21 @@ public class TVBooking{
 			status = ST_STARTED;
 		} else {
 			/*check conflict*/
+			long end = start + duration;
+			String sql = "select * from booking_table where status<="+ST_STARTED;
+			sql += " and ((start<="+start+" and (start+duration)>="+start+")";
+			sql += " or (start<="+end+" and (start+duration)>="+end+")) limit 1";
+			Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, sql, null, null);
+			if(c != null){
+				if(c.moveToFirst()){
+					int col = c.getColumnIndex("db_id");
+					int cid = c.getInt(col);
+					Log.d(TAG, "Conflict with booking "+cid+", cannot book.");
+					c.close();
+					return ERR_CONFLICT;
+				}
+				c.close();
+			}
 			status = ST_NOT_START;
 		}
 		
@@ -364,6 +426,15 @@ public class TVBooking{
 		return retid;
 	}
 	
+	/**
+	 *预约一个Event
+	 *@param context 当前Context
+	 *@param event 需要预约的节目
+	 *@param flag 预约标志，可以为FL_RECORD|FL_PLAY
+	 *@return 返回对应的TVBooking ID，< 0 表示预约失败
+	 *        ERR_PARAM: 预约参数错误
+	 *        ERR_CONFLICT: 预约时间段冲突
+	 */
 	public static int bookEvent(Context context, TVEvent event, int flag){
 		if (event == null) {
 			Log.d(TAG, "Invalid param for booking event");
@@ -381,62 +452,122 @@ public class TVBooking{
 		return ret;
 	}
 	
+	/**
+	 *获取预约标志
+	 *@return 预约标志 可以为FL_RECORD|FL_PLAY
+	 */
 	public int getFlag(){
 		return this.flag;
 	}
 	
+	/**
+	 *获取唯一ID
+	 *@return ID
+	 */
 	public int getID(){
 		return this.id;
 	}
 	
+	/**
+	 *获取录像文件路径，该路径不包含存储器路径
+	 *@return 录像文件路径
+	 */
 	public String getRecordFilePath(){
 		return this.recFilePath;
 	}
 	
+	/**
+	 *获取录像存储器路径
+	 *@return 录像存储器路径
+	 */
 	public String getRecordStoragePath(){
 		return this.recStoragePath;
 	}
 	
+	/**
+	 *获取预约开始时间
+	 *@return 预约开始时间, ms
+	 */
 	public long getStart(){
 		return this.start;
 	}
 	
+	/**
+	 *获取预约持续时间
+	 *@return 预约持续时间, ms
+	 */
 	public long getDuration(){
 		return this.duration;
 	}
 	
+	/**
+	 *获取预约状态
+	 *@return 预约状态
+	 */
 	public int getStatus(){
 		return this.status;
 	}
 	
+	/**
+	 *获取预约的Program
+	 *@return Program,当为从存储器读取的录像记录时，该值为null
+	 */
 	public TVProgram getProgram(){
 		return this.program;
 	}
 	
+	/**
+	 *获取预约Program名称
+	 *@return 预约Program名称
+	 */
 	public String getProgramName(){
 		return this.programName;
 	}
 	
+	/**
+	 *获取预约Event名称
+	 *@return 预约Event名称
+	 */
 	public String getEventName(){
 		return this.eventName;
 	}
 	
+	/**
+	 *获取预约频道的视频
+	 *@return 视频对象
+	 */
 	public TVProgram.Video getVideo(){
 		return this.video;
 	}
 	
+	/**
+	 *获取预约频道的所有音频
+	 *@return 音频对象
+	 */
 	public TVProgram.Audio[] getAllAudio(){
 		return this.audios;
 	}
 	
+	/**
+	 *获取预约频道的所有字幕
+	 *@return 字幕对象
+	 */
 	public TVProgram.Subtitle[] getAllSubtitle(){
 		return this.subtitles;
 	}
 	
+	/**
+	 *获取预约频道的所有图文
+	 *@return 图文对象
+	 */
 	public TVProgram.Teletext[] getAllTeletext(){
 		return this.teletexts;
 	}
 	
+	/**
+	 *更新预约状态
+	 *@param status 预约状态
+	 */
 	public void updateStatus(int status){
 		if (status < ST_NOT_START || status > ST_END) {
 			Log.d(TAG, "Invalid booking status "+status);
@@ -448,6 +579,10 @@ public class TVBooking{
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
 	
+	/**
+	 *更新预约持续时间，例如录像总时间
+	 *@param duration 持续时间
+	 */
 	public void updateDuration(long duration){
 		this.duration = duration;
 		Log.d(TAG, "Booking "+id+"' duration updated to "+duration/1000);
@@ -455,7 +590,10 @@ public class TVBooking{
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
 	
-	/** This file path is not include the storage path which may be dynamic */
+	/**
+	 *更新录像文件路径，不包含存储器路径
+	 *@param path 录像文件路径
+	 */
 	public void updateRecordFilePath(String path){
 		this.recFilePath = new String(path);
 		Log.d(TAG, "Booking "+id+"' file path updated to "+path);
@@ -463,6 +601,10 @@ public class TVBooking{
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
 	
+	/**
+	 *更新录像存储器路径,用于动态从存储器中读取录像记录
+	 *@param path 录像存储器路径
+	 */
 	public void updateRecordStoragePath(String path){
 		this.recStoragePath = new String(path);
 		Log.d(TAG, "Booking "+id+"' storage path updated to "+path);
@@ -470,6 +612,9 @@ public class TVBooking{
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
 	
+	/**
+	 *删除该预约记录
+	 */
 	public void delete(){
 		String cmd = "delete from booking_table where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);

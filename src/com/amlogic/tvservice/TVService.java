@@ -619,8 +619,8 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 	
 	
-	private void recordBooking(TVBooking book){
-		stopRecording();
+	private void startBooking(TVBooking book){
+		boolean needPlay = false;
 		
 		TVProgram playingProgram = null;
 		TVProgram requestProgram = book.getProgram();
@@ -630,23 +630,35 @@ public class TVService extends Service implements TVConfig.Update{
 		if (getDTVPlayParams() != null){
 			 playingProgram = playParamsToProgram(getDTVPlayParams());
 		}
-
-		/* check if the channel changed */
-		int playChanID = (playingProgram!=null) ? playingProgram.getChannel().getID() : -1;
-		int recChanID = requestProgram.getChannel().getID();
-		TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
-		param.booking = book;
-		param.isTimeshift = false;
-		if(playChanID != recChanID){
-			Log.d(TAG, "Channel changed, will start record after playing the new program");
+		
+		if ((book.getFlag() & TVBooking.FL_PLAY) != 0){
+			needPlay = true;
+		}
+ 		if ((book.getFlag() & TVBooking.FL_RECORD) != 0){
+ 			/* stop the current recording */
+ 			stopRecording();
+			/* check if the channel changed */
+			int playChanID = (playingProgram!=null) ? playingProgram.getChannel().getID() : -1;
+			int recChanID = requestProgram.getChannel().getID();
+			TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
+			param.booking = book;
+			param.isTimeshift = false;
+			if(playChanID != recChanID){
+				Log.d(TAG, "Channel changed, will start record after playing the new program");
+				needPlay = true;
+				param.fendLocked = false;
+			}else{
+				param.fendLocked = (programID != -1);
+			}
+		
+			recorder.startRecord(param);
+		}
+		
+		if (needPlay){
 			TVPlayParams tp = TVPlayParams.playProgramByID(requestProgram.getID());
 			setDTVPlayParams(tp);
 			playCurrentProgram();
-			param.fendLocked = false;
-		}else{
-			param.fendLocked = (programID != -1);
 		}
-		recorder.startRecord(param);
 	}
 	
 	private void recordCurrentProgram(boolean isTimeshift){
@@ -1439,10 +1451,17 @@ public class TVService extends Service implements TVConfig.Update{
 		switch(event.type){
 			case TVBookManager.Event.EVENT_NEW_BOOKING_CONFIRM:
 				Log.d(TAG, "New booking confirm");
-				
+				sendMessage(TVMessage.bookingRemind(event.bookingID));
 				break;
 			case TVBookManager.Event.EVENT_NEW_BOOKING_START:
 				Log.d(TAG, "New booking start");
+				TVBooking booking = TVBooking.selectByID(this, event.bookingID);
+				if (booking != null){
+					sendMessage(TVMessage.bookingStart(event.bookingID));
+					startBooking(booking);
+				} else {
+					Log.d(TAG, "Cannot get booking "+event.bookingID);
+				}
 				
 				break;
 			default:

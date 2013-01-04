@@ -62,15 +62,6 @@ public class DTVPlaybackParams implements Parcelable {
 		this.filePath = filePath;
 	}
 
-	/*public boolean equals(DTVPlaybackParams tp){
-		if(tp.status != status ||
-			tp.currentTime != currentTime ||
-			tp.totalTime != totalTime)
-			return false;
-
-		return true;
-	}*/
-
 	public int describeContents(){
 		return 0;
 	}
@@ -79,14 +70,26 @@ public class DTVPlaybackParams implements Parcelable {
 		return CREATOR;
 	}
 
+	/**
+	 *获取当前回放状态
+	 *@return 当前播放状态，如PLAYBACK_ST_PLAYING等
+	 */
 	public int getStatus(){
 		return status;
 	}
 
+	/**
+	 *获取当前回放时间
+	 *@return 当前播放时间，ms
+	 */
 	public long getCurrentTime(){
 		return currentTime;
 	}
 
+	/**
+	 *获取当前回放总时间
+	 *@return 回放总时间，ms
+	 */
 	public long getTotalTime(){
 		return totalTime;
 	}

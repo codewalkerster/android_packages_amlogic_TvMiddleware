@@ -23,49 +23,11 @@ abstract public class TVBookManager{
 	
 	private static final String TAG = "TVBookManager";
 	private static final int START_CONFIRM_TIME = 60;
-	private static final int CONFLICT_CONFIRM_TIME = 15;
 	private TVTime tvTime = null;
-	private Handler handler;
+	private Handler handler = new Handler();
 	private Context context;
 	
 	private Runnable bookManagerTask = new Runnable() {
-		/*private long getNextDelayMs(){
-			long delay = -1;
-			long currTime = tvTime.getTime();
-			TVBooking latestNotStart = null;
-			TVBooking latestConfirmed = null;
-			
-			String sql = "select * from booking_table where status="+TVBooking.ST_NOT_START;
-			sql += " and ("+currTime/1000+"-start)>"+START_CONFIRM_TIME;
-			sql += " order by start limit 1";
-			Cursor c = getContentResolver().query(TVDataProvider.RD_URL, null, sql, null, null);
-			if (c != null) {
-				latestNotStart = new TVBooking(context, c);
-			}
-			
-			sql = "select * from booking_table where status<="+TVBooking.ST_CONFIRMED;
-			sql += " and ("+currTime/1000+"-start)<0";
-			sql += " order by start limit 1";
-			c = getContentResolver().query(TVDataProvider.RD_URL, null, sql, null, null);
-			if (c != null) {
-				latestConfirmed = new TVBooking(context, c);
-			}
-			
-			if (latestNotStart != null && latestConfirmed != null) {
-				delay = (latestNotStart.start < latestConfirmed.start) ? latestNotStart.start : latestConfirmed.start;
-				delay -= currTime;
-			} else if (latestNotStart != null) {
-				delay = latestNotStart.start - currTime;
-			} else if (latestConfirmed != null) {
-				delay = latestConfirmed.start - currTime;
-			}
-			
-			if (delay != -1) {
-				Log.d(TAG, "Next record check at "+delay+"ms later");
-			}
-			return delay;
-		}*/
-		
 		public void run() {
 			/* Checking not start bookings */
 			TVBooking notStartBooking[] = checkNotStartBookings();
@@ -74,30 +36,32 @@ abstract public class TVBookManager{
 					Log.d(TAG, "New booking "+notStartBooking[i].getID()+" will start, flag="+
 						notStartBooking[i].getFlag() + ", wait the user's confirm...");
 					onBookingEvent(Event.EVENT_NEW_BOOKING_CONFIRM, notStartBooking[i].getID());
+					notStartBooking[i].updateStatus(TVBooking.ST_CONFIRMED);
 				}
 			}
 			
-			/* Checking conflict bookings */
-			TVBooking conflictBooking[] = checkConflictBookings();
-			if (conflictBooking != null){
-				for (int i=0; i<conflictBooking.length; i++) {
-					Log.d(TAG, "New booking "+conflictBooking[i].getID()+" got conflict, wait the user's confirm...");
-					onBookingEvent(Event.EVENT_NEW_BOOKING_CONFLICT, conflictBooking[i].getID());
-				}
-			}
-	
 			/* Checking confirmed bookings */
 			TVBooking confirmedBooking[] = checkConfirmedBookings();
 			if (confirmedBooking != null){
 				for (int i=0; i<confirmedBooking.length; i++) {
-					Log.d(TAG, "New booking "+confirmedBooking[i].getID()+" starting now, flag="+
-						confirmedBooking[i].getFlag());
-					onBookingEvent(Event.EVENT_NEW_BOOKING_START, confirmedBooking[i].getID());
+					if (i == 0) {
+						/* Start the first one */
+						Log.d(TAG, "New booking "+confirmedBooking[i].getID()+" starting now, flag="+
+							confirmedBooking[i].getFlag());
+						onBookingEvent(Event.EVENT_NEW_BOOKING_START, confirmedBooking[i].getID());
+						if ((confirmedBooking[i].getFlag()&TVBooking.FL_RECORD) != 0) {
+							confirmedBooking[i].updateStatus(TVBooking.ST_STARTED);
+						} else {
+							confirmedBooking[i].updateStatus(TVBooking.ST_END);
+						}
+					} else {
+						/* Auto delete the elses  */
+						confirmedBooking[i].delete();
+					}
 				}
 			}
 
 			handler.postDelayed(this, 5000);
-			
 		}
 	};
 	
@@ -147,29 +111,11 @@ abstract public class TVBookManager{
 		return bookings;
 	}
 	
-	private TVBooking[] checkConflictBookings(){
-		TVBooking b[] = null;
-		/*String sql = "select * from booking_table where status<="+TVBooking.ST_CONFIRMED;
-		sql += " and (start-"+tvTime.getTime()/1000+")<="+CONFLICT_CONFIRM_TIME;
-		sql += " order by start";
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, sql, null, null);
-		if (c != null) {
-			if(c.moveToFirst()){
-				int id = 0;
-				bookings = new TVBooking[c.getCount()];
-				do{
-					bookings[id++] = new TVBooking(context, c);
-				}while(c.moveToNext());
-			}
-			c.close();
-		}*/
-		
-		return b;
-	}
-	
 	public TVBookManager(Context context, TVTime time){
 		this.context = context;
 		tvTime = time;
+		
+		handler.postDelayed(bookManagerTask, 1000);
 	}
 	
 	public void onEvent(TVBookManager.Event evt){

@@ -35,9 +35,6 @@ abstract public class TVRecorder{
 	
 	private static final String TAG = "TVRecorder";
 	private int native_handle;
-	private int fendID = -1;
-	private int dvrID  = -1;
-	private int asyncFifoID = -1;
 	private int status = ST_IDLE;
 	private String storePath = "/mnt/sda1";
 	private Handler recordHandler = new Handler();
@@ -323,7 +320,7 @@ abstract public class TVRecorder{
 		
 		status = ST_RECORDING;
 		if (! recordParams.isTimeshift) {
-			recordHandler.postDelayed(recorderTimerTask, 1000);
+			recordHandler.postDelayed(recorderTimerTask, 100);
 		}
 		
 		return 0;
@@ -430,7 +427,22 @@ abstract public class TVRecorder{
 			Log.d(TAG, "Recording already stopped!");
 			return;
 		}
+		recordHandler.removeCallbacks(recorderTimerTask);
+		DTVRecordParams recPara = tvDevice.getRecordingParams();
+		if (riFile != null && recPara != null) {
+			long totalRecTime = recPara.getCurrentRecordTime();
+			/* update to file */
+			riFile.update(totalRecTime);
+			/* update to database */
+			recordParams.booking.updateDuration(totalRecTime);
+			recordParams.booking.updateStatus(TVBooking.ST_END);
+		}
+		
 		tvDevice.stopRecording();
+		
+		status = ST_IDLE;
+		recordParams = null;
+		riFile = null;
 	}
 	
 	public DTVRecordParams getRecordingParams(){
