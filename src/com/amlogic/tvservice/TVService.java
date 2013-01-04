@@ -1208,7 +1208,7 @@ public class TVService extends Service implements TVConfig.Update{
 								/** get each frequency */
 								for (int i=0; i<channelList.length; i++) {
 									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.atcsParams(frequency);
+									channelList[i] = TVChannelParams.atscParams(frequency);
 								}
 							}
 							else if(sp.getTsSourceID() == TVChannelParams.MODE_ANALOG){

@@ -545,7 +545,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 }
                 else if (name.equals("SetAudioSoundMode") || name.equals("SetAudioBalance") || name.equals("SetAudioTrebleVolume")
                         || name.equals("SetAudioBassVolume") || name.equals("SetAudioSupperBassVolume") || name.equals("SetAudioSRSSurround")
-                        || name.equals("SetAudioSrsDialogClarity") || name.equals("SetAudioSrsTruBass")|| name.equals("SetBaseColorMode"))
+                        || name.equals("SetAudioSrsDialogClarity") || name.equals("SetAudioSrsTruBass")|| name.equals("SetBaseColorMode")
+                        || name.equals("SetAudioSupperBassSwitch"))
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue);
                 }
@@ -588,7 +589,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         // int val = 0;
         if (name.equals("GetAudioBalance") || name.equals("GetAudioSoundMode") || name.equals("GetAudioTrebleVolume")
                 || name.equals("GetAudioBassVolume") || name.equals("GetAudioSupperBassVolume") || name.equals("GetAudioSRSSurround")
-                || name.equals("GetAudioSrsDialogClarity") || name.equals("GetAudioSrsTruBass") || name.equals("GetBaseColorMode"))
+                || name.equals("GetAudioSrsDialogClarity") || name.equals("GetAudioSrsTruBass") || name.equals("GetBaseColorMode")
+                || name.equals("GetAudioSupperBassSwitch"))
         {
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
             return myvalue;
