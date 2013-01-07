@@ -219,6 +219,8 @@ abstract public class TVDeviceImpl extends TVDevice{
 		
 	}
 	
-	
+	public void setVGAAutoAdjust()
+    {
+    }
 }
 

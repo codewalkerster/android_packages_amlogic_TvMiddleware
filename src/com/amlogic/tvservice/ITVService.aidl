@@ -124,5 +124,8 @@ interface ITVService{
 	
 	//播放上次播放的频道，如失败则播放第一个有效的频道
 	void playValid();
+
+	//VGA自动检测
+	void setVGAAutoAdjust();
 }
 

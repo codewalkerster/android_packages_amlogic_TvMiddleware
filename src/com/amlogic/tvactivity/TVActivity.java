@@ -991,5 +991,12 @@ abstract public class TVActivity extends Activity
 	public void playValid(){
 		client.playValid();
 	}
+
+	/**
+	 *设定VGA自动检测
+	 */
+	public void setVGAAutoAdjust(){
+		client.setVGAAutoAdjust();
+	}
 }
 

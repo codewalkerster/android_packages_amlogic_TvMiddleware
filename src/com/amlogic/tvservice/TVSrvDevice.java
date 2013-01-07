@@ -478,7 +478,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // TODO Auto-generated method stub
         Log.d(TAG, "onVGAAdjustChange status:" + state);
-        Event myEvent = new Event(Event.VGA_ADJUST_STATUS);
+        Event myEvent = new Event(Event.EVENT_VGA_ADJUST_STATUS);
         myEvent.vga_adjust_status = null;
 
         if (state < 0)

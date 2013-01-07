@@ -821,5 +821,17 @@ abstract public class TVClient
 			}
 		}
 	}
+
+	/**
+	 *设定VGA自动检测
+	 */
+	public void setVGAAutoAdjust(){
+		if(service != null){
+			try{
+				service.setVGAAutoAdjust();
+			}catch(RemoteException e){
+			}
+		}
+	}
 }
 

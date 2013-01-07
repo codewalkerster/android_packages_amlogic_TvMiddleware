@@ -61,6 +61,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_FINE_TUNE        = 1973;
 	private static final int MSG_RESTORE_FACTORY_SETTING = 1974;
 	private static final int MSG_PLAY_VALID       = 1975;
+	private static final int MSG_SET_VGA_AUTO_ADJUST = 1976;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -338,6 +339,11 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_PLAY_VALID);
 			handler.sendMessage(msg);
 		}
+
+		public void setVGAAutoAdjust(){
+			Message msg = handler.obtainMessage(MSG_SET_VGA_AUTO_ADJUST);
+			handler.sendMessage(msg);
+		}
 	};
 
 	/*Message handler*/
@@ -427,6 +433,9 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_PLAY_VALID:
 					resolvePlayValid();
+					break;
+				case MSG_SET_VGA_AUTO_ADJUST:
+					resolveSetVGAAutoAdjust();
 					break;
 			}
 		}
@@ -1393,6 +1402,14 @@ public class TVService extends Service implements TVConfig.Update{
 				recorder.onRecordEvent(event);
 				sendMessage(TVMessage.recordEnd(event.recEndCode));
 				break;
+			case TVDevice.Event.EVENT_VGA_ADJUST_STATUS:
+				Log.d(TAG, "VGA adjust");
+				if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_FAILED){
+					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_FAILED));
+				}else if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_SUCCESS){
+					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_OK));
+				}
+				break;
 		}
 	}
 
@@ -1623,6 +1640,12 @@ public class TVService extends Service implements TVConfig.Update{
 			playCurrentProgram();
 		}
 	}
+
+	/*VGA auto adjust.*/
+	private void resolveSetVGAAutoAdjust(){
+		device.setVGAAutoAdjust();
+	}
+
 
 	public IBinder onBind (Intent intent){
 		return mBinder;

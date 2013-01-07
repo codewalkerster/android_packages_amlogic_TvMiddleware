@@ -20,7 +20,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public static final int EVENT_DTV_NO_DATA             = 5;
 		public static final int EVENT_DTV_CANNOT_DESCRAMLE    = 6;
 		public static final int EVENT_RECORD_END              = 7;
-		public static final int VGA_ADJUST_STATUS             = 8;
+		public static final int EVENT_VGA_ADJUST_STATUS       = 8;
 
 		
 		

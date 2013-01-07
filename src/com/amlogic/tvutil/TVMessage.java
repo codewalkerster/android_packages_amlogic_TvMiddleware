@@ -55,6 +55,11 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_STOP_RECORD_REQUEST = 22;
 	/**录像已结束*/
 	public static final int TYPE_RECORD_END        = 23;
+	/**VGA信号调整成功*/
+	public static final int TYPE_VGA_ADJUST_OK     = 24;
+	/**VGA信号调整失败*/
+	public static final int TYPE_VGA_ADJUST_FAILED = 25;
+
 	
 	private static final String TAG="TVMessage";
 	private int type;
@@ -195,6 +200,14 @@ public class TVMessage implements Parcelable{
 	}
 
 	public TVMessage(){
+	}
+
+	/**
+	 *创建一个TVMessage
+	 *@param type 消息类型
+	 */
+	public TVMessage(int type){
+		this.type = type;
 	}
 
 	/**
