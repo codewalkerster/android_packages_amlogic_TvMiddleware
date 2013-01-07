@@ -20,13 +20,17 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public static final int EVENT_DTV_NO_DATA             = 5;
 		public static final int EVENT_DTV_CANNOT_DESCRAMLE    = 6;
 		public static final int EVENT_RECORD_END              = 7;
+		public static final int VGA_ADJUST_STATUS             = 8;
 
-		public int             type;
-		public TVChannelParams feParams;
-		public int             feStatus;
-		public int             recEndCode;
-		public DTVRecordParams recParams;
-		public int             source;
+		
+		
+		public int                                type;
+		public TVChannelParams                    feParams;
+		public int                                feStatus;
+		public int                                recEndCode;
+		public DTVRecordParams                    recParams;
+		public int                                source;
+		public TVConst.VGA_ADJUST_STATUS          vga_adjust_status;
 
 		public Event(int type){
 			this.type = type;
@@ -102,5 +106,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	abstract public void onEvent(Event event);
 	
 	abstract public void ATVChannelFineTune(int fre);
+	
+	abstract public void setVGAAutoAdjust();
 }
 

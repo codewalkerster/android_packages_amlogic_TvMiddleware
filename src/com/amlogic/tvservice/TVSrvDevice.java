@@ -1,6 +1,5 @@
 package com.amlogic.tvservice;
 
-
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVConfigValue.TypeException;
@@ -15,13 +14,14 @@ import android.amlogic.Tv.Frontend_Para;
 import android.amlogic.Tv.SourceSwitchListener;
 import android.amlogic.Tv.SrcInput;
 import android.amlogic.Tv.StatusTVChangeListener;
+import android.amlogic.Tv.VGAAdjustChangeListener;
 import android.amlogic.Tv.tvin_info_t;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, SourceSwitchListener
+public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, SourceSwitchListener, VGAAdjustChangeListener
 {
     private boolean destroy;
     private String TAG = "TVDeviceImpl";
@@ -35,7 +35,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     public static final int EVENT_FRONTEND = 1 << 1;
     public static final int EVENT_SOURCE_SWITCH = 1 << 2;
     deviceHandler myHandler = null;
-	public TVDeviceImpl()
+
+    public TVDeviceImpl()
     {
         super();
         tv = SingletonTv.getTvInstance();
@@ -44,15 +45,16 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         // tv.INIT_TV();
 
     }
-    
+
     public TVDeviceImpl(Looper looper)
     {
         super();
         mylooper = looper;
-    
+
         tv = SingletonTv.getTvInstance();
         tv.SetStatusTVChangeListener(this);
         tv.SetSourceSwitchListener(this);
+        tv.SetVGAChangeListener(this);
         // tv.INIT_TV();
         myHandler = new deviceHandler(looper);
     }
@@ -327,8 +329,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.d(TAG, "*********ATVChannelFineTune" + fre);
         tv.Set_Atv_Channel_Fine_Tune(fre);
     }
-	
-	
+
     public void startRecording(DTVRecordParams params)
     {
         Log.e(TAG, "*********startRecording have not realize");
@@ -403,6 +404,12 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.e(TAG, "*********seekTo have not realize");
     }
 
+    public void setVGAAutoAdjust()
+    {
+        Log.d(TAG, "*********setVGAAutoAdjust");
+        tv.RunVGAAutoAdjust();
+    }
+
     protected void finalize() throws Throwable
     {
         if (!destroy)
@@ -458,11 +465,29 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     public void onSourceSwitchStatusChange(SrcInput input, int state)
     {
         Log.v(TAG, "onSourceSwitchStatusChange:  " + input.toString() + Integer.toString(state));
-        if (state == 0) {
+        if (state == 0)
+        {
             Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
             myEvent.source = input.ordinal();
             onEvent(myEvent);
         }
+    }
+
+    @Override
+    public void onVGAAdjustChange(int state)
+    {
+        // TODO Auto-generated method stub
+        Log.d(TAG, "onVGAAdjustChange status:" + state);
+        Event myEvent = new Event(Event.VGA_ADJUST_STATUS);
+        myEvent.vga_adjust_status = null;
+
+        if (state < 0)
+            myEvent.vga_adjust_status = TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_FAILED;
+        else if (state == 0)
+            myEvent.vga_adjust_status = TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_DOING;
+        else if (state == 1)
+            myEvent.vga_adjust_status = TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_SUCCESS;
+        onEvent(myEvent);
     }
 
     TVChannelParams fpara2chanpara(int mode, int freq, int para1, int para2)
@@ -529,7 +554,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 }
                 // int val = 0;
                 int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
-                Log.e(TAG, "Source Input Type"+val);
+                Log.d(TAG, "Source Input Type" + val);
                 int status3D = TVDeviceImpl.tv.Get3DMode();
                 tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
 
@@ -585,7 +610,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.v(TAG, "GET NEW " + name);
         TVConfigValue myvalue = null;
         int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
-        Log.e(TAG, "Source Input Type"+val);
+        Log.d(TAG, "Source Input Type" + val);
         // int val = 0;
         if (name.equals("GetAudioBalance") || name.equals("GetAudioSoundMode") || name.equals("GetAudioTrebleVolume")
                 || name.equals("GetAudioBassVolume") || name.equals("GetAudioSupperBassVolume") || name.equals("GetAudioSRSSurround")
@@ -603,7 +628,6 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
     }
 
-   
 }
 
 class SingletonTv
