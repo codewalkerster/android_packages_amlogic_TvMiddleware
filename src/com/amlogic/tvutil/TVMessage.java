@@ -59,8 +59,9 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_VGA_ADJUST_OK     = 24;
 	/**VGA信号调整失败*/
 	public static final int TYPE_VGA_ADJUST_FAILED = 25;
-
-	
+	/**VGA信号调整中*/
+    public static final int TYPE_VGA_ADJUST_DOING  = 26;
+    
 	private static final String TAG="TVMessage";
 	private int type;
 	private int programID;

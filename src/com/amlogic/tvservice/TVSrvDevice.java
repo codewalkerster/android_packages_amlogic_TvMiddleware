@@ -521,6 +521,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         /*****************tv setting***********************/
         Log.v(TAG, "SET " + name + ": " + value);
         String configType = "Set";
+        String save = "SaveCur";
+        String saveName = "";
         if (TVDeviceImpl.tv == null)
             try
             {
@@ -535,6 +537,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         if (pos == -1)
             Log.e(TAG, "set name fail");
         name = name.substring(pos + 1);
+        saveName = save + name;
         name = configType + name;
         Log.v(TAG, "SET NEW " + name);
 
@@ -568,12 +571,17 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue, val, fmt);
                 }
+                else if (name.equals("SetVGAPhase") || name.equals("SetVGAClock") || name.equals("SetVGAHPos") || name.equals("SetVGAVPos"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, fmt);
+                }
                 else if (name.equals("SetAudioSoundMode") || name.equals("SetAudioBalance") || name.equals("SetAudioTrebleVolume")
                         || name.equals("SetAudioBassVolume") || name.equals("SetAudioSupperBassVolume") || name.equals("SetAudioSRSSurround")
-                        || name.equals("SetAudioSrsDialogClarity") || name.equals("SetAudioSrsTruBass")|| name.equals("SetBaseColorMode")
+                        || name.equals("SetAudioSrsDialogClarity") || name.equals("SetAudioSrsTruBass") || name.equals("SetBaseColorMode")
                         || name.equals("SetAudioSupperBassSwitch"))
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue);
+                    TVDeviceImpl.tv.TvITFExecute(saveName, userValue);
                 }
                 else
                 {
@@ -592,6 +600,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         /*****************tv setting***********************/
         Log.v(TAG, "GET : " + name);
         String configType = "Get";
+        String cur = "GetCur";
+        String curName = "";
         if (TVDeviceImpl.tv == null)
             try
             {
@@ -606,10 +616,14 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         if (pos == -1)
             Log.e(TAG, "set name fail");
         name = name.substring(pos + 1);
+        curName = name;
         name = configType + name;
         Log.v(TAG, "GET NEW " + name);
         TVConfigValue myvalue = null;
         int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
+
+        tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
+        int fmt = sig_fmt.fmt.ordinal();
         Log.d(TAG, "Source Input Type" + val);
         // int val = 0;
         if (name.equals("GetAudioBalance") || name.equals("GetAudioSoundMode") || name.equals("GetAudioTrebleVolume")
@@ -617,7 +631,13 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 || name.equals("GetAudioSrsDialogClarity") || name.equals("GetAudioSrsTruBass") || name.equals("GetBaseColorMode")
                 || name.equals("GetAudioSupperBassSwitch"))
         {
+            curName = cur + curName;
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
+            return myvalue;
+        }
+        else if (name.equals("GetVGAPhase") || name.equals("GetVGAClock") || name.equals("GetVGAHPos") || name.equals("GetVGAVPos"))
+        {
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name, fmt));
             return myvalue;
         }
         else

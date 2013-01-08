@@ -1408,7 +1408,9 @@ public class TVService extends Service implements TVConfig.Update{
 					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_FAILED));
 				}else if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_SUCCESS){
 					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_OK));
-				}
+				}else if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_DOING){
+                    sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_DOING));
+                }
 				break;
 		}
 	}
