@@ -295,7 +295,7 @@ public class TVChannelParams  implements Parcelable {
 	 *@param frequency 频率Hz为单位
 	 *@return 返回新创建的参数
 	 */
-	public static TVChannelParams atcsParams(int frequency){
+	public static TVChannelParams atscParams(int frequency){
 		TVChannelParams tp = new TVChannelParams(MODE_ATSC);
 
 		tp.frequency  = frequency;
@@ -379,7 +379,7 @@ public class TVChannelParams  implements Parcelable {
 							/** get each frequency */
 							for (int i=0; i<channelList.length; i++) {
 								frequency = Integer.parseInt(flist[i]);
-								channelList[i] = TVChannelParams.atcsParams(frequency);
+								channelList[i] = TVChannelParams.atscParams(frequency);
 							}
 						}
 						else if(mode == TVChannelParams.MODE_ANALOG){

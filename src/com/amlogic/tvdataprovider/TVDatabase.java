@@ -143,8 +143,10 @@ public class TVDatabase extends SQLiteOpenHelper
 
 		File file = context.getDatabasePath(dbName);
 
+		Log.d(TAG, "database version: DB_VERSION "+DB_VERSION+", curVer "+curVer);
 		if(curVer != DB_VERSION){
 			create = true;
+			Log.d(TAG, "Database version changed, delete the current database.");
 			file.delete();
 		}
 

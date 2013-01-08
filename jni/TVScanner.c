@@ -778,7 +778,8 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
     AM_DMX_SetSource(para.dtv_para.dmx_dev_id, AM_DMX_SRC_TS2);
     prog->dmx_id = para.dtv_para.dmx_dev_id;
     prog->fend_id = para.fend_dev_id;
-
+	prog->mode = para.dtv_para.mode&0x7;
+	
     /* Start Scan */
     if (AM_SCAN_Create(&para, &handle) != AM_SUCCESS) {
         handle = 0;

@@ -24,6 +24,9 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVChannel;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVStatus;
+import com.amlogic.tvutil.TVBooking;
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
 
@@ -35,25 +38,30 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_PLAY_PROGRAM  = 1950;
 	private static final int MSG_STOP_PLAYING  = 1951;
 	private static final int MSG_START_TIMESHIFTING = 1952;
-	private static final int MSG_START_PLAYBACK  = 1953;
-	private static final int MSG_START_SCAN      = 1954;
-	private static final int MSG_STOP_SCAN       = 1955;
-	private static final int MSG_START_RECORDING = 1956;
-	private static final int MSG_STOP_RECORDING  = 1957;
-	private static final int MSG_PAUSE           = 1958;
-	private static final int MSG_RESUME          = 1959;
-	private static final int MSG_FAST_FORWARD    = 1960;
-	private static final int MSG_FAST_BACKWARD   = 1961;
-	private static final int MSG_SEEK_TO         = 1962;
-	private static final int MSG_DEVICE_EVENT    = 1963;
-	private static final int MSG_EPG_EVENT       = 1964;
-	private static final int MSG_SCAN_EVENT      = 1965;
-	private static final int MSG_SET_PROGRAM_TYPE = 1966;
-	private static final int MSG_CONFIG_CHANGED   = 1967;
-	private static final int MSG_SWITCH_AUDIO     = 1968;
-	private static final int MSG_RESET_ATV_FORMAT = 1969;
-	private static final int MSG_FINE_TUNE        = 1970;
-	private static final int MSG_RESTORE_FACTORY_SETTING = 1971;
+	private static final int MSG_STOP_TIMESHIFTING = 1953;
+	private static final int MSG_START_PLAYBACK  = 1954;
+	private static final int MSG_STOP_PLAYBACK    = 1955;
+	private static final int MSG_START_SCAN      = 1956;
+	private static final int MSG_STOP_SCAN       = 1957;
+	private static final int MSG_START_RECORDING = 1958;
+	private static final int MSG_STOP_RECORDING  = 1959;
+	private static final int MSG_PAUSE           = 1960;
+	private static final int MSG_RESUME          = 1961;
+	private static final int MSG_FAST_FORWARD    = 1962;
+	private static final int MSG_FAST_BACKWARD   = 1963;
+	private static final int MSG_SEEK_TO         = 1964;
+	private static final int MSG_DEVICE_EVENT    = 1965;
+	private static final int MSG_EPG_EVENT       = 1966;
+	private static final int MSG_SCAN_EVENT      = 1967;
+	private static final int MSG_BOOK_EVENT       = 1968;
+	private static final int MSG_SET_PROGRAM_TYPE = 1969;
+	private static final int MSG_CONFIG_CHANGED   = 1970;
+	private static final int MSG_SWITCH_AUDIO     = 1971;
+	private static final int MSG_RESET_ATV_FORMAT = 1972;
+	private static final int MSG_FINE_TUNE        = 1973;
+	private static final int MSG_RESTORE_FACTORY_SETTING = 1974;
+	private static final int MSG_PLAY_VALID       = 1975;
+	private static final int MSG_SET_VGA_AUTO_ADJUST = 1976;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -133,6 +141,26 @@ public class TVService extends Service implements TVConfig.Update{
 					ret = device.getFrontendBER();
 			}
 
+			return ret;
+		}
+		
+		public DTVPlaybackParams getPlaybackParams(){
+			DTVPlaybackParams ret = null;
+			
+			synchronized(TVService.this){
+				ret = device.getPlaybackParams();
+			}
+			
+			return ret;
+		}
+		
+		public DTVRecordParams getRecordingParams() {
+			DTVRecordParams ret = null;
+			
+			synchronized(TVService.this){
+				ret = recorder.getRecordingParams();
+			}
+			
 			return ret;
 		}
 
@@ -236,10 +264,15 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_START_TIMESHIFTING);
 			handler.sendMessage(msg);
 		}
+		
+		public void stopTimeshifting(){
+			Message msg = handler.obtainMessage(MSG_STOP_TIMESHIFTING);
+                        handler.sendMessage(msg);
+		}
 
-		public void startRecording(int bookingID){
-			Message msg = handler.obtainMessage(MSG_START_RECORDING, new Integer(bookingID));
-			handler.sendMessage(msg);
+		public void startRecording(){
+			Message msg = handler.obtainMessage(MSG_START_RECORDING);
+                        handler.sendMessage(msg);
 		}
 
 		public void stopRecording(){
@@ -248,8 +281,13 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 
 		public void startPlayback(int bookingID){
-			Message msg = handler.obtainMessage(MSG_START_PLAYBACK);
-			handler.sendMessage(msg);
+			Message msg = handler.obtainMessage(MSG_START_PLAYBACK, new Integer(bookingID));
+                        handler.sendMessage(msg);
+		}
+		
+		public void stopPlayback(){
+			Message msg = handler.obtainMessage(MSG_STOP_PLAYBACK);
+                        handler.sendMessage(msg);
 		}
 
 		public void startScan(TVScanParams sp){
@@ -296,6 +334,16 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_RESTORE_FACTORY_SETTING);
 			handler.sendMessage(msg);
 		}
+		
+		public void playValid(){
+			Message msg = handler.obtainMessage(MSG_PLAY_VALID);
+			handler.sendMessage(msg);
+		}
+
+		public void setVGAAutoAdjust(){
+			Message msg = handler.obtainMessage(MSG_SET_VGA_AUTO_ADJUST);
+			handler.sendMessage(msg);
+		}
 	};
 
 	/*Message handler*/
@@ -320,8 +368,14 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_START_TIMESHIFTING:
 					resolveStartTimeshifting();
 					break;
+				case MSG_STOP_TIMESHIFTING:
+					resolveStopTimeshifting();
+					break;
 				case MSG_START_PLAYBACK:
 					resolveStartPlayback((Integer)msg.obj);
+					break;
+				case MSG_STOP_PLAYBACK:
+					resolveStopPlayback();
 					break;
 				case MSG_START_SCAN:
 					resolveStartScan((TVScanParams)msg.obj);
@@ -330,7 +384,7 @@ public class TVService extends Service implements TVConfig.Update{
 					resolveStopScan((Boolean)msg.obj);
 					break;
 				case MSG_START_RECORDING:
-					resolveStartRecording((Integer)msg.obj);
+					resolveStartRecording();
 					break;
 				case MSG_STOP_RECORDING:
 					resolveStopRecording();
@@ -359,6 +413,9 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_SCAN_EVENT:
 					resolveScanEvent((TVScanner.Event)msg.obj);
 					break;
+				case MSG_BOOK_EVENT:
+					resolveBookEvent((TVBookManager.Event)msg.obj);
+					break;
 				case MSG_CONFIG_CHANGED:
 					resolveConfigChanged((String)msg.obj);
 					break;
@@ -373,6 +430,12 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case MSG_RESTORE_FACTORY_SETTING:
 					resolveRestoreFactorySetting();
+					break;
+				case MSG_PLAY_VALID:
+					resolvePlayValid();
+					break;
+				case MSG_SET_VGA_AUTO_ADJUST:
+					resolveSetVGAAutoAdjust();
 					break;
 			}
 		}
@@ -400,6 +463,27 @@ public class TVService extends Service implements TVConfig.Update{
 			}
 
 			Message msg = handler.obtainMessage(MSG_EPG_EVENT, event);
+			handler.sendMessage(msg);
+		}
+	};
+	
+	private TVRecorder recorder = new TVRecorder(this){
+		/*Recorder event handler*/
+		@Override
+		public void onEvent(TVRecorder.Event event){
+			switch(event.type){
+				case TVRecorder.Event.EVENT_RECORDS_UPDATE:
+					Log.d(TAG, "Detect PVR records update.");
+					sendMessage(TVMessage.recordsUpdate());
+					break;
+			}
+		}
+	};
+	
+	private TVBookManager bookManager = new TVBookManager(this, time){
+		/*book manager event handler*/
+		public void onEvent(TVBookManager.Event event){
+			Message msg = handler.obtainMessage(MSG_BOOK_EVENT, event);
 			handler.sendMessage(msg);
 		}
 	};
@@ -512,14 +596,147 @@ public class TVService extends Service implements TVConfig.Update{
 			}
 		}
 	}
+	
+	private int switchRecording(TVProgram requestProgram){
+		TVProgram playingProgram = null;
+		
+		if (requestProgram == null)
+			return 0;
+			
+		if (getDTVPlayParams() != null){
+			 playingProgram = playParamsToProgram(getDTVPlayParams());
+		}
+
+		int playChanID = (playingProgram!=null) ? playingProgram.getChannel().getID() : -1;
+		int recChanID = requestProgram.getChannel().getID();
+
+		if(playChanID != recChanID){
+			Log.d(TAG, "Channel changed, will start record after playing the new program");
+			return 3;
+		}
+		/*if (recordingProgram.getID() == playingProgram.getID()){
+			Log.d(TAG, "Program "+recordingProgram.getID()+" is already recording.");
+		}else{
+			*send message to clients to solve this conflict
+		}*/
+		
+		if (programID != -1) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	
+	
+	private void startBooking(TVBooking book){
+		boolean needPlay = false;
+		
+		TVProgram playingProgram = null;
+		TVProgram requestProgram = book.getProgram();
+		if (requestProgram == null)
+			return;
+			
+		if (getDTVPlayParams() != null){
+			 playingProgram = playParamsToProgram(getDTVPlayParams());
+		}
+		
+		if ((book.getFlag() & TVBooking.FL_PLAY) != 0){
+			needPlay = true;
+		}
+ 		if ((book.getFlag() & TVBooking.FL_RECORD) != 0){
+ 			/* stop the current recording */
+ 			stopRecording();
+			/* check if the channel changed */
+			int playChanID = (playingProgram!=null) ? playingProgram.getChannel().getID() : -1;
+			int recChanID = requestProgram.getChannel().getID();
+			TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
+			param.booking = book;
+			param.isTimeshift = false;
+			if(playChanID != recChanID){
+				Log.d(TAG, "Channel changed, will start record after playing the new program");
+				needPlay = true;
+				param.fendLocked = false;
+			}else{
+				param.fendLocked = (programID != -1);
+			}
+		
+			recorder.startRecord(param);
+		}
+		
+		if (needPlay){
+			TVPlayParams tp = TVPlayParams.playProgramByID(requestProgram.getID());
+			setDTVPlayParams(tp);
+			playCurrentProgram();
+		}
+	}
+	
+	private void recordCurrentProgram(boolean isTimeshift){
+		TVProgram playingProgram = null;
+		if (getDTVPlayParams() != null){
+			playingProgram = playParamsToProgram(getDTVPlayParams());
+			if(playingProgram == null){
+				Log.d(TAG, "Cannot get current playing program");
+				return;
+			}
+		}else{
+			Log.d(TAG, "Cannot get current playing program");
+			return;
+		}
+		
+		TVProgram recordingProgram = recorder.getRecordingProgram();
+		if (recordingProgram != null){
+			if (recordingProgram.getID() == playingProgram.getID()){
+				if (!isTimeshift){
+					Log.d(TAG, "Program "+recordingProgram.getID()+" is already recording.");
+					return;
+				}
+				else if (recorder.isTimeshifting()){
+					Log.d(TAG, "Program "+recordingProgram.getID()+" is already in timeshifting.");
+					return;
+				}	
+			}
+			/**send message to clients to solve this conflict*/
+			sendMessage(TVMessage.stopRecordRequest(
+				isTimeshift ? TVMessage.REQ_TYPE_START_TIMESHIFT : TVMessage.REQ_TYPE_RECORD_CURRENT, 
+				playingProgram.getID()));
+			return;
+		}
+		
+		TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
+		if (isTimeshift){
+			param.booking = new TVBooking(playingProgram, time.getTime(), 0);
+			/* In timeshifting mode, start the playback first to 
+			 * receive the record data */
+			if (param.booking != null){
+				TVProgram.Audio auds[] = param.booking.getAllAudio();
+				DTVPlaybackParams dtp = new DTVPlaybackParams(
+					recorder.getStorage() + "/" + TVRecorder.TIMESHIFTING_FILE,
+					600*1000,
+					param.booking.getVideo(),
+					auds!=null ? auds[0] : null);
+				/* Stop current play */
+				stopPlaying();
+				/* Start the playback */
+				device.startTimeshifting(dtp);
+				status = TVRunningStatus.STATUS_TIMESHIFTING;
+			}
+		}else{
+			int bookingID = TVBooking.bookProgram(this, playingProgram, TVBooking.FL_RECORD, time.getTime(), 0);
+			param.booking = TVBooking.selectByID(this, bookingID);
+		}
+		if (param.booking != null){
+			/* Start the recorder */
+			param.isTimeshift = isTimeshift;
+			param.fendLocked = isTimeshift ? true : (programID != -1);
+			recorder.startRecord(param);
+		}else{
+			/* can this case be ture ?? */
+			Log.d(TAG, "Error for booking the current program");
+		}
+	}
 
 	private void stopRecording(){
-		if(recording){
-			TVDevice.DTVRecordParams params;
-
-			params = device.stopRecording();
-			recording = false;
-		}
+		recorder.stopRecord();
 	}
 
 	private boolean isInTVMode(){
@@ -695,6 +912,19 @@ public class TVService extends Service implements TVConfig.Update{
 		if(p == null)
 			return;
 
+		fe_params = p.getChannel().getParams();
+		if((channelParams == null) || !channelParams.equals(fe_params)){
+			if (recorder.isRecording()){
+				/*Channel will change, but currently is recording,
+				 *let the client to make the choice*/
+				Log.d(TAG, "Switch channel while in recording.");
+				sendMessage(TVMessage.stopRecordRequest(
+					TVMessage.REQ_TYPE_SWITCH_PROGRAM,
+					p.getID()));
+				return;
+			}
+		}
+		
 		synchronized(this){
 			programNum = p.getNumber();
 			programType = p.getType();
@@ -703,8 +933,6 @@ public class TVService extends Service implements TVConfig.Update{
 
 		/*Send program number message.*/
 		sendMessage(TVMessage.programNumber(getCurProgramType(), programNum));
-
-		fe_params = p.getChannel().getParams();
 
 		if((channelParams == null) || !channelParams.equals(fe_params)){
 			channelParams = fe_params;
@@ -847,14 +1075,52 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolveStartTimeshifting(){
 		if(!isInTVMode())
 			return;
+			
+		recordCurrentProgram(true);
+	}
+	
+	/*Stop timeshifting.*/
+	private void resolveStopTimeshifting(){
+		if(!isInTVMode())
+			return;
+			
+		/* Stop record */
+		stopRecording();
+		/* Stop playback */
+		stopPlaying();
 	}
 
 	/*Start DVR playback.*/
 	private void resolveStartPlayback(int bookingID){
 		if(!isInTVMode())
 			return;
+			
+		TVBooking booking = TVBooking.selectByID(this, bookingID);
+		if (booking == null){
+			Log.d(TAG, "Invalid bookingID "+bookingID+", cannot start playback");
+		}else{
+			TVProgram.Audio auds[] = booking.getAllAudio();
+			DTVPlaybackParams dtp = new DTVPlaybackParams(
+				booking.getRecordStoragePath() + "/" + booking.getRecordFilePath(),
+				booking.getDuration(),
+				booking.getVideo(),
+				auds!=null ? auds[0] : null);
+			/* Stop current play */
+			stopPlaying();
+			/* Start the playback */
+			device.startPlayback(dtp);
+			status = TVRunningStatus.STATUS_PLAYBACK;
+		}
 	}
 
+	/*Stop DVR playback.*/
+	private void resolveStopPlayback(){
+		if(!isInTVMode())
+			return;
+		
+		stopPlaying();
+	}
+	
 	/*Start channel scanning.*/
 	private void resolveStartScan(TVScanParams sp){
 		Log.d(TAG, "resolveStartScan");
@@ -866,12 +1132,12 @@ public class TVService extends Service implements TVConfig.Update{
 		/** Configure scan */
 		TVScanner.TVScannerParams tsp = new TVScanner.TVScannerParams(sp);
 		/** Set params from config */
-		try { 	  
+		try {
 		    int vidstd = config.getInt("tv:scan:atv:vidstd");
 		    int audstd = config.getInt("tv:scan:atv:audstd");
 		    
 		    if(vidstd < CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal() || 
-		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal()){
+		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
 		        Log.e(TAG,"vidstd is error");
 		    }
 		    if(vidstd < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal() || 
@@ -879,12 +1145,9 @@ public class TVService extends Service implements TVConfig.Update{
                 Log.e(TAG,"audstd is error");
             }
 		        
-
 			int std = TVChannelParams.getTunerStd(vidstd, audstd);
-            Log.v(TAG,"std = "+std);
-             tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"), std);
-
-
+			Log.v(TAG,"std = "+std);
+			tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"), std);
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG, "Cannot read atv config !!!");
@@ -954,7 +1217,7 @@ public class TVService extends Service implements TVConfig.Update{
 								/** get each frequency */
 								for (int i=0; i<channelList.length; i++) {
 									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.atcsParams(frequency);
+									channelList[i] = TVChannelParams.atscParams(frequency);
 								}
 							}
 							else if(sp.getTsSourceID() == TVChannelParams.MODE_ANALOG){
@@ -1006,14 +1269,15 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	/*Start recording.*/
-	private void resolveStartRecording(int bookingID){
-		stopRecording();
+	private void resolveStartRecording(){
+		recordCurrentProgram(false);
 	}
 
 	/*Stop recording.*/
 	private void resolveStopRecording(){
+		stopRecording();
 	}
-
+	
 	/*Pause.*/
 	private void resolvePause(){
 		if(!isInFileMode())
@@ -1114,6 +1378,12 @@ public class TVService extends Service implements TVConfig.Update{
 						if((status == TVRunningStatus.STATUS_SET_FRONTEND)/* && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0*/){
 							/*Play AV.*/
 							playCurrentProgramAV();
+							
+							/*if a record waiting for this fend event, start this record now*/
+							if (recorder.getStatus() == TVRecorder.ST_WAITING_FEND){
+								Log.d(TAG, "fend locked, start the pending record...");
+								recorder.fendLocked();
+							}
 						}
 						if(!channelLocked && (event.feStatus & TVChannelParams.FE_HAS_LOCK)!=0){
 							Log.d(TAG, "signal resume");
@@ -1125,6 +1395,19 @@ public class TVService extends Service implements TVConfig.Update{
 							channelLocked = false;
 						}
 					}
+				}
+				break;
+			case TVDevice.Event.EVENT_RECORD_END:
+				Log.d(TAG, "Record end");
+				recorder.onRecordEvent(event);
+				sendMessage(TVMessage.recordEnd(event.recEndCode));
+				break;
+			case TVDevice.Event.EVENT_VGA_ADJUST_STATUS:
+				Log.d(TAG, "VGA adjust");
+				if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_FAILED){
+					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_FAILED));
+				}else if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_SUCCESS){
+					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_OK));
 				}
 				break;
 		}
@@ -1177,6 +1460,29 @@ public class TVService extends Service implements TVConfig.Update{
 			default:
 				break;
 				
+		}
+	}
+	
+	/*Solve the events from the book manager.*/
+	private void resolveBookEvent(TVBookManager.Event event){
+		switch(event.type){
+			case TVBookManager.Event.EVENT_NEW_BOOKING_CONFIRM:
+				Log.d(TAG, "New booking confirm");
+				sendMessage(TVMessage.bookingRemind(event.bookingID));
+				break;
+			case TVBookManager.Event.EVENT_NEW_BOOKING_START:
+				Log.d(TAG, "New booking start");
+				TVBooking booking = TVBooking.selectByID(this, event.bookingID);
+				if (booking != null){
+					sendMessage(TVMessage.bookingStart(event.bookingID));
+					startBooking(booking);
+				} else {
+					Log.d(TAG, "Cannot get booking "+event.bookingID);
+				}
+				
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -1300,6 +1606,46 @@ public class TVService extends Service implements TVConfig.Update{
 		TVDataProvider.restore();
 		config.restore();
 	}
+	
+	/*Play a program.*/
+	private void resolvePlayValid(){
+		TVProgram p = null;
+
+		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+			if(atvPlayParams != null){
+				p = playParamsToProgram(atvPlayParams);
+			}
+		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+			TVPlayParams tp = getDTVPlayParams();
+			if(tp == null){
+				tp = dtvTVPlayParams;
+			}
+			if(tp == null){
+				tp = dtvRadioPlayParams;
+			}
+			if(tp != null){
+				p = playParamsToProgram(tp);
+			}
+		}
+
+		if (p == null){
+			Log.d(TAG, "Cannot play last played program, try first valid program.");
+			TVProgram fvp = TVProgram.selectFirstValid(this, getCurProgramType());
+			if (fvp != null){
+				TVPlayParams tp = TVPlayParams.playProgramByID(fvp.getID());
+				resolvePlayProgram(tp);
+			}
+		}else{
+			Log.d(TAG, "Play last program");
+			playCurrentProgram();
+		}
+	}
+
+	/*VGA auto adjust.*/
+	private void resolveSetVGAAutoAdjust(){
+		device.setVGAAutoAdjust();
+	}
+
 
 	public IBinder onBind (Intent intent){
 		return mBinder;
@@ -1314,8 +1660,13 @@ public class TVService extends Service implements TVConfig.Update{
 				handler.sendMessage(msg);
 			}
 		};
+		
+		recorder.open(device);
+		recorder.setStorage("/mnt/sda1");
 
 		TVDataProvider.openDatabase(this);
+		/*scan PVR records form storages to database*/
+		recorder.scanRecordsFromStorage();		
 		config = new TVConfig(this);
 
 		try{
@@ -1348,6 +1699,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 	public void onDestroy(){
 		callbacks.kill();
+		recorder.close();
 		TVDataProvider.closeDatabase(this);
 		super.onDestroy();
 	}

@@ -363,4 +363,14 @@ public class TVConst
             return this.val;
         }
     }
+    
+    
+    // vga adjust status
+    public enum VGA_ADJUST_STATUS {
+        CC_TV_VGA_ADJUST_FAILED,
+        CC_TV_VGA_ADJUST_DOING,
+        CC_TV_VGA_ADJUST_SUCCESS,
+       
+    }  
+    
 }

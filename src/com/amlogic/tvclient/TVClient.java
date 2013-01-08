@@ -20,6 +20,8 @@ import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVStatus;
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 
 /**
  *TV客户端
@@ -373,15 +375,26 @@ abstract public class TVClient
             }
         }
     }
-
-    /**
-     *开始录制节目
-     *@param bookingID 预约记录ID，-1表示录制当前节目
+    
+     /**
+     *停止时移播放
      */
-    public void startRecording(int bookingID) {
+    public void stopTimeshifting() {
         if(service != null) {
             try {
-                service.startRecording(bookingID);
+                service.stopTimeshifting();
+            } catch(RemoteException e) {
+            }
+        }
+    }
+
+    /**
+     *开始录制当前播放的节目
+     */
+    public synchronized void startRecording() {
+        if(service != null) {
+            try {
+                service.startRecording();
             } catch(RemoteException e) {
             }
         }
@@ -398,6 +411,20 @@ abstract public class TVClient
             }
         }
     }
+    
+    /**
+     *获取当前录像信息
+     */
+	public DTVRecordParams getRecordingParams() {
+		if(service != null) {
+            try {
+                return service.getRecordingParams();
+            } catch(RemoteException e) {
+            }
+        }
+        
+        return null;
+	}
 
     /**
      *开始录制节目回放
@@ -411,6 +438,32 @@ abstract public class TVClient
             }
         }
     }
+    
+    /**
+     *停止录制回放
+     */
+	public void stopPlayback() {
+		if(service != null) {
+            try {
+                service.stopPlayback();
+            } catch(RemoteException e) {
+            }
+        }
+	}
+		
+	/**
+     *获取当前回放信息
+     */
+	public DTVPlaybackParams getPlaybackParams() {
+		if(service != null) {
+            try {
+                return service.getPlaybackParams();
+            } catch(RemoteException e) {
+            }
+        }
+        
+        return null;
+	}
 
     /**
      *开始频道搜索
@@ -752,6 +805,30 @@ abstract public class TVClient
 		if(service != null){
 			try{
 				service.restoreFactorySetting();
+			}catch(RemoteException e){
+			}
+		}
+	}
+	
+	/**
+	 *播放上次播放的频道，如失败则播放第一个有效的频道
+	 */
+	public void playValid(){
+		if(service != null){
+			try{
+				service.playValid();
+			}catch(RemoteException e){
+			}
+		}
+	}
+
+	/**
+	 *设定VGA自动检测
+	 */
+	public void setVGAAutoAdjust(){
+		if(service != null){
+			try{
+				service.setVGAAutoAdjust();
 			}catch(RemoteException e){
 			}
 		}

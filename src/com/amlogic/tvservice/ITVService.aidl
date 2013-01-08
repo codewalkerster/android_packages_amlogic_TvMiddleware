@@ -6,6 +6,8 @@ import com.amlogic.tvutil.TVScanParams;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVStatus;
+import com.amlogic.tvutil.DTVPlaybackParams;
+import com.amlogic.tvutil.DTVRecordParams;
 
 //TV Service接口
 interface ITVService{
@@ -59,15 +61,27 @@ interface ITVService{
 
 	//开始时移播放
 	void startTimeshifting();
+	
+	//停止时移播放
+	void stopTimeshifting();
 
 	//开始录像
-	void startRecording(int bookingID);
+	void startRecording();
 
 	//停止录像
 	void stopRecording();
+	
+	//获取当前录像信息
+	DTVRecordParams getRecordingParams();
 
 	//开始回放
 	void startPlayback(int bookingID);
+	
+	//停止回放
+	void stopPlayback();
+		
+	//获取当前回放信息
+	DTVPlaybackParams getPlaybackParams();
 
 	//开始搜索
 	void startScan(in TVScanParams sp);
@@ -107,5 +121,11 @@ interface ITVService{
 
 	//恢复出厂设置
 	void restoreFactorySetting();
+	
+	//播放上次播放的频道，如失败则播放第一个有效的频道
+	void playValid();
+
+	//VGA自动检测
+	void setVGAAutoAdjust();
 }
 

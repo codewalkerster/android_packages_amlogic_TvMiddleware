@@ -40,7 +40,10 @@ LOCAL_SRC_FILES := \
 	src/com/amlogic/tvservice/TVScanner.java \
 	src/com/amlogic/tvservice/TVDevice.java \
 	src/com/amlogic/tvservice/TVService.java \
-	src/com/amlogic/tvservice/TVTime.java
+	src/com/amlogic/tvservice/TVTime.java \
+	src/com/amlogic/tvservice/TVTime.java \
+	src/com/amlogic/tvservice/TVRecorder.java \
+	src/com/amlogic/tvservice/TVBookManager.java
 
 LOCAL_MODULE_CLASS := APPS
 LOCAL_MODULE := TVService
