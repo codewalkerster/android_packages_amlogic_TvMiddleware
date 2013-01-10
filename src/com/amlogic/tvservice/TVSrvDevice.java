@@ -583,6 +583,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                     TVDeviceImpl.tv.TvITFExecute(name, userValue);
                     TVDeviceImpl.tv.TvITFExecute(saveName, userValue);
                 }
+                else if (name.equals("SetSSMSavePowerOnOffChannel")) 
+                {
+                    TVDeviceImpl.tv.TvITFExecute("SSMSavePowerOnOffChannel", userValue);
+                }
                 else
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue, val);
@@ -638,6 +642,11 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         else if (name.equals("GetVGAPhase") || name.equals("GetVGAClock") || name.equals("GetVGAHPos") || name.equals("GetVGAVPos"))
         {
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name, fmt));
+            return myvalue;
+        }
+        else if (name.equals("GetSSMReadPowerOnOffChannel")) 
+        {
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("SSMReadPowerOnOffChannel"));
             return myvalue;
         }
         else
