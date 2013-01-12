@@ -1487,5 +1487,45 @@ public class TVProgram{
 		}
 	}
 	
+	/**
+     *修改节目skip
+     *@param name 节目名称
+     */
+    public void setProgramSkip(boolean myskip){
+        if (this.skip != myskip)
+        {
+            this.skip = myskip;
+            int skipValue = 0;
+            if (myskip)
+                skipValue = 1;
+            
+            Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+                    null,
+                    "update srv_table set skip = " + skipValue + " where srv_table.db_id = " + id,
+                    null, null);
+            if(c != null){
+                c.close();
+            }
+        }
+       
+    }
+	
+    /**
+     *修改节目number
+     *@param name 节目名称
+     */
+    public void setProgramNumber(int number){
+        if( this.number.getNumber() != number){
+            
+            this.number = new TVProgramNumber(number);
+            Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+                    null,
+                    "update srv_table set chan_num = " + number + " where srv_table.db_id = " + id,
+                    null, null);
+            if(c != null){
+                c.close();
+            }
+        }
+    }
 }
 
