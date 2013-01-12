@@ -249,10 +249,10 @@ public class TVMessage implements Parcelable{
 	 *@return 返回节目类型
 	 */
 	public int getProgramType(){
-		if((flags & FLAG_PROGRAM_NUMBER) != FLAG_PROGRAM_NUMBER)
-			throw new UnsupportedOperationException();
-
-		return programType;
+		 if((flags & FLAG_PROGRAM_NUMBER) == FLAG_PROGRAM_NUMBER || (flags & FLAG_SCAN) == FLAG_SCAN )
+		     return programType;
+		 else
+		     throw new UnsupportedOperationException();
 	}
 
 	/**
