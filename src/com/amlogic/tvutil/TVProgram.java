@@ -447,7 +447,7 @@ public class TVProgram{
 		}
 
 		if(num.isATSCMode()){
-			cmd += "major_cha_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
+			cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
 		}else{
 			cmd += "chan_num = "+num.getNumber();
 		}
