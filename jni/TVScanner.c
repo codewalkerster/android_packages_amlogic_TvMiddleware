@@ -187,9 +187,33 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
     }
 }
 
+static void tv_scan_notify_atsc_program(ProgressData *pd, AM_SCAN_TS_t * ts)
+{
+	vct_section_info_t *vct;
+	vct_channel_info_t *vcinfo;
 
-/**\brief 查找并通知No Name节目*/
-static void tv_scan_notify_program(ProgressData *pd, AM_SCAN_TS_t * ts)
+	AM_SI_LIST_BEGIN(ts->digital.vcts, vct)
+	AM_SI_LIST_BEGIN(vct->vct_chan_info, vcinfo)
+		/*Skip inactive program*/
+		if (vcinfo->program_number == 0  || vcinfo->program_number == 0xffff)
+			continue;
+
+		/*从VCT表中查找该service并获取信息*/
+		if (vcinfo->channel_TSID == vct->transport_stream_id &&
+		    (vcinfo->service_type == 2 || vcinfo->service_type == 3))
+		{
+			pd->cur_srv_type = vcinfo->service_type==2 ? AM_SCAN_SRV_DTV : AM_SCAN_SRV_DRADIO;
+			memcpy(pd->cur_name, vcinfo->short_name, sizeof(vcinfo->short_name));
+			pd->cur_name[sizeof(vcinfo->short_name)] = 0;
+			log_info("Native scan notify: %s, prog_type %d, sid=%d\n", pd->cur_name,pd->cur_srv_type, vcinfo->program_number);
+			tv_scan_onevent(EVENT_SCAN_PROGRESS, pd);
+		}
+	AM_SI_LIST_END()
+	AM_SI_LIST_END()
+
+}
+
+static void tv_scan_notify_dvb_program(ProgressData *pd, AM_SCAN_TS_t * ts)
 {
     dvbpsi_pmt_t *pmt;
     dvbpsi_sdt_t *sdt;
@@ -284,7 +308,7 @@ static void tv_scan_notify_program(ProgressData *pd, AM_SCAN_TS_t * ts)
                     } else {
                         pd->cur_srv_type = psd->i_service_type==1 ? AM_SCAN_SRV_DTV : AM_SCAN_SRV_DRADIO;
                     }
-                    log_info("Native scan notify: %s, prog_type %d, sid=%d\n", name, psd->i_service_type, srv->i_service_id);
+                    log_info("Native scan notify: %s, prog_type %d, sid=%d\n", name, pd->cur_srv_type, srv->i_service_id);
                     strcpy(pd->cur_name, name);
                     tv_scan_onevent(EVENT_SCAN_PROGRESS, pd);
                 }
@@ -354,9 +378,10 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             AM_SCAN_TS_t *ts = (AM_SCAN_TS_t*)evt->data;
 
             if (ts != NULL) {
-                /*查找SDT表里没有描述但PMT有描述的电视广播节目，并通知界面*/
-                tv_scan_notify_program(prog, ts);
-
+                if (prog->standard == AM_SCAN_DTV_STD_ATSC)
+                    tv_scan_notify_atsc_program(prog, ts);
+                else
+                    tv_scan_notify_dvb_program(prog, ts);
             }
         }
         break;
@@ -414,20 +439,10 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             }
         }
         break;
-        case AM_SCAN_PROGRESS_TVCT_DONE: {
+        case AM_SCAN_PROGRESS_VCT_DONE: {
             /*ATSC TVCT*/
             if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
-                prog->progress += 15;
-                if (prog->progress >= 100)
-                    prog->progress = 99;
-
-                tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
-            }
-        }
-        break;
-        case AM_SCAN_PROGRESS_CVCT_DONE: {
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
-                prog->progress += 15;
+                prog->progress += 30;
                 if (prog->progress >= 100)
                     prog->progress = 99;
 
@@ -702,7 +717,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		start_para->atv_para.cvbs_unlocked_step = 1500000;
 		start_para->atv_para.cvbs_locked_step = 6000000;
 		start_para->atv_para.afc_range = 2000000;
-    } else {
+    } else if (java_mode == 1){
         start_para->mode = AM_SCAN_MODE_DTV_ATV;
         start_para->atv_para.mode = AM_SCAN_ATVMODE_NONE;
         /* Only search DTV */
@@ -724,6 +739,25 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
             start_para->dtv_para.fe_cnt = tv_scan_get_fe_paras(env, thiz, start_para->dtv_para.source,
                                           freq_list, &start_para->dtv_para.fe_paras);
         }
+        if (start_para->dtv_para.source == FE_ATSC) {
+            start_para->dtv_para.standard = AM_SCAN_DTV_STD_ATSC;
+        }
+        //Fix me: How can we start for ISDB ?
+        else {
+            start_para->dtv_para.standard = AM_SCAN_DTV_STD_DVB;
+        }
+    } else {
+         /* search ATV & DTV in one time */
+        start_para->mode = AM_SCAN_MODE_ADTV;
+        start_para->atv_para.mode = AM_SCAN_ATVMODE_NONE;
+        start_para->dtv_para.mode = AM_SCAN_DTVMODE_ALLBAND;
+       
+        start_para->dtv_para.source = (*env)->GetIntField(env, para, source);
+        start_para->dtv_para.dmx_dev_id = (*env)->GetIntField(env, para, dmx_id);
+       
+        jobjectArray freq_list = (*env)->GetObjectField(env, para, freqs);
+        start_para->dtv_para.fe_cnt = tv_scan_get_fe_paras(env, thiz, start_para->dtv_para.source,
+                                      freq_list, &start_para->dtv_para.fe_paras);
         if (start_para->dtv_para.source == FE_ATSC) {
             start_para->dtv_para.standard = AM_SCAN_DTV_STD_ATSC;
         }
@@ -763,7 +797,8 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
         log_error("get scan start param failed");
         goto create_end;
     }
-
+    
+    prog->standard = para.dtv_para.standard;
     para.dtv_para.resort_all = AM_FALSE;
     para.dtv_para.sort_method = AM_SCAN_SORT_BY_FREQ_SRV_ID;
     para.store_cb = NULL;
@@ -778,7 +813,7 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
     AM_DMX_SetSource(para.dtv_para.dmx_dev_id, AM_DMX_SRC_TS2);
     prog->dmx_id = para.dtv_para.dmx_dev_id;
     prog->fend_id = para.fend_dev_id;
-	prog->mode = para.dtv_para.mode&0x7;
+    prog->mode = para.dtv_para.mode&0x7;
 	
     /* Start Scan */
     if (AM_SCAN_Create(&para, &handle) != AM_SUCCESS) {
