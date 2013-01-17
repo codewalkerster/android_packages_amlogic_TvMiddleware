@@ -37,7 +37,7 @@ public class TVProgram{
 	private boolean lock;
 	private boolean scrambled;
 	private boolean favorite;
-
+    private int volume;
 	/**
 	 *Service中的基础元素信息
 	 */
@@ -353,6 +353,8 @@ public class TVProgram{
 		col = c.getColumnIndex("favor");
 		this.favorite = (c.getInt(col)!=0);
 
+		col = c.getColumnIndex("volume");  
+		this.volume =  c.getInt(col);
 		int pid, fmt;
 
 		col = c.getColumnIndex("vid_pid");
@@ -1152,6 +1154,15 @@ public class TVProgram{
 	public boolean getFavoriteFlag(){
 		return favorite;
 	}
+	
+	/**
+     *取得节目喜爱标志
+     *@return true 表示节目设置了喜爱标志，false表示节目未设置喜爱标志
+     */
+    public int getVolume(){
+        return volume;
+    }
+    
 
 	/**
 	 *修改节目加锁标志
@@ -1527,5 +1538,26 @@ public class TVProgram{
             }
         }
     }
+    
+    /**
+     *修改volume
+     *@param name 节目名称
+     */
+    public void setProgramVolume(int mvolume){
+        if( this.volume != mvolume){
+            
+            this.volume = mvolume;
+            Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+                    null,
+                    "update srv_table set volume = " + mvolume + " where srv_table.db_id = " + id,
+                    null, null);
+            if(c != null){
+                c.close();
+            }
+        }
+    }
+    
+    
+    
 }
 
