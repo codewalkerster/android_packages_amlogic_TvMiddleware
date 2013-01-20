@@ -127,5 +127,8 @@ interface ITVService{
 
 	//VGA自动检测
 	void setVGAAutoAdjust();
+	
+	//获取资源类型
+	int GetSrcInputType();
 }
 
