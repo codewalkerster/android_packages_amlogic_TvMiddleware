@@ -410,6 +410,11 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         tv.RunVGAAutoAdjust();
     }
 
+    public int GetSrcInputType()
+    {
+        Log.d(TAG, "*********GetSrcInputType");
+        return tv.GetSrcInputType().ordinal();
+    }
     protected void finalize() throws Throwable
     {
         if (!destroy)
@@ -537,8 +542,26 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         if (pos == -1)
             Log.e(TAG, "set name fail");
         name = name.substring(pos + 1);
+        
+    
+        
+        pos = name.indexOf(":");
+        if (pos == -1)
+            Log.e(TAG, "set name fail");
+        
+        String source = name.substring(0, pos);
+                
+        int    mysource = Integer.valueOf(source);   
+        Log.d(TAG, "Source Input Type" + mysource);
+        
+        name = name.substring(pos + 1);
+       
         saveName = save + name;
         name = configType + name;
+        
+        
+        
+        
         Log.v(TAG, "SET NEW " + name);
 
         int type = value.getType();
@@ -556,8 +579,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                     e.printStackTrace();
                 }
                 // int val = 0;
-                int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
-                Log.d(TAG, "Source Input Type" + val);
+//                int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
+//                Log.d(TAG, "Source Input Type" + val);
                 int status3D = TVDeviceImpl.tv.Get3DMode();
                 tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
 
@@ -565,11 +588,11 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 int ON = 1;
                 if (name.equals("SetSharpness"))
                 {
-                    TVDeviceImpl.tv.TvITFExecute(name, userValue, val, ON, status3D);
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource, ON, status3D);
                 }
                 else if (name.equals("SetSaturation") || name.equals("SetDisplayMode") || name.equals("SetHue"))
                 {
-                    TVDeviceImpl.tv.TvITFExecute(name, userValue, val, fmt);
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource, fmt);
                 }
                 else if (name.equals("SetVGAPhase") || name.equals("SetVGAClock") || name.equals("SetVGAHPos") || name.equals("SetVGAVPos"))
                 {
@@ -592,9 +615,30 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 					TVDeviceImpl.tv.TvITFExecute("SSMSaveParentalControlSwitch", userValue);
 					Log.d(TAG,">>>>>>>>>>>>>>>>>>>>SetParentControlSwitch");
 				}
+				  else if (name.equals("SetAudioVolumeCompensationVal"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue);
+                    int tmp_val = 0;
+                    try
+                    {
+                        TVConfigValue myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("GetAudioMasterVolume"));
+                        
+                        tmp_val = myvalue.getInt();
+                    }
+                    catch (TypeException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    TVDeviceImpl.tv.TvITFExecute("SetAudioMasterVolume", tmp_val);
+                }
+                else if (name.equals("SetRGBOGOGainR100")||name.equals("SetRGBOGOGainG100")||name.equals("SetRGBOGOGainB100"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue);
+                }
+				
                 else
                 {
-                    TVDeviceImpl.tv.TvITFExecute(name, userValue, val);
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource);
                 }
 
                 break;
@@ -609,8 +653,6 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         /*****************tv setting***********************/
         Log.v(TAG, "GET : " + name);
         String configType = "Get";
-        String cur = "GetCur";
-        String curName = "";
         if (TVDeviceImpl.tv == null)
             try
             {
@@ -625,22 +667,39 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         if (pos == -1)
             Log.e(TAG, "set name fail");
         name = name.substring(pos + 1);
-        curName = name;
+        
+    
+        
+        pos = name.indexOf(":");
+        if (pos == -1)
+            Log.e(TAG, "set name fail");
+        
+        String source = name.substring(0, pos);
+                
+        int    mysource = Integer.valueOf(source);   
+        Log.d(TAG, "Source Input Type" + mysource);
+        
+        name = name.substring(pos + 1);
+  
+        
+        
+        
+        
         name = configType + name;
         Log.v(TAG, "GET NEW " + name);
         TVConfigValue myvalue = null;
-        int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
+//        int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
 
         tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
         int fmt = sig_fmt.fmt.ordinal();
-        Log.d(TAG, "Source Input Type" + val);
+//        Log.d(TAG, "Source Input Type" + val);
         // int val = 0;
         if (name.equals("GetAudioBalance") || name.equals("GetAudioSoundMode") || name.equals("GetAudioTrebleVolume")
                 || name.equals("GetAudioBassVolume") || name.equals("GetAudioSupperBassVolume") || name.equals("GetAudioSRSSurround")
                 || name.equals("GetAudioSrsDialogClarity") || name.equals("GetAudioSrsTruBass") || name.equals("GetBaseColorMode")
-                || name.equals("GetAudioSupperBassSwitch"))
+                || name.equals("GetAudioSupperBassSwitch")||name.equals("GetAudioVolumeCompensationVal")||name.equals("GetRGBOGOGainR100")
+                || name.equals("GetRGBOGOGainG100")||name.equals("GetRGBOGOGainB100"))
         {
-            curName = cur + curName;
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
             return myvalue;
         }
@@ -672,7 +731,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         }
         else
         {
-            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name, val));
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name, mysource));
             return myvalue;
         }
 

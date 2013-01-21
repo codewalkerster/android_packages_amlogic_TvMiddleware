@@ -344,6 +344,11 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_SET_VGA_AUTO_ADJUST);
 			handler.sendMessage(msg);
 		}
+
+        @Override
+        public int GetSrcInputType(){
+            return device.GetSrcInputType();
+        }
 	};
 
 	/*Message handler*/
@@ -1137,7 +1142,7 @@ public class TVService extends Service implements TVConfig.Update{
 		    int audstd = config.getInt("tv:scan:atv:audstd");
 		    
 		    if(vidstd < CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal() || 
-		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
+		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal()){
 		        Log.e(TAG,"vidstd is error");
 		    }
 		    if(vidstd < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal() || 

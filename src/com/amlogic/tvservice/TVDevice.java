@@ -108,5 +108,8 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	abstract public void ATVChannelFineTune(int fre);
 	
 	abstract public void setVGAAutoAdjust();
+
+	abstract public int GetSrcInputType();
+   
 }
 

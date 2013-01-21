@@ -833,5 +833,20 @@ abstract public class TVClient
 			}
 		}
 	}
+	
+
+    /**
+     *得到设备的类型
+     */
+	public int GetSrcInputType(){
+	    int type = 0;
+	    if(service != null){
+            try{
+                type = service.GetSrcInputType();
+            }catch(RemoteException e){
+            }
+        }
+	    return type;
+	}
 }
 
