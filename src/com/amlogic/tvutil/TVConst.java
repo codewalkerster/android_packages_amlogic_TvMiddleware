@@ -365,6 +365,29 @@ public class TVConst
     }
     
     
+    public enum TV_Source_Input_Type {
+        SOURCE_TYPE_TV(0),
+        SOURCE_TYPE_AV(1),
+        SOURCE_TYPE_COMPONENT(2),
+        SOURCE_TYPE_HDMI(3),
+        SOURCE_TYPE_VGA(4),
+        SOURCE_TYPE_MPEG(5),
+        SOURCE_TYPE_DTV(6),
+        SOURCE_TYPE_MAX(7);
+
+        private int val;
+
+        TV_Source_Input_Type(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+    
+    
+    
     // vga adjust status
     public enum VGA_ADJUST_STATUS {
         CC_TV_VGA_ADJUST_FAILED,

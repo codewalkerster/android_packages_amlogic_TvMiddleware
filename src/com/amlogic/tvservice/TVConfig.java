@@ -54,17 +54,26 @@ public class TVConfig{
 
 	/**配置项目值读取接口*/
 	public interface Read{
-		public TVConfigValue read(String name);
+		public TVConfigValue read(String name, TVConfigEntry entry);
 	}
 
 	/**配置项*/
-	private class TVConfigEntry{
+	class TVConfigEntry{
 		private TVConfigValue value;
 		private Update update;
 		private Read read;
 		private RemoteCallbackList<ITVCallback> callbacks;
 		private HashMap<String, TVConfigEntry> children;
 		private TVConfigEntry parent;
+		private boolean cacheable;
+
+		TVConfigEntry(){
+			cacheable = true;
+		}
+
+		void setCacheable(boolean v){
+			cacheable = v;
+		}
 	}
 
 	/**根配置项*/
@@ -327,10 +336,15 @@ public class TVConfig{
 				break;
 		}
 
-		if(i >= names.length)
-			return curr;
-
 		boolean new_ent = false;
+
+		if(i >= names.length){
+			if(curr.cacheable)
+				return curr;
+			else
+				new_ent = true;
+		}
+
 		for(; i < names.length; i++){
 			ent = new TVConfigEntry();
 			ent.parent = curr;
@@ -346,7 +360,7 @@ public class TVConfig{
 			parent = curr;
 			while(parent != null){
 				if(parent.read != null){
-					value = parent.read.read(name);
+					value = parent.read.read(name, curr);
 					if(value != null)
 						break;
 				}
@@ -359,6 +373,16 @@ public class TVConfig{
 		}
 
 		return curr;
+	}
+
+	/**
+	 *设定配置项的值是否缓存
+	 *@param v true 表示缓存，false表示不缓存
+	 */
+	public synchronized void setCacheable(String name, boolean v) throws Exception{
+		TVConfigEntry ent = getEntry(name);
+
+		ent.setCacheable(v);
 	}
 
 	/**
