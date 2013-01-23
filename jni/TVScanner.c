@@ -519,9 +519,10 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
         fparam[i].terrestrial.para.u.ofdm.bandwidth = (*env)->GetIntField(env, para, bandwidth);
         break;
     case FE_QPSK:
-
+        fparam[i].sat.para.frequency = (*env)->GetIntField(env, para, freq);
         break;
     case FE_ATSC:
+        fparam[i].atsc.para.frequency = (*env)->GetIntField(env, para, freq);		
         break;
     default:
         break;
