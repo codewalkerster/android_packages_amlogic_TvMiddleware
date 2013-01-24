@@ -635,22 +635,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 					TVDeviceImpl.tv.TvITFExecute("SSMSaveParentalControlSwitch", userValue);
 					Log.d(TAG,">>>>>>>>>>>>>>>>>>>>SetParentControlSwitch");
 				}
-				  else if (name.equals("SetAudioVolumeCompensationVal"))
-                {
-                    TVDeviceImpl.tv.TvITFExecute(name, userValue);
-                    int tmp_val = 0;
-                    try
-                    {
-                        TVConfigValue myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("GetAudioMasterVolume"));
                         
-                        tmp_val = myvalue.getInt();
-                    }
-                    catch (TypeException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    TVDeviceImpl.tv.TvITFExecute("SetAudioMasterVolume", tmp_val);
-                }
                 else if (name.equals("SetRGBOGOGainR100")||name.equals("SetRGBOGOGainG100")||name.equals("SetRGBOGOGainB100"))
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue);
@@ -715,7 +700,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         int fmt = sig_fmt.fmt.ordinal();
         if (name.equals("GetAudioSoundMode") || name.equals("GetAudioSupperBassVolume") || name.equals("GetAudioSRSSurround")
                 || name.equals("GetAudioSrsDialogClarity") || name.equals("GetAudioSrsTruBass") || name.equals("GetBaseColorMode")
-                || name.equals("GetAudioSupperBassSwitch") || name.equals("GetAudioVolumeCompensationVal"))
+                || name.equals("GetAudioSupperBassSwitch") )
         {
 
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
