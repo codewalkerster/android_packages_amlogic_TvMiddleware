@@ -28,6 +28,7 @@ import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvsubtitle.TVSubtitleView;
+import com.amlogic.tvutil.TvinInfo;
 
 /**
  *TV Activity
@@ -998,5 +999,13 @@ abstract public class TVActivity extends Activity
 	public void setVGAAutoAdjust(){
 		client.setVGAAutoAdjust();
 	}
+	/*get TV Info*/
+	public TvinInfo getCurrentSignalInfo(){
+		return client.getCurrentSignalInfo();
+	}
+	/**/
+	public int GetSrcInputType(){
+		return client.GetSrcInputType();
+	} 
 }
 
