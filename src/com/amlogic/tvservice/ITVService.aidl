@@ -8,12 +8,15 @@ import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
+import com.amlogic.tvutil.TvinInfo;
+
 
 //TV Service接口
 interface ITVService{
 	//取得当前状态
 	TVStatus getStatus();
 
+    
 	//注册消息回调
 	void registerCallback(ITVCallback cb);
 
@@ -130,5 +133,9 @@ interface ITVService{
 	
 	//获取资源类型
 	int GetSrcInputType();
+	
+	
+    //获取tvin的状态
+    TvinInfo getCurrentSignalInfo();
 }
 

@@ -5,6 +5,7 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
+import com.amlogic.tvutil.TvinInfo;
 
 import java.io.File;
 
@@ -110,6 +111,10 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	abstract public void setVGAAutoAdjust();
 
 	abstract public int GetSrcInputType();
+	
+	abstract public TvinInfo GetCurrentSignalInfo();
+	
+  
    
 }
 

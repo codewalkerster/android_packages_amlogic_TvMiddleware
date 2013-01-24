@@ -4,10 +4,15 @@ import com.amlogic.tvservice.TVConfig.TVConfigEntry;
 import com.amlogic.tvutil.TVChannelParams;
 import com.amlogic.tvutil.TVConfigValue;
 import com.amlogic.tvutil.TVConfigValue.TypeException;
+import com.amlogic.tvutil.TvinInfo.tvin_sig_fmt_e;
+import com.amlogic.tvutil.TvinInfo.tvin_sig_status_t;
+import com.amlogic.tvutil.TvinInfo.tvin_trans_fmt;
 import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
+import com.amlogic.tvutil.TvinInfo;
+
 import java.io.File;
 import android.util.Log;
 import android.amlogic.Tv;
@@ -414,6 +419,22 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.d(TAG, "*********GetSrcInputType");
         return tv.GetSrcInputType().ordinal();
     }
+    
+    public TvinInfo GetCurrentSignalInfo()
+    {
+        Log.d(TAG, "*********GetCurrentSignalInfo");
+        TvinInfo mytvinfo = new TvinInfo();
+        tvin_info_t tvin_info = tv.GetCurrentSignalInfo();
+        mytvinfo.fmt = tvin_sig_fmt_e.values()[tvin_info.fmt.ordinal()];
+        mytvinfo.trans_fmt = tvin_trans_fmt.values()[tvin_info.trans_fmt.ordinal()];
+        mytvinfo.status = tvin_sig_status_t.values()[tvin_info.status.ordinal()];
+        mytvinfo.reserved = tvin_info.reserved;
+        return mytvinfo;
+    }
+    
+    
+  
+    
     protected void finalize() throws Throwable
     {
         if (!destroy)
@@ -634,7 +655,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue);
                 }
-				
+                else if(name.equals("SetAudioMasterVolume") || name.equals("SetAudioVolumeCompensationVal"))
+                {
+                    TVDeviceImpl.tv.TvITFExecute(name, userValue);
+                }
                 else
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource);
@@ -726,6 +750,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 				else if (name.equals("GetPowerOnOffChannel")) 
         {
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("SSMReadPowerOnOffChannel"));
+            entry.setCacheable(false);
             return myvalue;
         }
         else if (name.equals("GetParentControlSwitch")) 
@@ -738,6 +763,12 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             catch (Exception e)
             {
             }
+            return myvalue;
+        }
+        else if(name.equals("GetAudioMasterVolume") )
+        {
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
+            entry.setCacheable(false);
             return myvalue;
         }
         else

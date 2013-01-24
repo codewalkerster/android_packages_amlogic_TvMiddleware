@@ -1,5 +1,6 @@
 package com.amlogic.tvservice;
 
+import android.app.IntentService;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
@@ -7,6 +8,7 @@ import android.content.Context;
 import android.os.Message;
 import android.os.Looper;
 import android.os.Handler;
+import android.os.RemoteException;
 import android.database.Cursor;
 import java.util.Date;
 import android.os.RemoteCallbackList;
@@ -348,6 +350,13 @@ public class TVService extends Service implements TVConfig.Update{
         @Override
         public int GetSrcInputType(){
             return device.GetSrcInputType();
+        }
+
+        @Override
+        public TvinInfo getCurrentSignalInfo() 
+        {
+            // TODO Auto-generated method stub
+            return device.GetCurrentSignalInfo();
         }
 	};
 

@@ -22,6 +22,7 @@ import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
+import com.amlogic.tvutil.TvinInfo;
 
 /**
  *TV客户端
@@ -848,5 +849,21 @@ abstract public class TVClient
         }
 	    return type;
 	}
+	
+	
+	 /**
+     *得到设备的类型
+     */
+    public TvinInfo getCurrentSignalInfo(){
+        TvinInfo tvinInfo = null;
+        if(service != null){
+            try{
+                tvinInfo = service.getCurrentSignalInfo();
+            }catch(RemoteException e){
+            }
+        }
+        return tvinInfo;
+    }
+	
 }
 
