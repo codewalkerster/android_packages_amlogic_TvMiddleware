@@ -31,6 +31,7 @@ import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
+import com.amlogic.tvutil.TvinInfo;
 
 public class TVService extends Service implements TVConfig.Update{
 	private static final String TAG = "TVService";
