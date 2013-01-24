@@ -29,6 +29,7 @@ import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvutil.TVBooking;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
+import com.amlogic.tvutil.TvinInfo;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
 import com.amlogic.tvutil.TvinInfo;
@@ -535,6 +536,23 @@ public class TVService extends Service implements TVConfig.Update{
 	private boolean isScanning = false;
 
 	private void setDTVPlayParams(TVPlayParams params){
+		if(params != null && params.getType()==TVPlayParams.PLAY_PROGRAM_ID){
+			try{
+				TVProgram prog = TVProgram.selectByID(this, params.getProgramID());
+
+				if(prog != null){
+					if(prog.getType() == TVProgram.TYPE_TV){
+						dtvTVPlayParams = params;
+					}else if(prog.getType() == TVProgram.TYPE_RADIO){
+						dtvRadioPlayParams = params;
+					}
+				}
+			}catch(Exception e){
+			}
+
+			return;
+		}
+
 		if(dtvProgramType == TVProgram.TYPE_TV)
 			dtvTVPlayParams = params;
 		else if(dtvProgramType == TVProgram.TYPE_RADIO)

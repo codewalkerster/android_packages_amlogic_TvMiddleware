@@ -207,13 +207,13 @@ abstract public class TVDeviceImpl extends TVDevice{
     {
 	}
 
-    @Override
-    public TVConfigValue read(String name)
+	@Override
+    public TVConfigValue read(String name, TVConfig.TVConfigEntry entry)
 	{
 		return null;
 	}
 	
-	 @Override
+	@Override
     public void ATVChannelFineTune(int fre)
 	{
 		
