@@ -110,11 +110,14 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	
 	abstract public void setVGAAutoAdjust();
 
-	abstract public int GetSrcInputType();
-	
-	abstract public TvinInfo GetCurrentSignalInfo();
-	
-  
-   
+    public int GetSrcInputType()
+    {
+        return 0;
+    }
+
+    public TvinInfo GetCurrentSignalInfo()
+	{
+		return null;
+	}
 }
 
