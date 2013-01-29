@@ -48,7 +48,9 @@ public class TVChannel{
 			bw = c.getInt(col);
 
 			this.params = TVChannelParams.dvbtParams(freq, bw);
-		}
+		}else if(src == TVChannelParams.MODE_ATSC){
+			this.params = TVChannelParams.atscParams(freq);
+		}		
 		else if(src == TVChannelParams.MODE_ANALOG){
 			col = c.getColumnIndex("std");
 			int std = c.getInt(col);
