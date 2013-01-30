@@ -17,6 +17,7 @@ import java.io.File;
 import android.util.Log;
 import android.amlogic.Tv;
 import android.amlogic.Tv.Frontend_Para;
+import android.amlogic.Tv.SigInfoChangeListener;
 import android.amlogic.Tv.SourceSwitchListener;
 import android.amlogic.Tv.SrcInput;
 import android.amlogic.Tv.StatusTVChangeListener;
@@ -27,7 +28,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, SourceSwitchListener, VGAAdjustChangeListener
+public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeListener, SourceSwitchListener
+                                                            , VGAAdjustChangeListener,SigInfoChangeListener
 {
     private boolean destroy;
     private String TAG = "TVDeviceImpl";
@@ -48,6 +50,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         tv = SingletonTv.getTvInstance();
         tv.SetStatusTVChangeListener(this);
         tv.SetSourceSwitchListener(this);
+        tv.SetSigInfoChangeListener(this);
+        tv.SetVGAChangeListener(this);
         // tv.INIT_TV();
 
     }
@@ -60,6 +64,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         tv = SingletonTv.getTvInstance();
         tv.SetStatusTVChangeListener(this);
         tv.SetSourceSwitchListener(this);
+        tv.SetSigInfoChangeListener(this);
         tv.SetVGAChangeListener(this);
         // tv.INIT_TV();
         myHandler = new deviceHandler(looper);
@@ -514,6 +519,23 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             myEvent.vga_adjust_status = TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_SUCCESS;
         onEvent(myEvent);
     }
+    
+    @Override
+    public void onSigChange(tvin_info_t arg0)
+    {
+        // TODO Auto-generated method stub
+        Log.d(TAG, "onSigChange ");
+        Event myEvent = new Event(Event.EVENT_SIG_CHANGE);
+        tvin_info_t tvin_info = tv.GetCurrentSignalInfo();
+        myEvent.tvin_info.fmt = tvin_sig_fmt_e.values()[tvin_info.fmt.ordinal()];
+        myEvent.tvin_info.trans_fmt = tvin_trans_fmt.values()[tvin_info.trans_fmt.ordinal()];
+        myEvent.tvin_info.status = tvin_sig_status_t.values()[tvin_info.status.ordinal()];
+        myEvent.tvin_info.reserved = tvin_info.reserved;
+        onEvent(myEvent);
+         
+    }
+
+    
 
     TVChannelParams fpara2chanpara(int mode, int freq, int para1, int para2)
     {

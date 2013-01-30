@@ -61,7 +61,8 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_VGA_ADJUST_FAILED = 25;
 	/**VGA信号调整中*/
     public static final int TYPE_VGA_ADJUST_DOING  = 26;
-    
+    /**信号改变*/
+    public static final int TYPE_SIG_CHANGE        = 27;
 	private static final String TAG="TVMessage";
 	private int type;
 	private int programID;
@@ -80,7 +81,7 @@ public class TVMessage implements Parcelable{
 	private int scanProgramType;
 	private int inputSource;
 	private int stopRecordRequestProgramID;
-	
+	public TvinInfo   tvin_info;
 	
 	private int recordErrorCode;
 	public static final int REC_ERR_NONE        = 0; // Success, no error
@@ -683,6 +684,14 @@ public class TVMessage implements Parcelable{
 
 		return msg;
 	}
+	
+	public static TVMessage sigChange(TvinInfo tvin_info){
+        TVMessage msg = new TVMessage();
+        msg.tvin_info = tvin_info;
+        return msg;
+    }
+    
+	
 	
 	public int describeContents(){
 		return 0;
