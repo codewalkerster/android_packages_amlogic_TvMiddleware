@@ -1445,6 +1445,9 @@ public class TVService extends Service implements TVConfig.Update{
                     sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_DOING));
                 }
 				break;
+			 case TVDevice.Event.EVENT_SIG_CHANGE:
+			     sendMessage(TVMessage.sigChange( event.tvin_info));
+			     break;
 		}
 	}
 

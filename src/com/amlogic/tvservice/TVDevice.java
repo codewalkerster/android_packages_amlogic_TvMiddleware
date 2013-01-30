@@ -22,7 +22,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public static final int EVENT_DTV_CANNOT_DESCRAMLE    = 6;
 		public static final int EVENT_RECORD_END              = 7;
 		public static final int EVENT_VGA_ADJUST_STATUS       = 8;
-
+		public static final int EVENT_SIG_CHANGE              = 9;
 		
 		
 		public int                                type;
@@ -32,6 +32,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public DTVRecordParams                    recParams;
 		public int                                source;
 		public TVConst.VGA_ADJUST_STATUS          vga_adjust_status;
+		public TvinInfo                           tvin_info;
 
 		public Event(int type){
 			this.type = type;
