@@ -200,7 +200,7 @@ public class TVDimension{
 		context.getContentResolver().query(TVDataProvider.WR_URL,
 				null, cmd, null, null);
 		
-		/* Add U.S. Rating region 0x1*/
+		/* Add U.S. Rating region 0x1 */
 		String[] abbrev1 = {"","D","TV-G","TV-PG","TV-14","TV-MA"};
 		String[] text1   = {"","D","TV-G","TV-PG","TV-14","TV-MA"};
 		int[]    lock1   = {-1, -1,    -1,      0,      0,     -1};
@@ -223,6 +223,10 @@ public class TVDimension{
 		                    "No One 17 and Under Admitted","No One 17 and Under Admitted",
 		                    "“Not Rated by MPAA"};
 		int[]    lock7   = {-1, -1, 0, 0, 0, 0, 0, 0, 0};
+		/*Extra for 'All' */
+		String[] abbrevall = {"TV-Y","TV-Y7","TV-G","TV-PG","TV-14","TV-MA"};
+		String[] textall   = {"TV-Y","TV-Y7","TV-G","TV-PG","TV-14","TV-MA"};
+		int[]    lockall   = {0,     0,      0,      0,      0,     0};
 		
 		add(context, REGION_US, "US (50 states + possessions)", "Dialogue",         1, lock1, abbrev1, text1);
 		add(context, REGION_US, "US (50 states + possessions)", "Language",         2, lock2, abbrev2, text2);
@@ -230,8 +234,9 @@ public class TVDimension{
 		add(context, REGION_US, "US (50 states + possessions)", "Violence",         4, lock4, abbrev4, text4);
 		add(context, REGION_US, "US (50 states + possessions)", "Fantasy violence", 6, lock6, abbrev6, text6);
 		add(context, REGION_US, "US (50 states + possessions)", "MPAA",             7, lock6, abbrev6, text6);
+		add(context, REGION_US, "US (50 states + possessions)", "All",             -1, lockall, abbrevall, textall);
 		
-		/* Add Canadian Rating region 0x2*/
+		/* Add Canadian Rating region 0x2 */
 		String[] cabbrev0 = {"E",     "C",       "C8+","G",      "PG","14+","18+"};
 		String[] ctext0   = {"Exempt","Children","8+", "General","PG","14+","18+"};
 		int[]    clock0   = {0,       0,         0,    0,        0,   0,    0};
