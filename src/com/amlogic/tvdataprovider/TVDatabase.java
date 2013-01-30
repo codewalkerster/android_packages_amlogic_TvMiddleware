@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import com.amlogic.tvutil.TVChannelParams;
+import com.amlogic.tvutil.TVDimension;
 
 public class TVDatabase extends SQLiteOpenHelper
 {
@@ -201,6 +202,9 @@ public class TVDatabase extends SQLiteOpenHelper
 				Log.d(TAG, tvRegions[i].name + " done !");
 				cv.clear();
 			}
+			
+			/* builtin default ATSC V-Chip dimensions */
+			TVDimension.restore(context);
 
 			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION).commit();
 		}
