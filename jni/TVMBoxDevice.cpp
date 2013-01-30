@@ -145,6 +145,9 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 			para->terrestrial.para.u.qam.modulation  = (fe_modulation_t)mod;
 			para->terrestrial.para.u.qam.symbol_rate = sym;
 			break;
+		case FE_ATSC:
+			para->atsc.para.frequency = freq;
+			break;	
 	}
 }
 
