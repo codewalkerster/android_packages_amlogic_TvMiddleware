@@ -254,7 +254,7 @@ public class TVDatabase extends SQLiteOpenHelper
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
 			"Fantasy violence", 6, lock6, abbrev6, text6);
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
-			"MPAA",             7, lock6, abbrev6, text6);
+			"MPAA",             7, lock7, abbrev7, text7);
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
 			"All",             -1, lockall, abbrevall, textall);
 		
