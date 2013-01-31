@@ -81,7 +81,7 @@ public class TVMessage implements Parcelable{
 	private int scanProgramType;
 	private int inputSource;
 	private int stopRecordRequestProgramID;
-	private TvinInfo   tvin_info;
+	public TvinInfo   tvin_info;
 	
 	private int recordErrorCode;
 	public static final int REC_ERR_NONE        = 0; // Success, no error
