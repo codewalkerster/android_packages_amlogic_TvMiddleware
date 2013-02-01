@@ -38,6 +38,8 @@ public class TVProgram{
 	private boolean scrambled;
 	private boolean favorite;
     private int volume;
+    private int src;
+    private int sourceID;
 	/**
 	 *Service中的基础元素信息
 	 */
@@ -295,12 +297,15 @@ public class TVProgram{
 
 	private TVProgram(Context context, Cursor c){
 		int col;
-		int num, type, src;
+		int num, type;
 
 		this.context = context;
 
 		col = c.getColumnIndex("db_id");
 		this.id = c.getInt(col);
+		
+		col = c.getColumnIndex("source_id");
+		this.sourceID = c.getInt(col);
 
 		col = c.getColumnIndex("src");
 		src = c.getInt(col);
@@ -898,7 +903,6 @@ public class TVProgram{
 							subtitles[id++] = sub;
 						}while(c1.moveToNext());
 					}
-					c1.close();
 				}
 
 				if(c2 != null){
@@ -924,9 +928,12 @@ public class TVProgram{
 							subtitles[id++] = sub;
 						}while(c2.moveToNext());
 					}
-					c2.close();
 				}
 			}
+			if(c1 != null)
+				c1.close();
+			if(c2 != null)
+				c2.close();
 		}
 	}
 
@@ -1224,8 +1231,13 @@ public class TVProgram{
 		TVEvent evt = null;
 		Cursor c;
 
-		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and evt_table.start <= "+time+" and evt_table.end > "+time;
-
+		cmd = "select * from evt_table where evt_table.";
+		if (src == TVChannelParams.MODE_ATSC){
+			cmd += "source_id = "+sourceID;
+		}else{
+			cmd += "db_srv_id = "+getID();
+		}
+		cmd += " and evt_table.start <= "+time+" and evt_table.end > "+time;
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
 				cmd,
@@ -1252,8 +1264,13 @@ public class TVProgram{
 		TVEvent evt = null;
 		Cursor c;
 
-		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and evt_table.start > "+time+" order by evt_table.start";
-
+		cmd = "select * from evt_table where evt_table.";
+		if (src == TVChannelParams.MODE_ATSC){
+			cmd += "source_id = "+sourceID;
+		}else{
+			cmd += "db_srv_id = "+getID();
+		}
+		cmd += " and evt_table.start > "+time+" order by evt_table.start";
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
 				cmd,
@@ -1282,7 +1299,13 @@ public class TVProgram{
 		TVEvent evts[] = null;
 		Cursor c;
 
-		cmd = "select * from evt_table where evt_table.db_srv_id = "+getID()+" and ";
+		cmd = "select * from evt_table where evt_table.";
+		if (src == TVChannelParams.MODE_ATSC){
+			cmd += "source_id = "+sourceID;
+		}else{
+			cmd += "db_srv_id = "+getID();
+		}
+		cmd += " and ";
 		cmd += " ((start < "+begin+" and end > "+begin+") ||";
 		cmd += " (start >= "+begin+" and start < "+end+"))";
 		cmd += " order by evt_table.start";
