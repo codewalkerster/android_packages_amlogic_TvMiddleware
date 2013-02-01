@@ -687,7 +687,10 @@ public class TVMessage implements Parcelable{
 	
 	public static TVMessage sigChange(TvinInfo tvin_info){
         TVMessage msg = new TVMessage();
+		msg.type = TYPE_SIG_CHANGE;
         msg.tvin_info = tvin_info;
+		if(tvin_info == null)
+			Log.d(TAG,"*************tvin_info is null TVMessage************");
         return msg;
     }
     

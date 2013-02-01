@@ -37,6 +37,11 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public Event(int type){
 			this.type = type;
 		}
+		public Event(int type,TvinInfo tv_info)
+		{
+			this.type = type;
+			this.tvin_info = tv_info;
+		}
 	}
 
 	public TVDevice(){
