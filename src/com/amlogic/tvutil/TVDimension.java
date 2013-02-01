@@ -21,6 +21,7 @@ public class TVDimension{
 	private int id;
 	private int indexj;
 	private int ratingRegion;
+	private int graduatedScale;
 	private int[] lockValues;
 	private String name;
 	private String ratingRegionName;
@@ -40,7 +41,10 @@ public class TVDimension{
 		
 		col = c.getColumnIndex("rating_region");
 		this.ratingRegion = c.getInt(col);
-
+		
+		col = c.getColumnIndex("graduated_scale");
+		this.graduatedScale = c.getInt(col);
+		
 		col = c.getColumnIndex("name");
 		this.name = c.getString(col);
 		
@@ -158,6 +162,40 @@ public class TVDimension{
 		return d;
 	}
 	
+	/**
+	 *根据记录ID取得对应的TVDimension
+	 *@param context 当前Context
+	 *@param ratingRegionID rating region ID
+	 *@param index RRT中对应的index_j
+	 *@return 返回对应的TVDimension对象
+	 */
+	public static TVDimension[] selectUSDownloadable(Context context){
+		TVDimension[] d = null;
+		String cmd = "select * from dimension_table where rating_region >= 5";
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null, cmd, null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				d = new TVDimension[c.getCount()];
+				do{
+					d[id++] = new TVDimension(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return d;
+	}
+	
+	/**
+	 *判断指定value是否需要block
+	 *@param context 当前Context
+	 *@param ratingRegionID rating region ID
+	 *@param dimensionIndex RRT中对应的index_j
+	 *@param valueIndex RRT中对应的rating_value
+	 *@return 是否block
+	 */
 	public static boolean isBlocked(Context context, int ratingRegionID, int dimensionIndex, int valueIndex){
 		TVDimension dm = selectByIndex(context, ratingRegionID, dimensionIndex);
 		if (dm != null){
@@ -190,6 +228,7 @@ public class TVDimension{
 	public String getRatingRegionName(){
 		return ratingRegionName;
 	}
+	
 	/**
 	 *取得Dimension名称
 	 *@return 返回Dimension名称
@@ -197,13 +236,27 @@ public class TVDimension{
 	public String getName(){
 		return name;
 	}
-
+	
+	/**
+	 *取得graduated scale标志
+	 *@return 返回graduated scale标志
+	 */
+	public int getGraduatedScale(){
+		return graduatedScale;
+	}
+	
 	/**
 	 *取得该dimension的所有values的加锁状态
 	 *@return 返回所有values的加锁状态，0-未加锁，-1-无效值，即不能对该项进行设置，其他-已加锁
 	 */
 	public int[] getLockStatus(){
-		return lockValues;
+		if (lockValues.length > 1){
+			int[] l = new int[lockValues.length - 1];
+			System.arraycopy(lockValues, 1, l, 0, l.length);
+			return l;
+		}else{
+			return null;
+		}
 	}
 	
 	/**
@@ -247,7 +300,14 @@ public class TVDimension{
 	 *@return 返回所有values的abbrev text
 	 */
 	public String[] getAbbrev(){
-		return abbrevValues;
+		/* the first rating_value must be not visible to user */
+		if (abbrevValues.length > 1){
+			String[] a = new String[abbrevValues.length - 1];
+			System.arraycopy(abbrevValues, 1, a, 0, a.length);
+			return a;
+		}else{
+			return null;
+		}
 	}
 
 	/**
@@ -255,7 +315,13 @@ public class TVDimension{
 	 *@return 返回所有values的value text
 	 */
 	public String[] getText(){
-		return textValues;
+		if (textValues.length > 1){
+			String[] t = new String[textValues.length - 1];
+			System.arraycopy(textValues, 1, t, 0, t.length);
+			return t;
+		}else{
+			return null;
+		}
 	}
 	
 	/**
@@ -280,13 +346,13 @@ public class TVDimension{
 	 *@param status 加锁状态
 	 */
 	public void setLockStatus(int[] status){
-		if (status == null || status.length != lockValues.length){
+		if (status == null || status.length != (lockValues.length-1)){
 			Log.d(TAG, "Cannot set lock status, invalid param");
 			return;
 		}
 		
 		for (int i=0; i<status.length; i++){
-			setLockStatus(i, status[i]);
+			setLockStatus(i+1, status[i]);
 		}
 	}
 	
