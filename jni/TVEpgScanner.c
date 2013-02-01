@@ -83,6 +83,7 @@ static void epg_evt_callback(int dev_no, int event_type, void *param, void *user
 	memset(&edata, 0, sizeof(edata));
 	switch(event_type){
 		case AM_EPG_EVT_NEW_TDT:
+		case AM_EPG_EVT_NEW_STT:
 		{
 			int utc_time;
 			
@@ -149,6 +150,7 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
 
 	/*注册EIT通知事件*/
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
+	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
@@ -164,6 +166,7 @@ static void epg_destroy(JNIEnv* env, jobject obj)
 	/*反注册EIT通知事件*/
 	if (data) {
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);

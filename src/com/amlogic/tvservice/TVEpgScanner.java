@@ -1,5 +1,7 @@
 package com.amlogic.tvservice;
 
+import com.amlogic.tvutil.TVChannelParams;
+
 abstract public class TVEpgScanner{
 	public static final int MODE_ADD    = 0;
 	public static final int MODE_REMOVE = 1;
@@ -119,8 +121,13 @@ abstract public class TVEpgScanner{
 		if(channel_id != -1){
 			leaveChannel();
 		}
-
-		startScan(SCAN_EIT_ALL|SCAN_SDT|SCAN_NIT|SCAN_TDT|SCAN_CAT);
+		
+		if(fend_type == TVChannelParams.MODE_ATSC){
+			startScan(SCAN_PSIP_EIT|SCAN_MGT|SCAN_VCT|SCAN_RRT|SCAN_STT);
+		}else{
+			startScan(SCAN_EIT_ALL|SCAN_SDT|SCAN_NIT|SCAN_TDT|SCAN_CAT);
+		}
+		
 		channel_id = chan_id;
 	}
 
