@@ -81,7 +81,11 @@ public class TVMessage implements Parcelable{
 	private int scanProgramType;
 	private int inputSource;
 	private int stopRecordRequestProgramID;
-	public TvinInfo   tvin_info;
+	private TvinInfo   tvin_info;
+	private int parentalRating;
+	private String vchipDimension;
+	private String vchipAbbrev;
+	private String vchipText;
 	
 	private int recordErrorCode;
 	public static final int REC_ERR_NONE        = 0; // Success, no error
@@ -97,6 +101,11 @@ public class TVMessage implements Parcelable{
 	public static final int REQ_TYPE_START_TIMESHIFT = 2;
 	/**停止录像以切换到指定频道播放*/
 	public static final int REQ_TYPE_SWITCH_PROGRAM  = 3;
+	
+	private int programBlockType;
+	public static final int BLOCK_BY_LOCK             = 0;
+	public static final int BLOCK_BY_PARENTAL_CONTROL = 1;
+	public static final int BLOCK_BY_VCHIP            = 2;
 
 	private int flags;
 	private static final int FLAG_PROGRAM_ID = 1;
@@ -108,6 +117,7 @@ public class TVMessage implements Parcelable{
 	private static final int FLAG_PROGRAM_NUMBER = 64;
 	private static final int FLAG_STOP_RECORD    = 128;
 	private static final int FLAG_RECORD_END     = 256;
+	private static final int FLAG_PROGRAM_BLOCK  = 512;
 
 	public static final Parcelable.Creator<TVMessage> CREATOR = new Parcelable.Creator<TVMessage>(){
 		public TVMessage createFromParcel(Parcel in) {
@@ -155,6 +165,12 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_RECORD_END) != 0){
 			recordErrorCode = in.readInt();
 		}
+		if((flags & FLAG_PROGRAM_BLOCK) != 0){
+			parentalRating = in.readInt();
+			vchipDimension = in.readString();
+			vchipAbbrev    = in.readString();
+			vchipText      = in.readString();
+		}
 	}
 
 	public void writeToParcel(Parcel dest, int flag){
@@ -194,6 +210,12 @@ public class TVMessage implements Parcelable{
 		}
 		if((flags & FLAG_RECORD_END) != 0){
 			dest.writeInt(recordErrorCode);
+		}
+		if((flags & FLAG_PROGRAM_BLOCK) != 0){
+			dest.writeInt(parentalRating);
+			dest.writeString(vchipDimension);
+			dest.writeString(vchipAbbrev);
+			dest.writeString(vchipText);
 		}
 	}
 
@@ -409,17 +431,107 @@ public class TVMessage implements Parcelable{
 
 		return cfgValue;
 	}
+	
+	/**
+	 *取得ProgramBlock的block type
+	 *@return 返回block type
+	 */
+	public int getProgramBlockType() {
+		if((flags & FLAG_PROGRAM_BLOCK) != FLAG_PROGRAM_BLOCK)
+			throw new UnsupportedOperationException();
+
+		return programBlockType;
+	}
+	
+	/**
+	 *取得ProgramBlock的parental rating
+	 *@return 返回parental rating
+	 */
+	public int getParentalRating() {
+		if((flags & FLAG_PROGRAM_BLOCK) != FLAG_PROGRAM_BLOCK)
+			throw new UnsupportedOperationException();
+
+		return parentalRating;
+	}
+	
+	/**
+	 *取得ProgramBlock的vchip dimension
+	 *@return 返回vchip dimension
+	 */
+	public String getVChipDimension() {
+		if((flags & FLAG_PROGRAM_BLOCK) != FLAG_PROGRAM_BLOCK)
+			throw new UnsupportedOperationException();
+
+		return vchipDimension;
+	}
+	
+	/**
+	 *取得ProgramBlock的vchip abbrev
+	 *@return 返回vchip abbrev
+	 */
+	public String getVChipAbbrev() {
+		if((flags & FLAG_PROGRAM_BLOCK) != FLAG_PROGRAM_BLOCK)
+			throw new UnsupportedOperationException();
+
+		return vchipAbbrev;
+	}
+	
+	/**
+	 *取得ProgramBlock的vchip value text
+	 *@return 返回vchip value text
+	 */
+	public String getVChipValueText() {
+		if((flags & FLAG_PROGRAM_BLOCK) != FLAG_PROGRAM_BLOCK)
+			throw new UnsupportedOperationException();
+
+		return vchipText;
+	}
 
 	/**
-	 *创建一个ProgramBlock消息
+	 *创建一个ProgramBlock消息，适用用户加锁节目导致的block
 	 *@return 返回创建的新消息
 	 */
 	public static TVMessage programBlock(int programID){
 		TVMessage msg = new TVMessage();
 
-		msg.flags = FLAG_PROGRAM_ID;
+		msg.flags = FLAG_PROGRAM_ID | FLAG_PROGRAM_BLOCK;
 		msg.type = TYPE_PROGRAM_BLOCK;
+		msg.programBlockType = BLOCK_BY_LOCK;
 		msg.programID = programID;
+
+		return msg;
+	}
+	
+	/**
+	 *创建一个ProgramBlock消息，适用DVB parental control导致的block
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programBlock(int programID, int parentalRating){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID | FLAG_PROGRAM_BLOCK;
+		msg.type = TYPE_PROGRAM_BLOCK;
+		msg.programBlockType = BLOCK_BY_PARENTAL_CONTROL;
+		msg.programID = programID;
+		msg.parentalRating = parentalRating;
+
+		return msg;
+	}
+	
+	/**
+	 *创建一个ProgramBlock消息，适用ATSC V-Chip导致的block
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programBlock(int programID, String dimension, String ratingAbbrev, String ratingText){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID | FLAG_PROGRAM_BLOCK;
+		msg.type = TYPE_PROGRAM_BLOCK;
+		msg.programBlockType = BLOCK_BY_VCHIP;
+		msg.programID = programID;
+		msg.vchipDimension = dimension;
+		msg.vchipAbbrev = ratingAbbrev;
+		msg.vchipText = ratingText;
 
 		return msg;
 	}

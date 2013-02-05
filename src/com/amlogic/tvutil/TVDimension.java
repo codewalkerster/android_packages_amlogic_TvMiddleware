@@ -27,6 +27,7 @@ public class TVDimension{
 	private String ratingRegionName;
 	private String[] abbrevValues;
 	private String[] textValues;
+	private boolean isPGAll;
 
 	TVDimension(Context context, Cursor c){
 		this.context = context;
@@ -64,8 +65,103 @@ public class TVDimension{
 			col = c.getColumnIndex("locked"+i);
 			this.lockValues[i] = c.getInt(col);
 		}
+		
+		if (ratingRegion == REGION_US && name.equals("All")){
+			isPGAll = true;
+		}else{
+			isPGAll = false;
+		}
+	}
+	
+	public class VChipRating{
+		private int region;
+		private int dimension;
+		private int value;
+		
+		public VChipRating(int region, int dimension, int value){
+			this.region = region;
+			this.dimension = dimension;
+			this.value = value;
+		}
+		
+		public int getRegion(){
+			return region;
+		}
+		
+		public int getDimension(){
+			return dimension;
+		}
+		
+		public int getValue(){
+			return value;
+		}
+	}
+	
+	public TVDimension(){
+	
 	}
 
+	private int getUSPGAllLockStatus(String abbrev){
+		TVDimension dm0 = selectByIndex(context, REGION_US, 0);
+		TVDimension dm5 = selectByIndex(context, REGION_US, 5);
+		String[] dm0Abbrev = dm0.getAbbrev();
+		String[] dm5Abbrev = dm5.getAbbrev();
+		
+		
+		Log.d(TAG, "get All for "+abbrev);
+		for (int j=0; j<dm0Abbrev.length; j++){
+			Log.d(TAG, dm0Abbrev[j]);
+			if (abbrev.equals(dm0Abbrev[j])){
+				return dm0.getLockStatus(j+1);
+			}
+		}
+		for (int j=0; j<dm5Abbrev.length; j++){
+			Log.d(TAG, dm0Abbrev[j]);
+			if (abbrev.equals(dm5Abbrev[j])){
+				return dm5.getLockStatus(j+1);
+			}
+		}
+		
+		return -1;
+	}
+	
+	private void setUSPGAllLockStatus(String abbrev, int lock){
+		TVDimension dm0 = selectByIndex(context, REGION_US, 0);
+		TVDimension dm5 = selectByIndex(context, REGION_US, 5);
+		String[] dm0Abbrev = dm0.getAbbrev();
+		String[] dm5Abbrev = dm5.getAbbrev();
+
+		for (int j=0; j<dm0Abbrev.length; j++){
+			if (abbrev.equals(dm0Abbrev[j])){
+				dm0.setLockStatus(j+1, lock);
+				return;
+			}
+		}
+		for (int j=0; j<dm5Abbrev.length; j++){
+			if (abbrev.equals(dm5Abbrev[j])){
+				dm5.setLockStatus(j+1, lock);
+				return;
+			}
+		}
+		
+		return;
+	}
+	
+	private int[] getUSPGAllLockStatus(String[] abbrevs){
+		int[] lockAll = new int[abbrevs.length];
+		
+		for (int i=0; i<abbrevs.length; i++){
+			lockAll[i] = getUSPGAllLockStatus(abbrevs[i]);
+		}
+		
+		return lockAll;
+	}
+	
+	private void setUSPGAllLockStatus(String[] abbrevs, int[] lock){
+		for (int i=0; i<abbrevs.length; i++){
+			setUSPGAllLockStatus(abbrevs[i], lock[i]);
+		}
+	}
 	/**
 	 *根据记录ID取得对应的TVDimension
 	 *@param context 当前Context
@@ -189,17 +285,17 @@ public class TVDimension{
 	}
 	
 	/**
-	 *判断指定value是否需要block
+	 *判断指定rating_value是否需要block
 	 *@param context 当前Context
-	 *@param ratingRegionID rating region ID
-	 *@param dimensionIndex RRT中对应的index_j
-	 *@param valueIndex RRT中对应的rating_value
+	 *@param definedRating content_advisory_descr中定义的级别信息
 	 *@return 是否block
 	 */
-	public static boolean isBlocked(Context context, int ratingRegionID, int dimensionIndex, int valueIndex){
-		TVDimension dm = selectByIndex(context, ratingRegionID, dimensionIndex);
-		if (dm != null){
-			return (dm.getLockStatus(valueIndex) == 1);
+	public static boolean isBlocked(Context context, VChipRating definedRating){
+		if (definedRating != null){
+			TVDimension dm = selectByIndex(context, definedRating.getRegion(), definedRating.getDimension());
+			if (dm != null){
+				return (dm.getLockStatus(definedRating.getValue()) == 1);
+			}
 		}
 		
 		return false;
@@ -251,9 +347,13 @@ public class TVDimension{
 	 */
 	public int[] getLockStatus(){
 		if (lockValues.length > 1){
-			int[] l = new int[lockValues.length - 1];
-			System.arraycopy(lockValues, 1, l, 0, l.length);
-			return l;
+			if (isPGAll){
+				return getUSPGAllLockStatus(abbrevValues);
+			}else{
+				int[] l = new int[lockValues.length - 1];
+				System.arraycopy(lockValues, 1, l, 0, l.length);
+				return l;
+			}
 		}else{
 			return null;
 		}
@@ -265,10 +365,15 @@ public class TVDimension{
 	 *@return 返回指定value的加锁状态，0-未加锁，-1-无效值，即不能对该项进行设置，其他-已加锁
 	 */
 	public int getLockStatus(int valueIndex){
-		if (valueIndex >= lockValues.length)
+		if (valueIndex >= lockValues.length){
 			return -1;
-		else
-			return lockValues[valueIndex];
+		}else{
+			if (isPGAll){
+				return getUSPGAllLockStatus(abbrevValues[valueIndex]);
+			}else{
+				return lockValues[valueIndex];
+			}
+		}
 	}
 	
 	/**
@@ -280,13 +385,17 @@ public class TVDimension{
 		int l[] = null;
 		
 		if (abbrevs != null){
-			l = new int[abbrevs.length];
-			for (int i=0; i<abbrevs.length; i++){
-				l[i] = -1;
-				for (int j=0; j<abbrevValues.length; j++){
-					if (abbrevs[i].equals(abbrevValues[j])){
-						l[i] = lockValues[j];
-						break;
+			if (isPGAll){
+				return getUSPGAllLockStatus(abbrevs);
+			}else{
+				l = new int[abbrevs.length];
+				for (int i=0; i<abbrevs.length; i++){
+					l[i] = -1;
+					for (int j=0; j<abbrevValues.length; j++){
+						if (abbrevs[i].equals(abbrevValues[j])){
+							l[i] = lockValues[j];
+							break;
+						}
 					}
 				}
 			}
@@ -309,6 +418,17 @@ public class TVDimension{
 			return null;
 		}
 	}
+	
+	/**
+	 *取得该dimension指定value的abbrev text
+	 *@return 返回abbrev text
+	 */
+	public String getAbbrev(int valueIndex){
+		if (valueIndex >= abbrevValues.length)
+			return null;
+		else
+			return abbrevValues[valueIndex];
+	}
 
 	/**
 	 *取得该dimension的所有values的value text
@@ -325,6 +445,17 @@ public class TVDimension{
 	}
 	
 	/**
+	 *取得该dimension指定value的value text
+	 *@return 返回value text
+	 */
+	public String getText(int valueIndex){
+		if (valueIndex >= textValues.length)
+			return null;
+		else
+			return textValues[valueIndex];
+	}
+	
+	/**
 	 *设置指定value的加锁状态
 	 *@param valueIndex value索引
 	 *@param status 加锁状态
@@ -332,12 +463,17 @@ public class TVDimension{
 	public void setLockStatus(int valueIndex, int status){
 		if (valueIndex >= lockValues.length)
 			return;
-		if (lockValues[valueIndex] != -1 && lockValues[valueIndex] != status){
-			lockValues[valueIndex] = status;
-			String cmd = "update dimension_table set locked" + valueIndex;
-			cmd += "=" + status + " where db_id = " + id;
-			context.getContentResolver().query(TVDataProvider.WR_URL,
-				null, cmd, null, null);
+			
+		if (isPGAll){
+			setUSPGAllLockStatus(abbrevValues[valueIndex], lockValues[valueIndex]);
+		}else{
+			if (lockValues[valueIndex] != -1 && lockValues[valueIndex] != status){
+				lockValues[valueIndex] = status;
+				String cmd = "update dimension_table set locked" + valueIndex;
+				cmd += "=" + status + " where db_id = " + id;
+				context.getContentResolver().query(TVDataProvider.WR_URL,
+					null, cmd, null, null);
+			}
 		}
 	}
 	
@@ -351,8 +487,12 @@ public class TVDimension{
 			return;
 		}
 		
-		for (int i=0; i<status.length; i++){
-			setLockStatus(i+1, status[i]);
+		if (isPGAll){
+			setUSPGAllLockStatus(abbrevValues, status);
+		}else{
+			for (int i=0; i<status.length; i++){
+				setLockStatus(i+1, status[i]);
+			}
 		}
 	}
 	
@@ -368,11 +508,16 @@ public class TVDimension{
 			Log.d(TAG, "Invalid abbrevs or locks, length must be equal");
 			return;
 		}
-		for (int i=0; i<abbrevs.length; i++){
-			for (int j=0; j<abbrevValues.length; j++){
-				if (abbrevs[i].equals(abbrevValues[j])){
-					setLockStatus(j, locks[i]);
-					break;
+		
+		if (isPGAll){
+			setUSPGAllLockStatus(abbrevs, locks);
+		}else{
+			for (int i=0; i<abbrevs.length; i++){
+				for (int j=0; j<abbrevValues.length; j++){
+					if (abbrevs[i].equals(abbrevValues[j])){
+						setLockStatus(j, locks[i]);
+						break;
+					}
 				}
 			}
 		}

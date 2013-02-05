@@ -22,6 +22,7 @@ public class TVEvent{
 	private int sub_flag;
 	private String descr=null;
 	private String ext_descr=null;
+	private TVDimension.VChipRating[] vchipRatings=null;
 
 	TVEvent(Context context, Cursor c){
 		this.context = context;
@@ -48,7 +49,26 @@ public class TVEvent{
 
 		col = c.getColumnIndex("parental_rating");
 		this.dvbViewAge = c.getInt(col);
-
+		
+		col = c.getColumnIndex("rrt_ratings");
+		String rrtRatings = c.getString(col);
+		String[] ratings = rrtRatings.split(",");
+		if (ratings != null && ratings.length > 0){
+			vchipRatings = new TVDimension.VChipRating[ratings.length];
+			TVDimension dm = new TVDimension();
+			for (int i=0; i<ratings.length; i++){
+				String[] rating = ratings[i].split(" ");
+				if (rating.length >= 3){
+					vchipRatings[i] = dm.new VChipRating(
+				                  Integer.parseInt(rating[0]),
+				                  Integer.parseInt(rating[1]),
+				                  Integer.parseInt(rating[2]));
+				}else{
+					/* Actually, this must NOT be true */
+					vchipRatings[i] = null;
+				}
+			}
+		}
 	}
 
 	/**
@@ -191,4 +211,11 @@ public class TVEvent{
 		return ext_descr;
 	}
 
+	/**
+	 *取得V-Chip级别信息
+	 *@return V-Chip级别信息对象
+	 */
+	public TVDimension.VChipRating[] getVChipRatings(){
+		return vchipRatings;
+	}
 }

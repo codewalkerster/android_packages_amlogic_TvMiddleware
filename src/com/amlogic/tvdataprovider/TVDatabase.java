@@ -14,7 +14,7 @@ import com.amlogic.tvutil.TVDimension;
 public class TVDatabase extends SQLiteOpenHelper
 {
 	private static final String TAG = "TVDatabase";
-	private static final int DB_VERSION = 3;
+	private static final int DB_VERSION = 4;
 	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
 
 	/*implemented by libjnidvbdatabase.so*/
@@ -171,6 +171,9 @@ public class TVDatabase extends SQLiteOpenHelper
 		getWritableDatabase().execSQL("delete from dimension_table");
 		
 		/* Add U.S. Rating region 0x1 */
+		String[] abbrev0 = {"","None","TV-G","TV-PG","TV-14","TV-MA"};
+		String[] text0   = {"","None","TV-G","TV-PG","TV-14","TV-MA"};
+		int[]    lock0   = {-1, -1,    0,      0,      0,     0};
 		String[] abbrev1 = {"","D","TV-G","TV-PG","TV-14","TV-MA"};
 		String[] text1   = {"","D","TV-G","TV-PG","TV-14","TV-MA"};
 		int[]    lock1   = {-1, -1,    -1,      0,      0,     -1};
@@ -183,6 +186,9 @@ public class TVDatabase extends SQLiteOpenHelper
 		String[] abbrev4 = {"","V","TV-G","TV-PG","TV-14","TV-MA"};
 		String[] text4   = {"","V","TV-G","TV-PG","TV-14","TV-MA"};
 		int[]    lock4   = {-1, -1,    -1,      0,      0,      0};
+		String[] abbrev5 = {"","TV-Y","TV-Y7"};
+		String[] text5   = {"","TV-Y","TV-Y7"};
+		int[]    lock5   = {-1,  0,       0};
 		String[] abbrev6 = {"","FV","TV-Y7"};
 		String[] text6   = {"","FV","TV-Y7"};
 		int[]    lock6   = {-1, -1,       0};
@@ -199,6 +205,8 @@ public class TVDatabase extends SQLiteOpenHelper
 		int[]    lockall   = {0,     0,      0,      0,      0,     0};
 		
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
+			"Entire Audience",  0, lock0, abbrev0, text0);
+		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
 			"Dialogue",         1, lock1, abbrev1, text1);
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
 			"Language",         2, lock2, abbrev2, text2);
@@ -206,6 +214,8 @@ public class TVDatabase extends SQLiteOpenHelper
 			"Sex",              3, lock3, abbrev3, text3);
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
 			"Violence",         4, lock4, abbrev4, text4);
+		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
+			"Children",         5, lock5, abbrev5, text5);
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 
 			"Fantasy violence", 6, lock6, abbrev6, text6);
 		insertNewDimension(TVDimension.REGION_US, "US (50 states + possessions)", 

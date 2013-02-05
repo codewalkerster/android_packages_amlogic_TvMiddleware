@@ -30,6 +30,8 @@ import com.amlogic.tvutil.TVBooking;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvutil.TvinInfo;
+import com.amlogic.tvutil.TVDimension;
+import com.amlogic.tvutil.TVEvent;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
 import com.amlogic.tvutil.TvinInfo;
@@ -66,6 +68,8 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_RESTORE_FACTORY_SETTING = 1974;
 	private static final int MSG_PLAY_VALID       = 1975;
 	private static final int MSG_SET_VGA_AUTO_ADJUST = 1976;
+	private static final int MSG_REPLAY              = 1977;
+	private static final int MSG_CHECK_BLOCK         = 1978;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -348,6 +352,11 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_SET_VGA_AUTO_ADJUST);
 			handler.sendMessage(msg);
 		}
+		
+		public void replay(){
+			Message msg = handler.obtainMessage(MSG_REPLAY);
+			handler.sendMessage(msg);
+		}
 
         @Override
         public int GetSrcInputType(){
@@ -453,6 +462,10 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_SET_VGA_AUTO_ADJUST:
 					resolveSetVGAAutoAdjust();
 					break;
+				case MSG_CHECK_BLOCK:
+				case MSG_REPLAY:
+					resolveReplay();
+					break;
 			}
 		}
 	};
@@ -503,6 +516,14 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 	};
+	
+	private Runnable programBlockCheck = new Runnable() {
+		public void run() {
+			Message msg = handler.obtainMessage(MSG_CHECK_BLOCK);
+			handler.sendMessage(msg);
+			checkBlockHandler.postDelayed(this, 2000);
+		}
+	};
 
 	private enum TVRunningStatus{
 		STATUS_SET_INPUT_SOURCE,
@@ -534,6 +555,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private boolean channelLocked = false;
 	private boolean recording = false;
 	private boolean isScanning = false;
+	private Handler checkBlockHandler = new Handler();
 
 	private void setDTVPlayParams(TVPlayParams params){
 		if(params != null && params.getType()==TVPlayParams.PLAY_PROGRAM_ID){
@@ -586,6 +608,29 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 
 		return type;
+	}
+	
+	private TVProgram getCurrentProgram(){
+		TVProgram p = null;
+
+		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+			if(atvPlayParams != null){
+				p = playParamsToProgram(atvPlayParams);
+			}
+		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+			TVPlayParams tp = getDTVPlayParams();
+			if(tp == null){
+				tp = dtvTVPlayParams;
+			}
+			if(tp == null){
+				tp = dtvRadioPlayParams;
+			}
+			if(tp != null){
+				p = playParamsToProgram(tp);
+			}
+		}
+		
+		return p;
 	}
 
 	private void stopPlaying(){
@@ -812,31 +857,80 @@ public class TVService extends Service implements TVConfig.Update{
 
 	private boolean checkProgramBlock(){
 		boolean ret = false;
-
+		TVMessage blockMsg = null;
+		TVProgram prog = getCurrentProgram();
+		
+		if(prog == null){
+			return ret;
+		}
+		
 		try{
-			if(config.getBoolean("tv:check_program_lock")){
-				TVProgram prog = TVProgram.selectByID(this, programID);
-
-				if(prog != null){
-					if(prog.getLockFlag())
-						ret = true;
-				}
+			if(! config.getBoolean("tv:check_program_lock")){
+				programBlocked = false;
+				return programBlocked;
 			}
 		}catch(Exception e){
 		}
-
+		
+		/* is blocked by user lock ? */
+		if(prog.getLockFlag()){
+			ret = true;
+			if (!programBlocked){
+				blockMsg = TVMessage.programBlock(programID);
+			}
+		}
+		
+		/* is blocked by vchip or parental control ? */		
 		if(!ret){
 			if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+			
 			}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
+				TVEvent presentEvent = prog.getPresentEvent(this, time.getTime());
+				if (presentEvent != null){
+					int mode = -1;
+					
+					try{
+						String modeStr = config.getString("tv:dtv:mode");
+						mode = TVChannelParams.getModeFromString(modeStr);
+					}catch(Exception e){
+					}
+
+					if(mode == TVChannelParams.MODE_ATSC){
+						/* ATSC V-Chip */
+						TVDimension.VChipRating[] definedRatings = presentEvent.getVChipRatings();
+						for (int i=0; definedRatings!=null && i<definedRatings.length; i++){
+							if (TVDimension.isBlocked(this, definedRatings[i])){
+								ret = true;
+								if (!programBlocked){
+									TVDimension dm = TVDimension.selectByIndex(this, 
+													definedRatings[i].getRegion(), 
+													definedRatings[i].getDimension());
+									String dmName = dm.getName();
+									String abbrev = dm.getAbbrev(definedRatings[i].getValue());
+									String text   = dm.getText(definedRatings[i].getValue());
+									Log.d(TAG, "Program blocked by Dimension:'"+dmName+
+										"' Abbrev:'"+abbrev+"' Value:'"+text+"'");
+								
+									blockMsg = TVMessage.programBlock(programID, dmName, abbrev, text);
+								}
+								break;
+							}
+						}
+					}else{
+						/* DVB parental control */
+					}
+				}else{
+					Log.d(TAG, "Present event of playing program not received yet, will unblock this program.");
+				}
 			}
 		}
 
 		if(ret != programBlocked){
 			programBlocked = ret;
 
-			if(ret){
-				Log.d(TAG, "block the program");
-				sendMessage(TVMessage.programBlock(programID));
+			if(ret && blockMsg != null){
+				Log.d(TAG, "block the program by type "+blockMsg.getProgramBlockType());
+				sendMessage(blockMsg);
 			}else{
 				Log.d(TAG, "unblock the program");
 				sendMessage(TVMessage.programUnblock(programID));
@@ -1647,24 +1741,7 @@ public class TVService extends Service implements TVConfig.Update{
 	
 	/*Play a program.*/
 	private void resolvePlayValid(){
-		TVProgram p = null;
-
-		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
-			if(atvPlayParams != null){
-				p = playParamsToProgram(atvPlayParams);
-			}
-		}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
-			TVPlayParams tp = getDTVPlayParams();
-			if(tp == null){
-				tp = dtvTVPlayParams;
-			}
-			if(tp == null){
-				tp = dtvRadioPlayParams;
-			}
-			if(tp != null){
-				p = playParamsToProgram(tp);
-			}
-		}
+		TVProgram p = getCurrentProgram();
 
 		if (p == null){
 			Log.d(TAG, "Cannot play last played program, try first valid program.");
@@ -1684,6 +1761,33 @@ public class TVService extends Service implements TVConfig.Update{
 		device.setVGAAutoAdjust();
 	}
 
+	/*If the program block status changed, replay current playing program*/
+	private void resolveReplay(){
+		if(status != TVRunningStatus.STATUS_PLAY_ATV && 
+		   status != TVRunningStatus.STATUS_PLAY_DTV){
+			return;
+		}
+		boolean prevBlock = programBlocked;
+		
+		checkProgramBlock();
+		
+		if (prevBlock != programBlocked){
+			Log.d(TAG, "Program block changed from "+
+				(prevBlock      ? "blocked" : "unblocked")+" to "+
+				(programBlocked ? "blocked" : "unblocked"));
+			if (!programBlocked){
+				/*unblocked, perform replay*/
+				playCurrentProgramAV();
+			}else{
+				/*blocked, stop playing*/
+				if(status == TVRunningStatus.STATUS_PLAY_ATV){
+					device.stopATV();
+				} else if(status == TVRunningStatus.STATUS_PLAY_DTV){
+					device.stopDTV();
+				}
+			}
+		}
+	}
 
 	public IBinder onBind (Intent intent){
 		return mBinder;
@@ -1725,6 +1829,8 @@ public class TVService extends Service implements TVConfig.Update{
 			Log.e(TAG, "intialize config failed");
 		}
 
+		/*Start program block check timer*/
+		checkBlockHandler.postDelayed(programBlockCheck, 1000);
 	}
 	
 	public void onUpdate(String name, TVConfigValue value){
