@@ -70,6 +70,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_SET_VGA_AUTO_ADJUST = 1976;
 	private static final int MSG_REPLAY              = 1977;
 	private static final int MSG_CHECK_BLOCK         = 1978;
+	private static final int MSG_UNBLOCK             = 1979;
 
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
@@ -357,6 +358,11 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_REPLAY);
 			handler.sendMessage(msg);
 		}
+		
+		public void unblock(){
+			Message msg = handler.obtainMessage(MSG_UNBLOCK);
+			handler.sendMessage(msg);
+		}
 
         @Override
         public int GetSrcInputType(){
@@ -463,8 +469,13 @@ public class TVService extends Service implements TVConfig.Update{
 					resolveSetVGAAutoAdjust();
 					break;
 				case MSG_CHECK_BLOCK:
+					resolveReplay(false);
+					break;
 				case MSG_REPLAY:
-					resolveReplay();
+					resolveReplay(true);
+					break;
+				case MSG_UNBLOCK:
+					resolveUnblock();
 					break;
 			}
 		}
@@ -555,6 +566,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private boolean channelLocked = false;
 	private boolean recording = false;
 	private boolean isScanning = false;
+	private boolean checkBlock = true;
 	private Handler checkBlockHandler = new Handler();
 
 	private void setDTVPlayParams(TVPlayParams params){
@@ -864,12 +876,9 @@ public class TVService extends Service implements TVConfig.Update{
 			return ret;
 		}
 		
-		try{
-			if(! config.getBoolean("tv:check_program_lock")){
-				programBlocked = false;
-				return programBlocked;
-			}
-		}catch(Exception e){
+		if (! checkBlock){
+			programBlocked = false;
+			return programBlocked;
 		}
 		
 		/* is blocked by user lock ? */
@@ -1158,6 +1167,15 @@ public class TVService extends Service implements TVConfig.Update{
 		TVChannel chan = prog.getChannel();
 		if(chan == null)
 			return;
+			
+		/*Re-enable the block check if needed*/
+		try{
+			if(config.getBoolean("tv:always_check_program_block")){
+				checkBlock = true;
+			}
+		}catch(Exception e){
+		}
+		programBlocked = false;
 
 		/*Check if the input source needed reset.*/
 		try{
@@ -1762,15 +1780,18 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	/*If the program block status changed, replay current playing program*/
-	private void resolveReplay(){
+	private void resolveReplay(boolean forceCheckBlock){
 		if(status != TVRunningStatus.STATUS_PLAY_ATV && 
 		   status != TVRunningStatus.STATUS_PLAY_DTV){
 			return;
 		}
+		
 		boolean prevBlock = programBlocked;
-		
+		/*when user changed the rating, a force block checking is needed*/
+		if (forceCheckBlock){
+			checkBlock = true;
+		}
 		checkProgramBlock();
-		
 		if (prevBlock != programBlocked){
 			Log.d(TAG, "Program block changed from "+
 				(prevBlock      ? "blocked" : "unblocked")+" to "+
@@ -1786,6 +1807,16 @@ public class TVService extends Service implements TVConfig.Update{
 					device.stopDTV();
 				}
 			}
+		}
+	}
+	
+	/*Unblock the current blocking program*/
+	private void resolveUnblock(){
+		if(programBlocked && 
+		   (status == TVRunningStatus.STATUS_PLAY_ATV) || 
+		   (status == TVRunningStatus.STATUS_PLAY_DTV)){
+			checkBlock = false;
+			playCurrentProgramAV();
 		}
 	}
 
@@ -1813,7 +1844,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 		try{
 			/*Must check the program lock*/
-			config.set("tv:check_program_lock", new TVConfigValue(true));
+			//config.set("tv:check_program_lock", new TVConfigValue(true));
 
 			String modeStr = config.getString("tv:dtv:mode");
 			int mode = TVChannelParams.getModeFromString(modeStr);
@@ -1822,7 +1853,7 @@ public class TVService extends Service implements TVConfig.Update{
 			epgScanner.setSource(0, 0, mode);
 
 			config.registerUpdate("tv:audio:language", this);
-			config.registerUpdate("tv:check_program_lock", this);
+			//config.registerUpdate("tv:check_program_lock", this);
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
 		}catch(Exception e){

@@ -1007,5 +1007,19 @@ abstract public class TVActivity extends Activity
 	public int GetSrcInputType(){
 		return client.GetSrcInputType();
 	} 
+	
+	/**
+	*当用户改变播放级别设置后，执行replay来进行强制block检查
+	*/
+    public void replay(){
+		client.replay();
+    }
+    
+    /**
+	*解锁并播放当前已加锁的频道，例如密码验证通过后，调用该方法进行解锁播放
+	*/
+    public void unblock(){
+    	client.unblock();
+    }
 }
 

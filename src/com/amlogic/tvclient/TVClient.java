@@ -865,5 +865,29 @@ abstract public class TVClient
         return tvinInfo;
     }
 	
+	/**
+	*当用户改变播放级别设置后，执行replay来进行强制block检查
+	*/
+    public void replay(){
+		if(service != null){
+			try{
+				service.replay();
+			}catch(RemoteException e){
+			}
+		}
+    }
+    
+    /**
+	*解锁并播放当前已加锁的频道，例如密码验证通过后，调用该方法进行解锁播放
+	*/
+    public void unblock(){
+    	if(service != null){
+			try{
+				service.unblock();
+			}catch(RemoteException e){
+			}
+		}
+    }
+    
 }
 

@@ -101,14 +101,13 @@ public class TVDimension{
 	
 	}
 
+	/* 'All' is a very special case, it links to dimension0 & dimension5 */
 	private int getUSPGAllLockStatus(String abbrev){
 		TVDimension dm0 = selectByIndex(context, REGION_US, 0);
 		TVDimension dm5 = selectByIndex(context, REGION_US, 5);
 		String[] dm0Abbrev = dm0.getAbbrev();
 		String[] dm5Abbrev = dm5.getAbbrev();
 		
-		
-		Log.d(TAG, "get All for "+abbrev);
 		for (int j=0; j<dm0Abbrev.length; j++){
 			Log.d(TAG, dm0Abbrev[j]);
 			if (abbrev.equals(dm0Abbrev[j])){

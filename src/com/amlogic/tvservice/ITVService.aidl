@@ -137,5 +137,12 @@ interface ITVService{
 	
     //获取tvin的状态
     TvinInfo getCurrentSignalInfo();
+    
+    //当用户改变播放级别设置后，执行replay来进行强制block检查
+    void replay();
+    
+    //解锁并播放当前已加锁的频道，例如密码验证通过后，调用该方法进行解锁播放
+    void unblock();
+    
 }
 
