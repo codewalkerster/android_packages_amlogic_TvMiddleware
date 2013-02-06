@@ -1873,7 +1873,9 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	public void onDestroy(){
+		checkBlockHandler.removeCallbacks(programBlockCheck);
 		callbacks.kill();
+		epgScanner.destroy();
 		recorder.close();
 		TVDataProvider.closeDatabase(this);
 		super.onDestroy();

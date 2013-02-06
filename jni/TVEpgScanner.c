@@ -126,7 +126,7 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
 		log_error("malloc failed");
 		return;
 	}
-
+	data->dmx_id = dmx_id;
     log_info("Opening demux%d ...", dmx_id);
     memset(&dmx_para, 0, sizeof(dmx_para));
     AM_DMX_Open(dmx_id, &dmx_para);
@@ -171,6 +171,7 @@ static void epg_destroy(JNIEnv* env, jobject obj)
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
 		AM_EPG_Destroy(data->handle);
+		log_info("EPGScanner on demux%d sucessfully destroyed", data->dmx_id);
 		log_info("Closing demux%d ...", data->dmx_id);
 		AM_DMX_Close(data->dmx_id);
 		if (data->obj)
