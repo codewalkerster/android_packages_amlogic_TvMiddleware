@@ -232,12 +232,16 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // native_set_frontend(params);
         tv.INIT_TV();
+        Log.d(TAG, ""+params.mode);
         if (params.mode == TVChannelParams.MODE_QAM)
             tv.SetFrontEnd(params.mode, params.frequency, params.symbolRate, params.modulation);
         else if (params.mode == TVChannelParams.MODE_ANALOG)
             tv.SetFrontEnd(params.mode, params.frequency, params.standard, 0);
         else if (params.mode == TVChannelParams.MODE_OFDM)
             tv.SetFrontEnd(params.mode, params.frequency, params.bandwidth, 0);
+        else if (params.mode == TVChannelParams.MODE_ATSC)
+            tv.SetFrontEnd(params.mode, params.frequency, 0, 0);
+        
     }
 
     public TVChannelParams getFrontend()
@@ -562,6 +566,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
                 Log.v(TAG, " MODE_ANALOG");
                 tvChannelPara = TVChannelParams.analogParams(freq, para1, 0);
+                break;
+            case TVChannelParams.MODE_ATSC:
+                Log.v(TAG, " MODE_ATSC");
+                tvChannelPara = TVChannelParams.atscParams(freq);
                 break;
         }
 
