@@ -183,6 +183,7 @@ public class TVChannelParams  implements Parcelable {
     public static final int STD_M         = STD_PAL_M    | STD_NTSC_M;
     public static final int STD_BG        = STD_PAL_BG   | STD_SECAM_B | STD_SECAM_G ;
 
+    public static final int COLOR_AUTO  =0x00000001;
 	public static final int COLOR_PAL   =0x04000000;
     public static final int COLOR_NTSC  =0x08000000;
     public static final int COLOR_SECAM =0x10000000;
@@ -431,6 +432,10 @@ public class TVChannelParams  implements Parcelable {
 	
 	   
 	public static CC_ATV_VIDEO_STANDARD VideoStd2Enum(int data){
+	   
+	    if((data & COLOR_AUTO) == COLOR_AUTO){
+            return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO;
+        }else
         if((data & COLOR_PAL) == COLOR_PAL){
             return CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL;
         }else
@@ -448,11 +453,7 @@ public class TVChannelParams  implements Parcelable {
 	public static int Change2VideoStd(int data){
 	    int videostd = 0;
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
-            if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_AUTO.ordinal()){
-				Log.e(TAG,"video stb auto is not function,replace CC_ATV_VIDEO_STD_PAL");
-				//*********************************temp******************
-				videostd = COLOR_PAL;
-			}
+			videostd = COLOR_AUTO;
         }else
         if(data == CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_PAL.ordinal())
             videostd = COLOR_PAL;
