@@ -499,9 +499,22 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     public void onSourceSwitchStatusChange(SrcInput input, int state)
     {
         Log.v(TAG, "onSourceSwitchStatusChange:  " + input.toString() + Integer.toString(state));
+        
+        if(input == SrcInput.TV)
+        {
+            Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+            myEvent.source = input.ordinal();
+            onEvent(myEvent);
+            return;
+        }
         if (state == 0)
         {
             Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+            myEvent.source = input.ordinal();
+            onEvent(myEvent);
+        }else
+        {
+            Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_FAILED);
             myEvent.source = input.ordinal();
             onEvent(myEvent);
         }
