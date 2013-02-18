@@ -542,21 +542,23 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // TODO Auto-generated method stub
         Log.d(TAG, "onSigChange ");
-		TvinInfo tvinfo = new TvinInfo();
-		tvinfo.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
-        tvinfo.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
-        tvinfo.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
-        tvinfo.reserved = arg0.reserved;
-        Event myEvent = new Event(Event.EVENT_SIG_CHANGE,tvinfo);
-   //     tvin_info_t tvin_info = tv.GetCurrentSignalInfo();
-   /*     myEvent.tvin_info.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
-        myEvent.tvin_info.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
-        myEvent.tvin_info.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
-        myEvent.tvin_info.reserved = tvin_info.reserved;*/
-		if(myEvent.tvin_info == null)
-			Log.d(TAG,"*************tvin_info is null..................");
-        onEvent(myEvent);
-          
+        if(tv.GetCurrentSourceInput()  != Tv.SrcInput.TV.toInt())
+        {
+            TvinInfo tvinfo = new TvinInfo();
+            tvinfo.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
+            tvinfo.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
+            tvinfo.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
+            tvinfo.reserved = arg0.reserved;
+            Event myEvent = new Event(Event.EVENT_SIG_CHANGE,tvinfo);
+       //     tvin_info_t tvin_info = tv.GetCurrentSignalInfo();
+       /*     myEvent.tvin_info.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
+            myEvent.tvin_info.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
+            myEvent.tvin_info.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
+            myEvent.tvin_info.reserved = tvin_info.reserved;*/
+            if(myEvent.tvin_info == null)
+                Log.d(TAG,"*************tvin_info is null..................");
+            onEvent(myEvent);
+        }
     }
 
     
