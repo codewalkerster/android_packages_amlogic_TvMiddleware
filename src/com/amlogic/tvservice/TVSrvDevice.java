@@ -664,6 +664,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 }
                 else if (name.equals("SetSaturation") || name.equals("SetDisplayMode") || name.equals("SetHue"))
                 {
+                	if(name.equals("SetDisplayMode"))//For DisPlay Mode 2.19
+                	{
+                		userValue = get_screen_mode(userValue);
+                	}
                     TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource, fmt);
                 }
                 else if (name.equals("SetVGAPhase") || name.equals("SetVGAClock") || name.equals("SetVGAHPos") || name.equals("SetVGAVPos"))
@@ -705,6 +709,41 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         }
 
     }
+
+	
+	private int get_screen_mode( int value )
+		{
+			int index = value ;
+			switch( value )
+			{
+			case 0:
+				value = 0;//full
+				break;
+			case 1:
+				value = 4;//4:3
+				break;
+			case 2:
+				value = 5;//panorama
+				break;
+			case 3:
+				value = 9;//zoom1
+				break;
+			case 4:
+				value = 8;//zoom2
+				break;
+			case 5:
+				value = 7;//Ptop
+				break;
+			case 6:
+				break;
+			case 7:
+				break;
+			default:
+				break;
+			}
+			Log.d(TAG, " reset index : " + index + " to DisplayMode : " + value );
+			return value;
+		}
 
     @Override
     public TVConfigValue read(String name, TVConfigEntry entry)
