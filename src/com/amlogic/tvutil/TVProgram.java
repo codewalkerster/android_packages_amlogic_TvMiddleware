@@ -454,7 +454,22 @@ public class TVProgram{
 		}
 
 		if(num.isATSCMode()){
-			cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
+			int minorCheck = num.getMinorCheck();
+			if (minorCheck == TVProgramNumber.MINOR_CHECK_UP){
+				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num >= "+num.getMinor()+" ";
+				cmd += "order by minor_chan_num DESC limit 1";
+			}else if (minorCheck == TVProgramNumber.MINOR_CHECK_DOWN){
+				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num <= "+num.getMinor()+" ";
+				cmd += "order by minor_chan_num limit 1";
+			}else if (minorCheck == TVProgramNumber.MINOR_CHECK_NEAREST_UP){
+				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num >= "+num.getMinor()+" ";
+				cmd += "order by minor_chan_num limit 1";
+			}else if (minorCheck == TVProgramNumber.MINOR_CHECK_NEAREST_DOWN){
+				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num <= "+num.getMinor()+" ";
+				cmd += "order by minor_chan_num DESC limit 1";
+			}else{
+				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
+			}
 		}else{
 			cmd += "chan_num = "+num.getNumber();
 		}
