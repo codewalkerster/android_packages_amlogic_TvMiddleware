@@ -1516,7 +1516,9 @@ public class TVService extends Service implements TVConfig.Update{
 				break;
 			case TVDevice.Event.EVENT_SET_INPUT_SOURCE_FAILED:
 				source = TVConst.SourceInput.values()[event.source];
-
+				if(source == reqInputSource){
+                    inputSource = reqInputSource;
+				}
 				Log.e(TAG, "set input source to "+source.name()+" failed");
 				break;
 			case TVDevice.Event.EVENT_FRONTEND:
