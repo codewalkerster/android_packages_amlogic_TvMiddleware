@@ -1,6 +1,7 @@
 #include <am_db.h>
 #include <jni.h>
 #include <android/log.h>
+#include <unistd.h>
 
 #define LOG_TAG "JNIDVBDATABASE"
 #define log_info(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -43,11 +44,18 @@ static void db_unsetup(JNIEnv *env, jobject obj)
 	AM_DB_UnSetup();
 }
 
+static void db_sync(JNIEnv *env, jobject obj)
+{
+	log_info("sync database");
+	sync();
+}
+
 static JNINativeMethod db_methods[] = 
 {
 	/* name, signature, funcPtr */
 	{"native_db_setup", "(Ljava/lang/String;ZLandroid/database/sqlite/SQLiteDatabase;)V", (void*)db_setup},
 	{"native_db_unsetup", "()V", (void*)db_unsetup},
+	{"native_db_sync", "()V", (void*)db_sync},
 };
 
 //JNIHelp.h ????

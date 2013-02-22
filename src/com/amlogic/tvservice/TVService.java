@@ -536,6 +536,13 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 	};
 
+	private Runnable dataSync = new Runnable() {
+		public void run() {
+			TVDataProvider.sync();
+			dataSyncHandler.postDelayed(this, 5000);
+		}
+	};
+
 	private enum TVRunningStatus{
 		STATUS_SET_INPUT_SOURCE,
 		STATUS_SET_FRONTEND,
@@ -568,6 +575,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private boolean isScanning = false;
 	private boolean checkBlock = true;
 	private Handler checkBlockHandler = new Handler();
+	private Handler dataSyncHandler = new Handler();
 
 	private void setDTVPlayParams(TVPlayParams params){
 		if(params != null && params.getType()==TVPlayParams.PLAY_PROGRAM_ID){
@@ -1862,6 +1870,9 @@ public class TVService extends Service implements TVConfig.Update{
 
 		/*Start program block check timer*/
 		checkBlockHandler.postDelayed(programBlockCheck, 1000);
+
+		/*Start data sync timer*/
+		dataSyncHandler.postDelayed(dataSync, 1000);
 	}
 	
 	public void onUpdate(String name, TVConfigValue value){
@@ -1873,6 +1884,7 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	public void onDestroy(){
+		dataSyncHandler.removeCallbacks(dataSync);
 		checkBlockHandler.removeCallbacks(programBlockCheck);
 		callbacks.kill();
 		epgScanner.destroy();

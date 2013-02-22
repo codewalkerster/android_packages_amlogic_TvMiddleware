@@ -20,6 +20,7 @@ public class TVDatabase extends SQLiteOpenHelper
 	/*implemented by libjnidvbdatabase.so*/
 	private native void native_db_setup(String name, boolean create, SQLiteDatabase db);
 	private native void native_db_unsetup();
+	private native static void native_db_sync();
 
 	/*Regions*/
 	private static class TVRegion {
@@ -285,6 +286,10 @@ public class TVDatabase extends SQLiteOpenHelper
 
 			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION).commit();
 		}
+	}
+
+	public static void sync(){
+		native_db_sync();
 	}
 
 	@Override

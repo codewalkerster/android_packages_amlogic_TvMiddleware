@@ -23,6 +23,7 @@ public class TVDataProvider extends ContentProvider{
 
 	private static int openCount = 0;
 	private static TVDatabase db;
+	private static boolean modified = false;
 
 	static{
 		URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
@@ -34,6 +35,9 @@ public class TVDataProvider extends ContentProvider{
 	public synchronized static void openDatabase(Context context){
 		if(openCount == 0){
 			db = new TVDatabase(context, DB_NAME);
+			modified = true;
+
+
 		}
 
 		openCount++;
@@ -65,6 +69,7 @@ public class TVDataProvider extends ContentProvider{
 		db.getWritableDatabase().execSQL("delete from dimension_table");
 		db.getWritableDatabase().execSQL("delete from sat_para_table");
 		db.getWritableDatabase().execSQL("delete from region_table");
+		modified = true;
 	}
 
 	@Override
@@ -91,6 +96,7 @@ public class TVDataProvider extends ContentProvider{
 			c = db.getReadableDatabase().rawQuery(selection, null);
 		}else if(id == WR_SQL){
 			db.getWritableDatabase().execSQL(selection);
+			modified = true;
 		}
 
 		return c;
@@ -112,6 +118,13 @@ public class TVDataProvider extends ContentProvider{
 	public int update(Uri uri, ContentValues values,  String where, String[] whereArgs)
 	{
 		return 0;
+	}
+
+	public static synchronized void sync(){
+		if(modified){
+			modified = false;
+			db.sync();
+		}
 	}
 }
 
