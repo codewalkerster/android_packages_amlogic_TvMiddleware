@@ -232,12 +232,16 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // native_set_frontend(params);
         tv.INIT_TV();
+        Log.d(TAG, ""+params.mode);
         if (params.mode == TVChannelParams.MODE_QAM)
             tv.SetFrontEnd(params.mode, params.frequency, params.symbolRate, params.modulation);
         else if (params.mode == TVChannelParams.MODE_ANALOG)
             tv.SetFrontEnd(params.mode, params.frequency, params.standard, 0);
         else if (params.mode == TVChannelParams.MODE_OFDM)
             tv.SetFrontEnd(params.mode, params.frequency, params.bandwidth, 0);
+        else if (params.mode == TVChannelParams.MODE_ATSC)
+            tv.SetFrontEnd(params.mode, params.frequency, 0, 0);
+        
     }
 
     public TVChannelParams getFrontend()
@@ -495,9 +499,22 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     public void onSourceSwitchStatusChange(SrcInput input, int state)
     {
         Log.v(TAG, "onSourceSwitchStatusChange:  " + input.toString() + Integer.toString(state));
+        
+        if(input == SrcInput.TV)
+        {
+            Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+            myEvent.source = input.ordinal();
+            onEvent(myEvent);
+            return;
+        }
         if (state == 0)
         {
             Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
+            myEvent.source = input.ordinal();
+            onEvent(myEvent);
+        }else
+        {
+            Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_FAILED);
             myEvent.source = input.ordinal();
             onEvent(myEvent);
         }
@@ -525,21 +542,23 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // TODO Auto-generated method stub
         Log.d(TAG, "onSigChange ");
-		TvinInfo tvinfo = new TvinInfo();
-		tvinfo.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
-        tvinfo.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
-        tvinfo.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
-        tvinfo.reserved = arg0.reserved;
-        Event myEvent = new Event(Event.EVENT_SIG_CHANGE,tvinfo);
-   //     tvin_info_t tvin_info = tv.GetCurrentSignalInfo();
-   /*     myEvent.tvin_info.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
-        myEvent.tvin_info.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
-        myEvent.tvin_info.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
-        myEvent.tvin_info.reserved = tvin_info.reserved;*/
-		if(myEvent.tvin_info == null)
-			Log.d(TAG,"*************tvin_info is null..................");
-        onEvent(myEvent);
-          
+        if(tv.GetCurrentSourceInput()  != Tv.SrcInput.TV.toInt())
+        {
+            TvinInfo tvinfo = new TvinInfo();
+            tvinfo.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
+            tvinfo.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
+            tvinfo.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
+            tvinfo.reserved = arg0.reserved;
+            Event myEvent = new Event(Event.EVENT_SIG_CHANGE,tvinfo);
+       //     tvin_info_t tvin_info = tv.GetCurrentSignalInfo();
+       /*     myEvent.tvin_info.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
+            myEvent.tvin_info.trans_fmt = tvin_trans_fmt.values()[arg0.trans_fmt.ordinal()];
+            myEvent.tvin_info.status = tvin_sig_status_t.values()[arg0.status.ordinal()];
+            myEvent.tvin_info.reserved = tvin_info.reserved;*/
+            if(myEvent.tvin_info == null)
+                Log.d(TAG,"*************tvin_info is null..................");
+            onEvent(myEvent);
+        }
     }
 
     
@@ -562,6 +581,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
                 Log.v(TAG, " MODE_ANALOG");
                 tvChannelPara = TVChannelParams.analogParams(freq, para1, 0);
+                break;
+            case TVChannelParams.MODE_ATSC:
+                Log.v(TAG, " MODE_ATSC");
+                tvChannelPara = TVChannelParams.atscParams(freq);
                 break;
         }
 
@@ -641,6 +664,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 }
                 else if (name.equals("SetSaturation") || name.equals("SetDisplayMode") || name.equals("SetHue"))
                 {
+                	if(name.equals("SetDisplayMode"))//For DisPlay Mode 2.19
+                	{
+                		userValue = get_screen_mode(userValue);
+                	}
                     TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource, fmt);
                 }
                 else if (name.equals("SetVGAPhase") || name.equals("SetVGAClock") || name.equals("SetVGAHPos") || name.equals("SetVGAVPos"))
@@ -682,6 +709,41 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         }
 
     }
+
+	
+	private int get_screen_mode( int value )
+		{
+			int index = value ;
+			switch( value )
+			{
+			case 0:
+				value = 0;//full
+				break;
+			case 1:
+				value = 4;//4:3
+				break;
+			case 2:
+				value = 5;//panorama
+				break;
+			case 3:
+				value = 9;//zoom1
+				break;
+			case 4:
+				value = 8;//zoom2
+				break;
+			case 5:
+				value = 7;//Ptop
+				break;
+			case 6:
+				break;
+			case 7:
+				break;
+			default:
+				break;
+			}
+			Log.d(TAG, " reset index : " + index + " to DisplayMode : " + value );
+			return value;
+		}
 
     @Override
     public TVConfigValue read(String name, TVConfigEntry entry)
