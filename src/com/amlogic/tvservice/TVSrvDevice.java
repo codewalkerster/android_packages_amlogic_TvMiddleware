@@ -542,7 +542,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     {
         // TODO Auto-generated method stub
         Log.d(TAG, "onSigChange ");
-        if(tv.GetCurrentSourceInput()  != Tv.SrcInput.TV.toInt())
+    //tmp   if(tv.GetCurrentSourceInput()  != Tv.SrcInput.TV.toInt())
         {
             TvinInfo tvinfo = new TvinInfo();
             tvinfo.fmt = tvin_sig_fmt_e.values()[arg0.fmt.ordinal()];
