@@ -195,6 +195,7 @@ public class TVChannelParams  implements Parcelable {
 	public int bandwidth;
 	public int audio;
 	public int standard;
+	public int afc_data;
 
 	public static final Parcelable.Creator<TVChannelParams> CREATOR = new Parcelable.Creator<TVChannelParams>(){
 		public TVChannelParams createFromParcel(Parcel in) {
@@ -217,6 +218,7 @@ public class TVChannelParams  implements Parcelable {
 		if(mode == MODE_ANALOG){
 			audio = in.readInt();
 			standard = in.readInt();
+			afc_data = in.readInt();
 		}
 	}
 
@@ -232,6 +234,7 @@ public class TVChannelParams  implements Parcelable {
 		if(mode == MODE_ANALOG){
 			dest.writeInt(audio);
 			dest.writeInt(standard);
+			dest.writeInt(afc_data);
 		}
 	}
 
@@ -311,13 +314,13 @@ public class TVChannelParams  implements Parcelable {
 	 *@param audio 伴音选择
 	 *@return 返回新创建的参数
 	 */
-	public static TVChannelParams analogParams(int frequency, int std, int audio){
+	public static TVChannelParams analogParams(int frequency, int std, int audio,int afc_flag){
 		TVChannelParams tp = new TVChannelParams(MODE_ANALOG);
 
 		tp.frequency = frequency;
 		tp.audio     = audio;
 		tp.standard  = std;
-
+		tp.afc_data  = afc_flag;
 		return tp;
 	}
 
@@ -388,7 +391,7 @@ public class TVChannelParams  implements Parcelable {
 							/** get each frequency */
 							for (int i=0; i<channelList.length; i++) {
 								frequency = Integer.parseInt(flist[i]);
-								channelList[i] = TVChannelParams.analogParams(frequency, 0, 0);
+								channelList[i] = TVChannelParams.analogParams(frequency, 0, 0,0);
 							}
 						}
 						

@@ -1378,7 +1378,7 @@ public class TVService extends Service implements TVConfig.Update{
 								/** get each frequency */
 								for (int i=0; i<channelList.length; i++) {
 									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.analogParams(frequency, 0, 0);
+									channelList[i] = TVChannelParams.analogParams(frequency, 0, 0,0);
 								}
 							}
 							

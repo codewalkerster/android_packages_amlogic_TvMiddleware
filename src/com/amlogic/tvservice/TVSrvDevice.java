@@ -43,7 +43,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
     public static final int EVENT_FRONTEND = 1 << 1;
     public static final int EVENT_SOURCE_SWITCH = 1 << 2;
     deviceHandler myHandler = null;
-
+    private int mFreq = 0;
     public TVDeviceImpl()
     {
         super();
@@ -236,7 +236,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         if (params.mode == TVChannelParams.MODE_QAM)
             tv.SetFrontEnd(params.mode, params.frequency, params.symbolRate, params.modulation);
         else if (params.mode == TVChannelParams.MODE_ANALOG)
-            tv.SetFrontEnd(params.mode, params.frequency, params.standard, 0);
+        {
+            mFreq = params.frequency;
+            tv.SetFrontEnd(params.mode, params.frequency, params.standard,params.afc_data);
+        }
         else if (params.mode == TVChannelParams.MODE_OFDM)
             tv.SetFrontEnd(params.mode, params.frequency, params.bandwidth, 0);
         else if (params.mode == TVChannelParams.MODE_ATSC)
@@ -469,7 +472,9 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 bundle.putInt("type", type);
                 bundle.putInt("state", state);
                 bundle.putInt("mode", mode);
-                bundle.putInt("freq", freq);
+                /*callback old freq*/
+//                bundle.putInt("freq", freq);
+                bundle.putInt("freq", mFreq);
                 bundle.putInt("para1", para1);
                 bundle.putInt("para2", para2);
                 msg.setData(bundle);
@@ -580,7 +585,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             case TVChannelParams.MODE_ANALOG:
 
                 Log.v(TAG, " MODE_ANALOG");
-                tvChannelPara = TVChannelParams.analogParams(freq, para1, 0);
+                tvChannelPara = TVChannelParams.analogParams(freq, para1, 0,para2);
                 break;
             case TVChannelParams.MODE_ATSC:
                 Log.v(TAG, " MODE_ATSC");

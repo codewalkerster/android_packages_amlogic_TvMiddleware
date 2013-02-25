@@ -714,10 +714,23 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		
 		start_para->atv_para.direction = (*env)->GetIntField(env, para, direction);
 		start_para->atv_para.default_std= (*env)->GetIntField(env, para, std);
-		start_para->atv_para.afc_unlocked_step = 3000000;
-		start_para->atv_para.cvbs_unlocked_step = 1500000;
-		start_para->atv_para.cvbs_locked_step = 6000000;
-		start_para->atv_para.afc_range = 2000000;
+		
+        if(start_para->atv_para.mode == AM_SCAN_ATVMODE_MANUAL)
+        {
+            //start_para->atv_para.afc_unlocked_step =  1000000;
+            start_para->atv_para.cvbs_unlocked_step = 1000000;
+            start_para->atv_para.cvbs_locked_step = 3000000;
+            start_para->atv_para.afc_range = 2000000;
+        }
+        else
+        {
+            start_para->atv_para.afc_unlocked_step = 3000000;
+            start_para->atv_para.cvbs_unlocked_step = 1500000;
+            start_para->atv_para.cvbs_locked_step = 6000000;
+            start_para->atv_para.afc_range = 2000000;
+        }
+        
+        
     } else if (java_mode == 1){
         start_para->mode = AM_SCAN_MODE_DTV_ATV;
         start_para->atv_para.mode = AM_SCAN_ATVMODE_NONE;

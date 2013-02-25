@@ -56,7 +56,9 @@ public class TVChannel{
 			int std = c.getInt(col);
 			col = c.getColumnIndex("aud_mode");
 			int aud_mode = c.getInt(col);
-			this.params = TVChannelParams.analogParams(freq,std, aud_mode);
+			col = c.getColumnIndex("flags");
+            int afc_flag = c.getInt(col);
+			this.params = TVChannelParams.analogParams(freq,std, aud_mode,afc_flag);
 		}
 
 		this.fendID = 0;
@@ -279,6 +281,30 @@ public class TVChannel{
                     null,
                     "update ts_table set freq=" + params.frequency + " where db_id = " + id,
                     null, null);
+            }
+        }
+        
+        return ret;
+    }
+    
+    
+    /**
+     *修改ATV的afc状态
+     *@param fre是频点
+     *@return true 表示已经修改制式,false表示制式已经设置无需修改
+     */
+    public boolean setATVAfcData(int data){
+        boolean ret = false;
+        if(params!=null){
+            if(params.getMode() == TVChannelParams.MODE_ANALOG){
+                if( params.afc_data != data){
+                    params.afc_data = data;
+                    context.getContentResolver().query(TVDataProvider.WR_URL,
+                            null,
+                            "update ts_table set flags=" + params.afc_data + " where db_id = " + id,
+                            null, null);
+                }
+               
             }
         }
         
