@@ -800,6 +800,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         {
 
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
+			entry.setCacheable(false);
             return myvalue;
         }
         else if (name.equals("GetAudioTrebleVolume") || name.equals("GetAudioBassVolume") || name.equals("GetAudioBalance"))
