@@ -800,6 +800,19 @@ abstract public class TVClient
 	}
 
 	/**
+	 *模拟CVBS AMP OUT
+	 *@param AMP 
+	 */
+	public void setCvbsAmpOut(int amp){
+		if(service != null){
+			try {
+				service.setCvbsAmpOut(amp);
+            } catch(RemoteException e) {
+            }
+		}
+	}
+    
+	/**
 	 *恢复出厂设置
 	 */
 	public void restoreFactorySetting(){

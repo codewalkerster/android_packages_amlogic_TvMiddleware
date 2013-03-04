@@ -116,6 +116,7 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	
 	abstract public void setVGAAutoAdjust();
 
+    abstract public void SetCvbsAmpOut(int amp);
     public int GetSrcInputType()
     {
         return 0;

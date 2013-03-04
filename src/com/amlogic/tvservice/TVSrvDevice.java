@@ -345,6 +345,12 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.d(TAG, "*********ATVChannelFineTune" + fre);
         tv.Set_Atv_Channel_Fine_Tune(fre);
     }
+    
+    public void SetCvbsAmpOut(int amp)
+    {
+        Log.d(TAG, "*********SetCvbsAmpOut" + amp);
+        tv.SetCvbsAmpOut(amp);
+    }
 
     public void startRecording(DTVRecordParams params)
     {
@@ -652,12 +658,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 }
                 catch (TypeException e)
                 {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-                // int val = 0;
-//                int val = TVDeviceImpl.tv.GetSrcInputType().ordinal();
-//                Log.d(TAG, "Source Input Type" + val);
                 int status3D = TVDeviceImpl.tv.Get3DMode();
                 tvin_info_t sig_fmt = TVDeviceImpl.tv.GetCurrentSignalInfo();
 
@@ -694,9 +696,11 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 				else if(name.equals("SetParentControlSwitch"))
 				{
 					TVDeviceImpl.tv.TvITFExecute("SSMSaveParentalControlSwitch", userValue);
-					Log.d(TAG,">>>>>>>>>>>>>>>>>>>>SetParentControlSwitch");
 				}
-                        
+				else if(name.equals("SetPowerOnMusicSwitch"))
+				{
+				    TVDeviceImpl.tv.TvITFExecute("SSMSavePowerOnMusicSwitch", userValue);
+				}
                 else if (name.equals("SetRGBOGOGainR100")||name.equals("SetRGBOGOGainG100")||name.equals("SetRGBOGOGainB100"))
                 {
                     TVDeviceImpl.tv.TvITFExecute(name, userValue);
@@ -838,6 +842,11 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         else if (name.equals("GetParentControlSwitch")) 
         {
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("SSMReadParentalControlSwitch"));
+            return myvalue;
+        }
+        else if(name.equals("GetPowerOnMusicSwitch"))
+        {
+            myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("SSMReadPowerOnMusicSwitch"));
             try
             {
                 Log.d(TAG, "*******************myvalue=" + myvalue.getInt());
@@ -859,7 +868,6 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             entry.setCacheable(false);
             return myvalue;
         }
-
     }
 
 }

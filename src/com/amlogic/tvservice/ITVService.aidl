@@ -144,5 +144,8 @@ interface ITVService{
     //解锁并播放当前已加锁的频道，例如密码验证通过后，调用该方法进行解锁播放
     void unblock();
     
+    //模拟CVBS AMP OUT
+    void setCvbsAmpOut(int amp);
+    
 }
 

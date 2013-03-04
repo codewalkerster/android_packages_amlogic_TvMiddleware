@@ -71,7 +71,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_REPLAY              = 1977;
 	private static final int MSG_CHECK_BLOCK         = 1978;
 	private static final int MSG_UNBLOCK             = 1979;
-
+    private static final int MSG_CVBS_AMP_OUT        = 1980;
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
 	
@@ -339,6 +339,11 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 
+        public void setCvbsAmpOut(int freq){
+			Message msg = handler.obtainMessage(MSG_CVBS_AMP_OUT, new Integer(freq));
+			handler.sendMessage(msg);
+		}
+        
 		public void restoreFactorySetting(){
 			Message msg = handler.obtainMessage(MSG_RESTORE_FACTORY_SETTING);
 			handler.sendMessage(msg);
@@ -459,6 +464,10 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_FINE_TUNE:
 					resolveFineTune((Integer)msg.obj);
 					break;
+                case MSG_CVBS_AMP_OUT:
+					resolveSetCvbsAmpOut((Integer)msg.obj);
+					break;    
+                    
 				case MSG_RESTORE_FACTORY_SETTING:
 					resolveRestoreFactorySetting();
 					break;
@@ -1743,6 +1752,22 @@ public class TVService extends Service implements TVConfig.Update{
 
 		if(chan.isAnalogMode()){
 			device.ATVChannelFineTune(freq);
+		}
+	}
+    
+    	/*cvbs out*/
+	private void resolveSetCvbsAmpOut(int amp_out){
+
+		TVProgram p = TVProgram.selectByID(this, programID);
+		if(p == null)
+			return;
+
+		TVChannel chan = p.getChannel();
+		if(chan == null)
+			return;
+
+		if(chan.isAnalogMode()){
+			device.SetCvbsAmpOut(amp_out);
 		}
 	}
 

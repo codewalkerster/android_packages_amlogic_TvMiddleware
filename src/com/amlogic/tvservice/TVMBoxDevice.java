@@ -218,6 +218,11 @@ abstract public class TVDeviceImpl extends TVDevice{
 	{
 		
 	}
+    
+    @Override
+    public void SetCvbsAmpOut(int amp)
+    {
+    }
 	
 	public void setVGAAutoAdjust()
     {
