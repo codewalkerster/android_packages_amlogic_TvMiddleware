@@ -43,6 +43,8 @@ typedef struct {
 #define EVENT_DTV_CANNOT_DESCRAMLE    6
 #define EVENT_RECORD_END              7
 
+#define SOURCE_DTV	10
+
 static JavaVM   *gJavaVM = NULL;
 static jclass    gEventClass;
 static jclass    gChanParamsClass;
@@ -433,6 +435,51 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 	env->SetIntField(evt, gEventSourceID, src);
 
 	on_event(obj, evt);
+
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open){
+		AM_FEND_OpenPara_t fend_para;
+		AM_AV_OpenPara_t av_para;
+		AM_DMX_OpenPara_t dmx_para;
+
+		memset(&fend_para, 0, sizeof(fend_para));
+		fend_para.mode = FEND_DEF_MODE;
+
+		AM_FEND_Open(FEND_DEV_NO, &fend_para);
+		AM_FEND_SetCallback(FEND_DEV_NO, fend_cb, dev);
+
+		memset(&dmx_para, 0, sizeof(dmx_para));
+		AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+
+		memset(&av_para, 0, sizeof(av_para));
+		AM_AV_Open(AV_DEV_NO, &av_para);
+
+		dev->dev_open = AM_TRUE;
+	}
+
+	int di = 1;
+
+	if(src == SOURCE_DTV)
+	{
+		if(!di)
+		{
+			/*disable deinterlace*/
+			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
+			LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
+		}
+		else
+		{
+			/*enable deinterlace*/
+			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
+			LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
+		}		
+	}
+	else
+	{
+		AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
+		LOGE("AM_AV_SetVPathPara exit\n");
+	}
+	
 }
 
 static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
