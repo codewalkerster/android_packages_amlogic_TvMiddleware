@@ -1026,8 +1026,8 @@ public class TVService extends Service implements TVConfig.Update{
 				programAudioPID = apid;
 
 				if(!checkProgramBlock()){
-					Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+vfmt);
-					device.playDTV(vpid, vfmt, apid, vfmt);
+					Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+afmt);
+					device.playDTV(vpid, vfmt, apid, afmt);
 				}
 
 				sendMessage(TVMessage.programStart(programID));
