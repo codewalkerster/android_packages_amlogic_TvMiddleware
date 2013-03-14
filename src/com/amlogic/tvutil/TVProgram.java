@@ -295,7 +295,7 @@ public class TVProgram{
 	private Subtitle subtitles[];
 	private Teletext teletexts[];
 
-	private TVProgram(Context context, Cursor c){
+	private void constructFromCursor(Context context, Cursor c){
 		int col;
 		int num, type;
 
@@ -406,6 +406,73 @@ public class TVProgram{
 		}
 	}
 	
+	private Cursor selectProgramInChannelByNumber(Context context, int channelID, TVProgramNumber num){
+		String cmd = "select * from srv_table where db_ts_id = " + channelID + " and ";
+		if (num.isATSCMode()){
+			cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
+		}else{
+			cmd += "chan_num = "+num.getNumber();
+		}
+		return context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+	}
+	
+	private TVProgram(Context context, Cursor c){
+		constructFromCursor(context, c);
+	}
+
+	/**
+	 *向数据库添加一个Program
+	 */
+	public TVProgram(Context context, int channelID, int type, TVProgramNumber num, int skipFlag){
+		TVChannel channel = TVChannel.selectByID(context, channelID);
+		if (channel == null){
+			Log.d(TAG, "Cannot add new program, invalid channel id "+channelID);
+			this.id = -1;
+		}else{
+			TVChannelParams params = channel.getParams();
+			Cursor c = selectProgramInChannelByNumber(context, channelID, num);
+			if(c != null){
+				if(c.moveToFirst()){
+					/*Construct*/
+					constructFromCursor(context, c);
+				}else{
+					/*add a new atv program to database*/
+					String cmd = "insert into srv_table(db_net_id,db_ts_id,service_id,src,name,service_type,";
+					cmd += "eit_schedule_flag,eit_pf_flag,running_status,free_ca_mode,volume,aud_track,vid_pid,";
+					cmd += "vid_fmt,aud_pids,aud_fmts,aud_langs,db_sub_id,skip,lock,chan_num,major_chan_num,";
+					cmd += "minor_chan_num,access_controlled,hidden,hide_guide,source_id,favor,current_aud,";
+					cmd += "db_sat_para_id,scrambled_flag,lcn,hd_lcn,sd_lcn,default_chan_num,chan_order) ";
+					cmd += "values(-1,"+ channelID + ",65535,"+ params.getMode() + ",'',"+type+",";
+					cmd += "0,0,0,0,0,0,8191,";
+					int chanNum = num.isATSCMode() ? (num.getMajor()<<16)|num.getMinor() : num.getNumber();
+					int majorNum = num.isATSCMode() ? num.getMajor() : 0;
+					cmd += "-1,'','','',-1," + skipFlag + ",0,"+ chanNum +","+ majorNum + ",";
+					cmd += "" + num.getMinor() + ",0,0,0,-1,0,-1,";
+					cmd += "-1,0,-1,-1,-1,-1,0)";
+					context.getContentResolver().query(TVDataProvider.WR_URL,
+							null, cmd, null, null);
+						
+					Cursor cr = selectProgramInChannelByNumber(context, channelID, num);
+					if(cr != null){
+						if(cr.moveToFirst()){
+							/*Construct*/
+							constructFromCursor(context, cr);
+						}else{
+							/*A critical error*/
+							Log.d(TAG, "Cannot add new program, sqlite error");
+							this.id = -1;
+						}
+						cr.close();
+					}
+				}
+				c.close();
+			}
+		}
+	}
+		
 	public TVProgram(){
 	
 	}

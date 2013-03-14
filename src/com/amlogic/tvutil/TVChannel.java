@@ -17,7 +17,7 @@ public class TVChannel{
 	private int tsSourceID;
 	private TVChannelParams params;
 
-	private TVChannel(Context context, Cursor c){
+	private void constructFromCursor(Context context, Cursor c){
 		int col;
 		int src, freq, mod, symb, bw;
 
@@ -62,6 +62,63 @@ public class TVChannel{
 		}
 
 		this.fendID = 0;
+	}
+	
+	private TVChannel(Context context, Cursor c){
+		constructFromCursor(context, c);
+	}
+	
+	/**
+	 *向数据库添加一个Channel
+	 */
+	public TVChannel(Context context, TVChannelParams p){
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from ts_table where ts_table.src = " + p.getMode() +
+				" and ts_table.freq = " + p.getFrequency(),
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				/*Construct*/
+				constructFromCursor(context, c);
+			}else{
+				String cmd = "insert into ts_table(src,freq,db_sat_para_id,polar,db_net_id,";
+				cmd += "ts_id,symb,mod,bw,snr,ber,strength,std,aud_mode,flags) ";
+				cmd += "values("+p.getMode()+","+p.getFrequency()+",";
+	
+				if (p.isDVBCMode()){
+					cmd += "-1,-1,-1,65535,"+p.getSymbolRate()+","+p.getModulation()+",0,0,0,0,0,0,0)";
+				}else if (p.isDVBTMode()){
+					cmd += "-1,-1,-1,65535,0,0,"+p.getBandwidth()+",0,0,0,0,0,0)";
+				}else if (p.isDVBSMode()){
+					cmd += "-1,-1,-1,65535,0,0,0,0,0,0,0,0,0)";
+				}else if (p.isAnalogMode()){
+					cmd += "-1,-1,-1,65535,0,0,0,0,0,0,"+p.getStandard()+","+p.getAudioMode()+",0)";
+				}else if (p.isATSCMode()){
+					cmd += "-1,-1,-1,65535,0,0,0,0,0,0,0,0,0)";
+				}else{
+					cmd += "-1,-1,-1,65535,0,0,0,0,0,0,0,0,0)";
+				}
+				context.getContentResolver().query(TVDataProvider.WR_URL,
+					null, cmd, null, null);
+				
+				Cursor cr = context.getContentResolver().query(TVDataProvider.RD_URL,
+						null,
+						"select * from ts_table where ts_table.src = " + p.getMode() +
+						" and ts_table.freq = " + p.getFrequency(),
+						null, null);
+				if(cr != null){
+					if(cr.moveToFirst()){
+						/*Construct*/
+						constructFromCursor(context, cr);
+					}else{
+						this.id = -1;
+					}
+					cr.close();
+				}
+			}
+			c.close();
+		}
 	}
 
 	/**
