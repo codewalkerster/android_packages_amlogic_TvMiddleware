@@ -475,6 +475,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
         }
     } else if (event_type == AM_SCAN_EVT_SIGNAL) {
         AM_SCAN_DTVSignalInfo_t *evt = (AM_SCAN_DTVSignalInfo_t*)param;
+        prog->cur_tp.fend_para.analog.para.frequency = (int)evt->frequency;
         prog->locked = evt->locked;
         tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
     }
