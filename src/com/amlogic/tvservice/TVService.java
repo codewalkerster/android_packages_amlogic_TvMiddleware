@@ -35,6 +35,8 @@ import com.amlogic.tvutil.TVEvent;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
 import com.amlogic.tvutil.TvinInfo;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 
 public class TVService extends Service implements TVConfig.Update{
 	private static final String TAG = "TVService";
@@ -1309,7 +1311,34 @@ public class TVService extends Service implements TVConfig.Update{
 		        
 			int std = TVChannelParams.getTunerStd(vidstd, audstd);
 			Log.v(TAG,"std = "+std);
-			tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq") , config.getInt("tv:scan:atv:maxfreq"), std);
+
+			int chanID = -1;
+			if (sp.getTvMode() == TVScanParams.TV_MODE_ATV &&
+				sp.getAtvMode() == TVScanParams.ATV_MODE_MANUAL){
+				if (sp.getAtvStartFreq() <= 0){
+					TVProgram p = null;
+					/** Scan from the current playing channel */
+					if(atvPlayParams != null){
+						p = playParamsToProgram(atvPlayParams);
+						if (p != null){
+							chanID = p.getChannel().getID();
+						}
+					}
+
+					if(chanID < 0){
+						Log.d(TAG, "Cannot get current channel for ATV manual scan!");
+						return;
+					}
+					tsp.setAtvStartFreq(p.getChannel().getParams().frequency);
+				}
+				else
+				    tsp.setAtvStartFreq(sp.getAtvStartFreq());
+			}
+            
+		    tsp.setAtvParams(config.getInt("tv:scan:atv:minfreq"), 
+	                config.getInt("tv:scan:atv:maxfreq"), std, sp.getAtvChannelID());
+	       
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG, "Cannot read atv config !!!");
@@ -1515,11 +1544,43 @@ public class TVService extends Service implements TVConfig.Update{
 								}
 							}
 
-							/*Play program*/
-							playCurrentProgram();
+	                        if(inputSource == TVConst.SourceInput.SOURCE_DTV)
+						           playCurrentProgram();  	/*Play program*/
+                            if(firstPlayAtv == true && inputSource == TVConst.SourceInput.SOURCE_ATV){
+						           playCurrentProgram();  
+                                   firstPlayAtv  = false;
+                            }
 						}
-					}
-				}
+					}else
+	                    device.freeFrontend();
+				}else{
+				    Log.v(TAG, "source: " + source + " TVConst.SourceInput.SOURCE_MPEG: " + TVConst.SourceInput.SOURCE_MPEG);
+				    reqInputSource = source;
+                    inputSource = reqInputSource;
+				    if(source == TVConst.SourceInput.SOURCE_MPEG){
+	                    
+	                     device.freeFrontend();
+	                 }else
+	                 if(source == TVConst.SourceInput.SOURCE_ATV){
+	                    /*Get a valid program*/
+	                    TVPlayParams playParams = null;
+	                    TVProgram p = null;
+	                    TVChannelParams fe_params = null;
+	                    if(atvPlayParams == null){
+	                        p = TVProgram.selectFirstValid(this, TVProgram.TYPE_ATV);
+	                        if(p != null)
+	                            playParams = TVPlayParams.playProgramByNumber(p.getNumber());
+	                    }else
+	                        playParams = atvPlayParams;
+	                    if(playParams != null){
+	                        Log.v(TAG, "*Get a valid program");
+	                        p = playParamsToProgram(playParams);
+	                        fe_params = p.getChannel().getParams();
+	                        device.setFrontend(fe_params);
+	                        
+	                    }
+	                 }
+				}		
 				/*Send message*/
 				sendMessage(TVMessage.inputSourceChanged(event.source));
 				break;
@@ -1900,6 +1961,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 		/*Start data sync timer*/
 		dataSyncHandler.postDelayed(dataSync, 1000);
+        registerServiceBroadcast();
 	}
 	
 	public void onUpdate(String name, TVConfigValue value){
@@ -1919,5 +1981,33 @@ public class TVService extends Service implements TVConfig.Update{
 		TVDataProvider.closeDatabase(this);
 		super.onDestroy();
 	}
+    
+    ServiceReceiver myServiceReceiver = null;
+    private void registerServiceBroadcast()
+    {
+        myServiceReceiver = new ServiceReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ServiceReceiver.StartPlayer);
+        this.registerReceiver(myServiceReceiver, filter);
+    }
+    
+    private boolean firstPlayAtv = false;
+    public class ServiceReceiver extends BroadcastReceiver {
+	static final String TAG = "TvServiceReceiver";
+	public static final String  StartPlayer = "com.amlogic.tvservice.startplayer";
+
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		if (StartPlayer.equals(intent.getAction())) {
+  				Log.d(TAG,"TVService Start ATV*******************************************");
+                int val = 0;
+                TVConst.SourceInput type = TVConst.SourceInput.values()[val];
+                resolveSetInputSource(type);
+                firstPlayAtv = true;
+               
+			}
+		}					
+	}
+	
 }
 

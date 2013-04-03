@@ -13,7 +13,11 @@ import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvutil.TvinInfo;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+
 import android.util.Log;
 import android.amlogic.Tv;
 import android.amlogic.Tv.Frontend_Para;
@@ -222,6 +226,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
     public void setVideoWindow(int x, int y, int w, int h)
     {
+        SetWindowSize(1,x ,y ,w ,h);
     }
 
     public void switchDTVAudio(int pid, int afmt)
@@ -238,7 +243,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         else if (params.mode == TVChannelParams.MODE_ANALOG)
         {
             mFreq = params.frequency;
-            tv.SetFrontEnd(params.mode, params.frequency, params.standard,params.afc_data);
+            tv.SetFrontEnd(params.mode, params.frequency, params.standard,params.afc_data/500);
         }
         else if (params.mode == TVChannelParams.MODE_OFDM)
             tv.SetFrontEnd(params.mode, params.frequency, params.bandwidth, 0);
@@ -735,10 +740,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 				value = 5;//panorama
 				break;
 			case 3:
-				value = 9;//zoom1
+				value = 2;//zoom1
 				break;
 			case 4:
-				value = 8;//zoom2
+				value = 3;//zoom2
 				break;
 			case 5:
 				value = 7;//Ptop
@@ -856,7 +861,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             }
             return myvalue;
         }
-        else if(name.equals("GetAudioMasterVolume") )
+        else if(name.equals("GetAudioMasterVolume") || name.equals("GetAudioVolumeCompensationVal"))
         {
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute(name));
             entry.setCacheable(false);
@@ -870,8 +875,32 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         }
     }
 
-}
 
+    private void SetWindowSize(int mode ,int x , int y , int w , int h) {
+        Log.d(TAG,"SetWindowSize========================"+mode+"x="+x+"y="+y+"w="+w+"h="+h);
+        //w=w+x;
+        //h=h+y;
+        String hole=null;
+        if(mode==1)
+           hole = ""+x+" "+y+" "+w+" "+h+" "+mode;
+        else
+           hole = ""+x+" "+y+" "+w+" "+h+" "+mode;
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/graphics/fb0/video_hole"));
+            try {
+                writer.write(hole);
+                } finally {
+                    writer.close();
+                }
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }catch (Exception e) {
+                Log.e(TAG,"set  /sys/class/graphics/fb0/video_hole ERROR!",e);
+        } 
+    //  SystemProperties.set("hw.videohole.enable", "true");
+
+    }
+}
 class SingletonTv
 {
     static Tv instance = null;

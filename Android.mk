@@ -43,7 +43,8 @@ LOCAL_SRC_FILES := \
 	src/com/amlogic/tvservice/TVTime.java \
 	src/com/amlogic/tvservice/TVTime.java \
 	src/com/amlogic/tvservice/TVRecorder.java \
-	src/com/amlogic/tvservice/TVBookManager.java
+	src/com/amlogic/tvservice/TVBookManager.java \
+    src/com/amlogic/tvservice/TVServiceReceiver.java
 
 LOCAL_MODULE_CLASS := APPS
 LOCAL_MODULE := TVService
@@ -70,7 +71,7 @@ $(GEN): $(GEN_SRC)
 
 $(info $(GEN))
 
-LOCAL_SDK_VERSION := current
+#LOCAL_SDK_VERSION := current
 
 LOCAL_STATIC_JAVA_LIBRARIES := tvmiddleware
 

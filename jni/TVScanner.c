@@ -671,7 +671,7 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSate
 static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_CreatePara_t *start_para)
 {
 	jfieldID amode, min_freq, max_freq, start_freq, direction, std;
-	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id;
+	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id, chan_id;
 	int java_mode;
 	
 	jclass objclass =(*env)->FindClass(env,"com/amlogic/tvservice/TVScanner$TVScannerParams"); 
@@ -686,6 +686,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	dmode = (*env)->GetFieldID(env,objclass, "dtvMode", "I"); 
 	fend_id = (*env)->GetFieldID(env,objclass, "fendID", "I"); 
 	dmx_id = (*env)->GetFieldID(env,objclass, "demuxID", "I"); 
+	chan_id = (*env)->GetFieldID(env,objclass, "channelID", "I"); 
 	source = (*env)->GetFieldID(env,objclass, "tsSourceID", "I"); 
 	chan_para = (*env)->GetFieldID(env,objclass, "startParams", "Lcom/amlogic/tvutil/TVChannelParams;"); 
 	freqs = (*env)->GetFieldID(env,objclass, "ChannelParamsList", "[Lcom/amlogic/tvutil/TVChannelParams;"); 
@@ -718,6 +719,8 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		
         if(start_para->atv_para.mode == AM_SCAN_ATVMODE_MANUAL)
         {
+			start_para->atv_para.channel_id = (*env)->GetIntField(env, para, chan_id);
+    
             //start_para->atv_para.afc_unlocked_step =  1000000;
             start_para->atv_para.cvbs_unlocked_step = 1000000;
             start_para->atv_para.cvbs_locked_step = 3000000;
@@ -725,6 +728,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
         }
         else
         {
+			start_para->atv_para.channel_id = -1;
             start_para->atv_para.afc_unlocked_step = 3000000;
             start_para->atv_para.cvbs_unlocked_step = 1500000;
             start_para->atv_para.cvbs_locked_step = 6000000;

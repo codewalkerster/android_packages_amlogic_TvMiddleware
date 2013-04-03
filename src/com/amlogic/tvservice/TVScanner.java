@@ -46,6 +46,7 @@ abstract public class TVScanner{
 
 	/** This param is invisible to Clients, our service will load this from provider/config */
 	public static class TVScannerParams extends TVScanParams{
+		private int channelID; //can be used for manual scan
 		/** Atv set */
 		private int minFreq;
 		private int maxFreq;
@@ -63,10 +64,11 @@ abstract public class TVScanner{
 			this.ChannelParamsList = chanelList;
 		}
 
-		public void setAtvParams(int minf, int maxf, int tunerStd) {
+		public void setAtvParams(int minf, int maxf, int tunerStd, int chanID) {
 			this.minFreq = minf;
 			this.maxFreq = maxf;
 			this.tunerStd = tunerStd;
+			this.channelID = chanID;
 		}
 
 	};

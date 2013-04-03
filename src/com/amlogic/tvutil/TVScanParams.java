@@ -32,6 +32,8 @@ public class TVScanParams implements Parcelable {
 	private int atvMode;
 	private int startFreq;
 	private int direction;
+    
+    private int channelID;
 
 	public static final Parcelable.Creator<TVScanParams> CREATOR = new Parcelable.Creator<TVScanParams>(){
 		public TVScanParams createFromParcel(Parcel in) {
@@ -54,6 +56,7 @@ public class TVScanParams implements Parcelable {
 			atvMode = in.readInt();
 			startFreq = in.readInt();
 			direction = in.readInt();
+            channelID = in.readInt();
 		}
 	}
 
@@ -69,6 +72,7 @@ public class TVScanParams implements Parcelable {
 			dest.writeInt(atvMode);
 			dest.writeInt(startFreq);
 			dest.writeInt(direction);
+            dest.writeInt(channelID);
 		}
 		
 	}
@@ -103,6 +107,24 @@ public class TVScanParams implements Parcelable {
 		return tsSourceID;
 	}
 
+	public int getAtvStartFreq() {
+		return startFreq;
+	}
+
+	public void setAtvStartFreq(int sf) {
+		startFreq = sf;
+	}
+    
+    	public int getAtvChannelID() {
+		return channelID;
+	}
+
+	public void setAtvChannelID(int chanID) {
+		channelID = chanID;
+	}
+    
+    
+
 	/**
 	 *创建新的搜索参数
 	 *@param sp 原始参数
@@ -116,6 +138,7 @@ public class TVScanParams implements Parcelable {
 		atvMode = sp.atvMode;
 		startFreq = sp.startFreq;
 		direction = sp.direction;
+        channelID = sp.channelID;
 	}
 
 	/**
@@ -187,16 +210,34 @@ public class TVScanParams implements Parcelable {
 	 *@param fendID frontend device number
 	 *@param startFreq the start frequency 
 	 *@param direction direction to search
+     *@param channelID the start scan chanID
 	 *@return the new TVScanParams object
 	 */
-	public static TVScanParams atvManualScanParams(int fendID, int startFreq, int direction){
+	public static TVScanParams atvManualScanParams(int fendID, int startFreq, int direction,int channelID){
 		TVScanParams sp = new TVScanParams(TV_MODE_ATV);
 
 		sp.atvMode = ATV_MODE_MANUAL;
 		sp.fendID = fendID;
 		sp.startFreq= startFreq;
 		sp.direction = direction;
+        sp.channelID = channelID;
+		return sp;
+	}
 
+	/**
+	 * Get ATV manual scan mode params, search from the playing channel
+	 *@param fendID frontend device number
+	 *@param direction direction to search
+	 *@return the new TVScanParams object
+	 */
+	public static TVScanParams atvManualScanParams(int fendID, int direction){
+		TVScanParams sp = new TVScanParams(TV_MODE_ATV);
+
+		sp.atvMode = ATV_MODE_MANUAL;
+		sp.fendID = fendID;
+		sp.startFreq= 0;
+		sp.direction = direction;
+        sp.channelID = -1;
 		return sp;
 	}
 

@@ -4,7 +4,15 @@
 	package="com.amlogic.tvservice"
 	android:sharedUserId="android.uid.system">
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 	<application android:process="com.amlogic.tvservice" android:label="TVService">
+        
+         <receiver android:name=".TVServiceReceiver"> 
+             <intent-filter>
+                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
+             </intent-filter>
+         </receiver>
+    
 		<service android:name=".TVService" android:process="com.amlogic.tvservice">
 			<intent-filter>
 				<action android:name="com.amlogic.tvservice.TVService"/>
