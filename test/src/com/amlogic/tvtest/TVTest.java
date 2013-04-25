@@ -16,6 +16,7 @@ import com.amlogic.tvutil.TVConst;
 import com.amlogic.tvutil.TVConst.CC_ATV_AUDIO_STANDARD;
 import com.amlogic.tvutil.TVConst.CC_ATV_VIDEO_STANDARD;
 import com.amlogic.tvutil.TVEvent;
+import com.amlogic.tvutil.TVDimension;
 import java.text.SimpleDateFormat;
 
 
@@ -255,6 +256,24 @@ public class TVTest extends TVActivity{
 		             
 	    		 case KeyEvent.KEYCODE_9:
 	    				setInputSource(TVConst.SourceInput.SOURCE_DTV);
+
+	    				TVDimension[] dm = TVDimension.selectUSDownloadable(this);
+	  
+	    				for (int i=0; i<dm.length; i++){
+	    					Log.d(TAG, "Dimension: "+dm[i].getName() + ", grad "+dm[i].getGraduatedScale());
+	    					String[] abbrevs = dm[i].getAbbrev();
+	    					int[] locks = dm[i].getLockStatus();
+							for (int j=0; j<locks.length; j++){
+								Log.d(TAG, abbrevs[j] + ",  " + locks[j]);
+								locks[j] = 1;
+							}
+							
+							dm[i].setLockStatus(locks);
+							locks = dm[i].getLockStatus();
+							for (int j=0; j<locks.length; j++){
+								Log.d(TAG, abbrevs[j] + ",  " + locks[j]);
+							}
+    					}
 		            	break;
 		         case KeyEvent.KEYCODE_DPAD_LEFT:
 		        	

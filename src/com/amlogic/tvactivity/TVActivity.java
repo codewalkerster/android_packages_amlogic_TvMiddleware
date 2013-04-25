@@ -77,19 +77,56 @@ abstract public class TVActivity extends Activity
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy");
+	Log.d(TAG, "onDestroy");
 
-        if(subtitleView != null) {
-        	unregisterConfigCallback("tv:subtitle:enable");
-        	unregisterConfigCallback("tv:subtitle:language");
-        	unregisterConfigCallback("tv:teletext:language");
-        	subtitleView.dispose();
-        	subtitleView = null;
+	if(subtitleView != null) {
+		unregisterConfigCallback("tv:subtitle:enable");
+		unregisterConfigCallback("tv:subtitle:language");
+		unregisterConfigCallback("tv:teletext:language");
+		unregisterConfigCallback("tv:atsc:cc:caption");
+		unregisterConfigCallback("tv:atsc:cc:foregroundcolor");
+		unregisterConfigCallback("tv:atsc:cc:foregroundopacity");
+		unregisterConfigCallback("tv:atsc:cc:backgroundcolor");
+		unregisterConfigCallback("tv:atsc:cc:backgroundopacity");
+		unregisterConfigCallback("tv:atsc:cc:fontstyle");
+		unregisterConfigCallback("tv:atsc:cc:fontsize");
+		unregisterConfigCallback("tv:atsc:cc:enable");
+		subtitleView.dispose();
+		subtitleView = null;
+	}
+
+	client.disconnect(this);
+	super.onDestroy();
+    }
+
+	private void resetProgramCC(TVProgram prog){
+		subtitleView.stop();
+
+		if (! getBooleanConfig("tv:atsc:cc:enable")){
+			Log.d(TAG, "CC is disabled !");
+			return;
+		}
+		
+		if (prog.getType() == TVProgram.TYPE_ATV){
+
+		}else{
+			TVSubtitleView.DTVCCParams subp;
+			
+			subp = new TVSubtitleView.DTVCCParams(
+				getIntConfig("tv:atsc:cc:caption"),
+				getIntConfig("tv:atsc:cc:foregroundcolor"),
+				getIntConfig("tv:atsc:cc:foregroundopacity"),
+				getIntConfig("tv:atsc:cc:backgroundcolor"),
+				getIntConfig("tv:atsc:cc:backgroundopacity"),
+				getIntConfig("tv:atsc:cc:fontstyle"),
+				getIntConfig("tv:atsc:cc:fontsize")
+				);
+			subtitleView.setSubParams(subp);
 		}
 
-        client.disconnect(this);
-        super.onDestroy();
-    }
+		subtitleView.startSub();
+		subtitleView.show();
+	}
 
 	private void resetSubtitle(int mode){
 		resetSubtitle(mode, -1);
@@ -122,30 +159,35 @@ abstract public class TVActivity extends Activity
 		int pid = -1, id1 = -1, id2 = -1, pm = -1;
 
 		if(mode == SUBTITLE_SUB){
-    		TVProgram.Subtitle sub;
-    		
-    		if(sub_id >= 0){
-    			sub = prog.getSubtitle(sub_id);
+			if (! getStringConfig("tv:dtv:mode").equals("atsc")){
+	    		TVProgram.Subtitle sub;
+	    		
+	    		if(sub_id >= 0){
+	    			sub = prog.getSubtitle(sub_id);
+				}else{
+	    			sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+				}
+
+	    		if(sub == null)
+	    			return;
+
+	       		switch(sub.getType()){
+					case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
+						pid = sub.getPID();
+						id1 = sub.getCompositionPageID();
+						id2 = sub.getAncillaryPageID();
+						pm  = SUBTITLE_SUB;
+						break;
+					case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
+						pid = sub.getPID();
+						id1 = sub.getMagazineNumber();
+						id2 = sub.getPageNumber();
+						pm  = SUBTITLE_TT;
+						break;
+				}
 			}else{
-    			sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
-			}
-
-    		if(sub == null)
-    			return;
-
-       		switch(sub.getType()){
-				case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
-					pid = sub.getPID();
-					id1 = sub.getCompositionPageID();
-					id2 = sub.getAncillaryPageID();
-					pm  = SUBTITLE_SUB;
-					break;
-				case TVProgram.Subtitle.TYPE_DTV_TELETEXT:
-					pid = sub.getPID();
-					id1 = sub.getMagazineNumber();
-					id2 = sub.getPageNumber();
-					pm  = SUBTITLE_TT;
-					break;
+				resetProgramCC(prog);
+				return;
 			}
 		}else if(mode == SUBTITLE_TT){
 			TVProgram.Teletext tt;
@@ -260,6 +302,27 @@ abstract public class TVActivity extends Activity
 			if(currSubtitleMode == SUBTITLE_TT){
 				//resetSubtitle(SUBTITLE_TT);
 			}
+		}else if(name.equals("tv:atsc:cc:caption") ||
+			name.equals("tv:atsc:cc:foregroundcolor") ||
+			name.equals("tv:atsc:cc:foregroundopacity") ||
+			name.equals("tv:atsc:cc:backgroundcolor") ||
+			name.equals("tv:atsc:cc:backgroundopacity") ||
+			name.equals("tv:atsc:cc:fontstyle") ||
+			name.equals("tv:atsc:cc:fontsize") ||
+			name.equals("tv:atsc:cc:enable")){
+
+			
+			Log.d(TAG, name +" changed, reset cc now.");
+			
+			int prog_id = client.getCurrentProgramID();
+
+			if(prog_id == -1)
+				return;
+
+			TVProgram prog = TVProgram.selectByID(this, prog_id);
+			if(prog == null)
+				return;
+			resetProgramCC(prog);
 		}
 	}
 
@@ -343,6 +406,14 @@ abstract public class TVActivity extends Activity
 		registerConfigCallback("tv:subtitle:enable");
 		registerConfigCallback("tv:subtitle:language");
 		registerConfigCallback("tv:teletext:language");
+		registerConfigCallback("tv:atsc:cc:caption");
+		registerConfigCallback("tv:atsc:cc:foregroundcolor");
+		registerConfigCallback("tv:atsc:cc:foregroundopacity");
+		registerConfigCallback("tv:atsc:cc:backgroundcolor");
+		registerConfigCallback("tv:atsc:cc:backgroundopacity");
+		registerConfigCallback("tv:atsc:cc:fontstyle");
+		registerConfigCallback("tv:atsc:cc:fontsize");
+		registerConfigCallback("tv:atsc:cc:enable");
 	}
 
 	private void updateVideoWindow(){
@@ -397,6 +468,15 @@ abstract public class TVActivity extends Activity
 		if(subtitleView != null){
 			subtitleView.layout(r.left, r.top, r.right, r.bottom);
 		}
+	}
+
+	/**
+	*设置由外层创建的SubtitleView
+	*/
+	public void setSubtitleView(TVSubtitleView subView) {
+		Log.d(TAG, "setSubtitleView");
+		subtitleView = subView;
+		initSubtitle();
 	}
 
     /**
@@ -984,6 +1064,14 @@ abstract public class TVActivity extends Activity
 	 */
 	public void restoreFactorySetting(){
 		client.restoreFactorySetting();
+	}
+	
+	/**
+	 *恢复出厂设置
+	 *@param flags 指定需要恢复的项
+	 */
+	public void restoreFactorySetting(int flags){
+		client.restoreFactorySetting(flags);
 	}
 	
 	/**

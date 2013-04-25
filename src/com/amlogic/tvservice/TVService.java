@@ -32,6 +32,7 @@ import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvutil.TvinInfo;
 import com.amlogic.tvutil.TVDimension;
 import com.amlogic.tvutil.TVEvent;
+import com.amlogic.tvutil.TVRegion;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
 import com.amlogic.tvutil.TvinInfo;
@@ -73,7 +74,12 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_REPLAY              = 1977;
 	private static final int MSG_CHECK_BLOCK         = 1978;
 	private static final int MSG_UNBLOCK             = 1979;
-    private static final int MSG_CVBS_AMP_OUT        = 1980;
+	private static final int MSG_CVBS_AMP_OUT        = 1980;
+	
+	/*Restore flags*/
+	private static final int RESTORE_FL_DATABASE  = 0x1;
+	private static final int RESTORE_FL_CONFIG    = 0x2;
+
 	final RemoteCallbackList<ITVCallback> callbacks
 			= new RemoteCallbackList<ITVCallback>();
 	
@@ -341,13 +347,13 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 
-        public void setCvbsAmpOut(int freq){
+		public void setCvbsAmpOut(int freq){
 			Message msg = handler.obtainMessage(MSG_CVBS_AMP_OUT, new Integer(freq));
 			handler.sendMessage(msg);
 		}
         
-		public void restoreFactorySetting(){
-			Message msg = handler.obtainMessage(MSG_RESTORE_FACTORY_SETTING);
+		public void restoreFactorySetting(int flags){
+			Message msg = handler.obtainMessage(MSG_RESTORE_FACTORY_SETTING, new Integer(flags));
 			handler.sendMessage(msg);
 		}
 		
@@ -471,7 +477,7 @@ public class TVService extends Service implements TVConfig.Update{
 					break;    
                     
 				case MSG_RESTORE_FACTORY_SETTING:
-					resolveRestoreFactorySetting();
+					resolveRestoreFactorySetting((Integer)msg.obj);
 					break;
 				case MSG_PLAY_VALID:
 					resolvePlayValid();
@@ -562,7 +568,8 @@ public class TVService extends Service implements TVConfig.Update{
 		STATUS_TIMESHIFTING,
 		STATUS_PLAYBACK,
 		STATUS_STOPPED,
-		STATUS_SCAN
+		STATUS_SCAN,
+		STATUS_ANALYZE_CHANNEL,
 	}
 
 	private TVRunningStatus status;
@@ -579,12 +586,14 @@ public class TVService extends Service implements TVConfig.Update{
 	private int programVideoPID = -1;
 	private int programAudioPID = -1;
 	private int programType = TVProgram.TYPE_TV;
+	private int dtvMode = -1;
 	private TVProgramNumber programNum;
 	private boolean programBlocked = false;
 	private boolean channelLocked = false;
 	private boolean recording = false;
 	private boolean isScanning = false;
 	private boolean checkBlock = true;
+	private boolean isAtvEnabled = false;
 	private Handler checkBlockHandler = new Handler();
 	private Handler dataSyncHandler = new Handler();
 
@@ -664,6 +673,43 @@ public class TVService extends Service implements TVConfig.Update{
 		return p;
 	}
 
+	private TVRegion getCurrentRegion(){
+		String region = null;
+		
+		try {
+			region = config.getString("tv:scan:dtv:region");
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot read dtv region !!!");
+		}
+		
+		return TVRegion.selectByName(this, region);
+	}
+
+	private TVChannelParams getChannelParamsByNo(int channelNo){
+		TVChannelParams cp = null;
+		
+		TVRegion curReg = getCurrentRegion();
+		if (curReg != null){
+			cp = curReg.getChannelParams(channelNo);
+		}
+		
+		return cp;
+	}
+	
+	private int getChannelNoByParams(TVChannelParams cp){
+		int chanNo = -1;
+		
+		if (cp != null){
+			TVRegion curReg = getCurrentRegion();
+			if (curReg != null){
+				chanNo = curReg.getChannelNo(cp.getFrequency());
+			}
+		}
+		
+		return chanNo;
+	}
+
 	private void stopPlaying(){
 		if(status == TVRunningStatus.STATUS_PLAY_ATV){
 			device.stopATV();
@@ -679,6 +725,9 @@ public class TVService extends Service implements TVConfig.Update{
 		}else if(status == TVRunningStatus.STATUS_PLAYBACK){
 			device.stopPlayback();
 			status = TVRunningStatus.STATUS_STOPPED;
+		}else if (status == TVRunningStatus.STATUS_ANALYZE_CHANNEL){
+			stopChannelAnalyzing(false);
+			status = TVRunningStatus.STATUS_STOPPED;
 		}
 
 		synchronized(this){
@@ -687,7 +736,8 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	private void stopScan(boolean store){
-		if(status == TVRunningStatus.STATUS_SCAN){
+		if(status == TVRunningStatus.STATUS_SCAN ||
+		   status == TVRunningStatus.STATUS_ANALYZE_CHANNEL){
 			scanner.stop(store);
 			status = TVRunningStatus.STATUS_STOPPED;
 
@@ -701,7 +751,8 @@ public class TVService extends Service implements TVConfig.Update{
 				channelID  = -1;
 				programID  = -1;
 				programNum = null;
-				channelParams = null;
+				if (status == TVRunningStatus.STATUS_SCAN)
+					channelParams = null;
 			}
 		}
 	}
@@ -873,8 +924,22 @@ public class TVService extends Service implements TVConfig.Update{
 			switch(params.getType()){
 				case TVPlayParams.PLAY_PROGRAM_NUMBER:
 					int type = getCurProgramType();
-
-					p = TVProgram.selectByNumber(this, type, params.getProgramNumber());
+					TVProgramNumber num = params.getProgramNumber();
+					p = TVProgram.selectByNumber(this, type, num);
+					if (isAtvEnabled && num != null && num.isATSCMode()){
+						if (p == null || (num.getMinor() < 0 && p.getType() == TVProgram.TYPE_ATV)){
+							TVChannelParams cp = getChannelParamsByNo(num.getMajor());
+							
+							/*check DTV programs in channel of num.getMajor()*/
+							TVChannel ch = TVChannel.selectByParams(this, cp);
+							if (ch != null){
+								TVProgram[] dtvProg = TVProgram.selectByChannel(this, ch.getID(), TVProgram.TYPE_DTV);
+								if (dtvProg != null){
+									p = dtvProg[0];
+								}
+							}
+						}
+					}
 					break;
 				case TVPlayParams.PLAY_PROGRAM_ID:
 					p = TVProgram.selectByID(this, params.getProgramID());
@@ -915,35 +980,32 @@ public class TVService extends Service implements TVConfig.Update{
 			}else if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 				TVEvent presentEvent = prog.getPresentEvent(this, time.getTime());
 				if (presentEvent != null){
-					int mode = -1;
-					
-					try{
-						String modeStr = config.getString("tv:dtv:mode");
-						mode = TVChannelParams.getModeFromString(modeStr);
-					}catch(Exception e){
-					}
-
-					if(mode == TVChannelParams.MODE_ATSC){
+					if(dtvMode == TVChannelParams.MODE_ATSC){
 						/* ATSC V-Chip */
-						TVDimension.VChipRating[] definedRatings = presentEvent.getVChipRatings();
-						for (int i=0; definedRatings!=null && i<definedRatings.length; i++){
-							if (TVDimension.isBlocked(this, definedRatings[i])){
-								ret = true;
-								if (!programBlocked){
-									TVDimension dm = TVDimension.selectByIndex(this, 
-													definedRatings[i].getRegion(), 
-													definedRatings[i].getDimension());
-									String dmName = dm.getName();
-									String abbrev = dm.getAbbrev(definedRatings[i].getValue());
-									String text   = dm.getText(definedRatings[i].getValue());
-									Log.d(TAG, "Program blocked by Dimension:'"+dmName+
-										"' Abbrev:'"+abbrev+"' Value:'"+text+"'");
-								
-									blockMsg = TVMessage.programBlock(programID, dmName, abbrev, text);
+						try{
+							if(config.getBoolean("tv:vchip:enable")){
+								TVDimension.VChipRating[] definedRatings = presentEvent.getVChipRatings();
+								for (int i=0; definedRatings!=null && i<definedRatings.length; i++){
+									if (TVDimension.isBlocked(this, definedRatings[i])){
+										ret = true;
+										if (!programBlocked){
+											TVDimension dm = TVDimension.selectByIndex(this, 
+															definedRatings[i].getRegion(), 
+															definedRatings[i].getDimension());
+											String dmName = dm.getName();
+											String abbrev = dm.getAbbrev(definedRatings[i].getValue());
+											String text   = dm.getText(definedRatings[i].getValue());
+											Log.d(TAG, "Program blocked by Dimension:'"+dmName+
+												"' Abbrev:'"+abbrev+"' Value:'"+text+"'");
+										
+											blockMsg = TVMessage.programBlock(programID, dmName, abbrev, text);
+										}
+										break;
+									}
 								}
-								break;
 							}
-						}
+						}catch(Exception e){
+						}				
 					}else{
 						/* DVB parental control */
 					}
@@ -1085,9 +1147,12 @@ public class TVService extends Service implements TVConfig.Update{
 			programType = p.getType();
 			channelID = p.getChannel().getID();
 		}
-
-		/*Send program number message.*/
-		sendMessage(TVMessage.programNumber(getCurProgramType(), programNum));
+		
+		if (programNum.isATSCMode()){
+			Log.d(TAG, "Program number: "+programNum.getMajor()+"-"+programNum.getMinor());
+		}else{
+			Log.d(TAG, "Program number: "+programNum.getNumber());
+		}
 
 		if((channelParams == null) || !channelParams.equals(fe_params)){
 			channelParams = fe_params;
@@ -1097,12 +1162,82 @@ public class TVService extends Service implements TVConfig.Update{
 			epgScanner.leaveChannel();
 
 			/*Reset the frontend.*/
+			Log.d(TAG, "Set frontend to mode "+fe_params.getMode()+", frequency "+fe_params.getFrequency());
 			device.setFrontend(fe_params);
+			Log.d(TAG, "Set frontend end");
 			status = TVRunningStatus.STATUS_SET_FRONTEND;
 			return;
 		}
 
 		playCurrentProgramAV();
+	}
+	
+	
+	/*Start scan a specified channel*/
+	private void startChannelAnalyzing(int channelNo){
+		TVChannelParams cp = getChannelParamsByNo(channelNo);
+		if (cp == null || cp.getFrequency() <= 0){
+			Log.d(TAG, "Channel "+channelNo+" not exist, cannot analyze this channel!");
+			return;
+		}
+		Log.d(TAG, "Start analyzing DTV in channel "+channelNo+"("+cp.getFrequency()+" Hz)...");
+		/*Send scan dtv channel start message.*/
+		sendMessage(TVMessage.scanDTVChannelStart(channelNo));
+		
+		TVScanParams sp = TVScanParams.dtvManualScanParams(0, cp);
+		resolveStartScan(sp);
+		channelParams = cp;
+		status = TVRunningStatus.STATUS_ANALYZE_CHANNEL;
+	}
+
+	/*Stop scanning current channel*/
+	private void stopChannelAnalyzing(boolean store){
+		Log.d(TAG, "Stop analyzing channel.");
+		resolveStopScan(store);
+	}
+
+	/*Set a channel to atv, only available for ATSC*/
+	private TVProgram setChannelToATV(int channelNo){
+		TVChannelParams chanParams = getChannelParamsByNo(channelNo);
+		if (chanParams == null || chanParams.getFrequency() <= 0){
+			Log.d(TAG, "Channel "+channelNo+" not exist, cannot stay at ATV!");
+			return null;
+		}
+		if (chanParams.getMode() != TVChannelParams.MODE_ANALOG){
+			TVChannelParams cp = TVChannelParams.analogParams(chanParams.getFrequency(),0,0,0);
+			chanParams = cp;
+		}
+		TVChannel ch = new TVChannel(this, chanParams);
+
+		return new TVProgram(this, ch.getID(), TVProgram.TYPE_ATV, new TVProgramNumber(channelNo, 0), 2/*special flag*/);
+	}
+	
+	private void replayCurrentChannel(){
+		if (channelParams == null)
+			return;
+		TVProgram validProgram = null;
+		TVChannel ch = TVChannel.selectByParams(this, channelParams);
+		if (ch != null){
+			TVProgram[] progInChan = TVProgram.selectByChannel(this, ch.getID(), TVProgram.TYPE_DTV);
+			if (progInChan == null && channelParams.isATSCMode()){
+				/*Has ATV Program in this channel?*/
+				progInChan = TVProgram.selectByChannel(this, ch.getID(), TVProgram.TYPE_ATV);		
+			}
+			if (progInChan != null)
+				validProgram = progInChan[0];
+		}
+		if (validProgram == null && channelParams.isATSCMode()){
+			/*stay at the analog mode*/
+			validProgram = setChannelToATV(getChannelNoByParams(channelParams));
+		} 
+		if (validProgram == null){
+			Log.d(TAG, "Cannot get any valid program in this channel, cannot replay");
+			return;
+		}
+		
+		channelParams = null;
+		/*play this validProgram*/
+		resolvePlayProgram(TVPlayParams.playProgramByID(validProgram.getID()));
 	}
 
 	/*Reset the input source.*/
@@ -1150,6 +1285,9 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolvePlayProgram(TVPlayParams tp){
 		Log.d(TAG, "try to play program");
 
+		if (tp == null)
+			return;
+		
 		/*Translate the channel up/channel down parameters*/
 		int playType = tp.getType();
 
@@ -1175,8 +1313,27 @@ public class TVService extends Service implements TVConfig.Update{
 
 		/*Get the program*/
 		TVProgram prog = playParamsToProgram(tp);
-		if(prog == null)
+		if(prog == null){
+			if (isAtvEnabled && playType == TVPlayParams.PLAY_PROGRAM_NUMBER){
+				try{
+					TVProgramNumber num = tp.getProgramNumber();
+					if (num != null && num.isATSCMode()){
+						if (num.getMinor() < 0){
+							startChannelAnalyzing(num.getMajor()); 
+						}else if (num.getMinor() == 0 && prog == null){
+							prog = setChannelToATV(num.getMajor());
+						}
+					}
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		if (prog == null){
+			Log.d(TAG, "Cannot get the program to play.");
 			return;
+		}
 
 		/*Stop playing*/
 		if(prog.getID() != programID){
@@ -1186,6 +1343,9 @@ public class TVService extends Service implements TVConfig.Update{
 		TVChannel chan = prog.getChannel();
 		if(chan == null)
 			return;
+			
+		/*Send program switch message.*/
+		sendMessage(TVMessage.programSwitch(prog.getID()));
 			
 		/*Re-enable the block check if needed*/
 		try{
@@ -1348,82 +1508,10 @@ public class TVService extends Service implements TVConfig.Update{
 		TVChannelParams[] channelList = null;
 		if (sp.getTvMode() != TVScanParams.TV_MODE_ATV &&
 			sp.getDtvMode() == TVScanParams.DTV_MODE_ALLBAND) {
-			String region;
-			/** load the frequency list */
-			try {
-				region = config.getString("tv:scan:dtv:region");
-			} catch (Exception e) {
-				e.printStackTrace();
-				Log.d(TAG, "Cannot read dtv region !!!");
-				return;
-			}
 			
-			Cursor c = this.getContentResolver().query(TVDataProvider.RD_URL, null,
-					"select * from region_table where name='" + region + "' and source=" + sp.getTsSourceID(),
-					null, null);
-			if(c != null){
-				if(c.moveToFirst()){
-					int col = c.getColumnIndex("frequencies");
-					String freqs = c.getString(col);
-					
-					if (freqs != null && freqs.length() > 0) {
-						String[] flist = freqs.split(" ");
-						
-						if (flist !=null && flist.length > 0) {
-							int frequency = 0;
-							int bandwidth = 0;
-
-							if(sp.getTsSourceID() == TVChannelParams.MODE_QPSK){
-								channelList = new TVChannelParams[flist.length];
-								/** get each frequency */
-								for (int i=0; i<channelList.length; i++) {
-									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.dvbsParams(frequency, 0);
-								}
-							}
-							else if(sp.getTsSourceID() == TVChannelParams.MODE_QAM){
-								channelList = new TVChannelParams[flist.length];
-								/** get each frequency */
-								for (int i=0; i<channelList.length; i++) {
-									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.dvbcParams(frequency, 0, 0);
-								}
-							}
-							else if(sp.getTsSourceID() == TVChannelParams.MODE_OFDM){
-								channelList = new TVChannelParams[flist.length/2];
-								
-								/** get each frequency and bandwidth */
-								for (int i=0; i<flist.length; i++) {
-									
-									if(i%2 == 0){
-										frequency = Integer.parseInt(flist[i]);
-									}else{
-										bandwidth = Integer.parseInt(flist[i]);
-										channelList[i/2] = TVChannelParams.dvbtParams(frequency, bandwidth);
-									}
-								}								
-							}
-							else if(sp.getTsSourceID() == TVChannelParams.MODE_ATSC){
-								channelList = new TVChannelParams[flist.length];
-								/** get each frequency */
-								for (int i=0; i<channelList.length; i++) {
-									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.atscParams(frequency);
-								}
-							}
-							else if(sp.getTsSourceID() == TVChannelParams.MODE_ANALOG){
-								channelList = new TVChannelParams[flist.length];
-								/** get each frequency */
-								for (int i=0; i<channelList.length; i++) {
-									frequency = Integer.parseInt(flist[i]);
-									channelList[i] = TVChannelParams.analogParams(frequency, 0, 0,0);
-								}
-							}
-							
-						}
-					}
-				}
-				c.close();
+			TVRegion rg = getCurrentRegion();
+			if (rg != null){
+				channelList = rg.getChannelParams();
 			}
 		} 
 		
@@ -1614,6 +1702,12 @@ public class TVService extends Service implements TVConfig.Update{
 							Log.d(TAG, "signal resume");
 							sendMessage(TVMessage.signalResume(channelID));
 							channelLocked = true;
+							if(inputSource == TVConst.SourceInput.SOURCE_ATV){
+								TVProgram prog = getCurrentProgram();
+								if (prog != null && prog.getSkip() == 2){
+									prog.setSkipFlag(false);
+								}
+							}
 						}else if(channelLocked && (event.feStatus & TVChannelParams.FE_TIMEDOUT)!=0){
 							Log.d(TAG, "signal lost");
 							sendMessage(TVMessage.signalLost(channelID));
@@ -1658,6 +1752,11 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "Detect EPG events have updates, send msg to clients...");
 				sendMessage(TVMessage.eventUpdate());
 				break;
+			case TVEpgScanner.Event.EVENT_CHANNEL_UPDATE:
+				Log.d(TAG, "Detect channel "+event.channelID+" update, try a re-scan now...");
+				if (event.channelID == channelID){
+					startChannelAnalyzing(getChannelNoByParams(channelParams));
+				}
 			default:
 				break;
 		}
@@ -1666,30 +1765,42 @@ public class TVService extends Service implements TVConfig.Update{
 	/*Solve the events from the channel scanner.*/
 	private void resolveScanEvent(TVScanner.Event event){
 		Log.d(TAG, "Channel scan event: " + event.type);
-		switch (event.type) {
-			case TVScanner.Event.EVENT_SCAN_PROGRESS:
-				Log.d(TAG, "Progress: " + event.percent + "%" + ", channel no. "+event.channelNumber);
-				if (event.programName != null) {
-					Log.d(TAG, "New Program : "+ event.programName + ", type "+ event.programType);
-				}
-				sendMessage(TVMessage.scanUpdate(event.percent, event.channelNumber, event.totalChannelCount, 
-					event.channelParams, event.lockedStatus, event.programName, event.programType));
-				break;
-			case TVScanner.Event.EVENT_STORE_BEGIN:
-				Log.d(TAG, "Store begin...");
-				sendMessage(TVMessage.scanStoreBegin());
-				break;
-			case TVScanner.Event.EVENT_STORE_END:
-				Log.d(TAG, "Store end");
-				sendMessage(TVMessage.scanStoreEnd());
-				break;
-			case TVScanner.Event.EVENT_SCAN_END:
-				Log.d(TAG, "Scan end");
-				sendMessage(TVMessage.scanEnd());
-				break;
-			default:
-				break;
-				
+		if (status == TVRunningStatus.STATUS_SCAN){
+			switch (event.type) {
+				case TVScanner.Event.EVENT_SCAN_PROGRESS:
+					Log.d(TAG, "Progress: " + event.percent + "%" + ", channel no. "+event.channelNumber);
+					if (event.programName != null) {
+						Log.d(TAG, "New Program : "+ event.programName + ", type "+ event.programType);
+					}
+					sendMessage(TVMessage.scanUpdate(event.percent, event.channelNumber, event.totalChannelCount, 
+						event.channelParams, event.lockedStatus, event.programName, event.programType));
+					break;
+				case TVScanner.Event.EVENT_STORE_BEGIN:
+					Log.d(TAG, "Store begin...");
+					sendMessage(TVMessage.scanStoreBegin());
+					break;
+				case TVScanner.Event.EVENT_STORE_END:
+					Log.d(TAG, "Store end");
+					sendMessage(TVMessage.scanStoreEnd());
+					break;
+				case TVScanner.Event.EVENT_SCAN_END:
+					Log.d(TAG, "Scan end");
+					sendMessage(TVMessage.scanEnd());
+					break;
+				default:
+					break;
+					
+			}
+		}else if (status == TVRunningStatus.STATUS_ANALYZE_CHANNEL){
+			switch (event.type) {
+				case TVScanner.Event.EVENT_SCAN_END:
+					stopChannelAnalyzing(true);
+					Log.d(TAG, "Channel analyzing end, try replay any program in this channel...");
+					replayCurrentChannel();
+					break;
+				default:
+					break;
+			}
 		}
 	}
 	
@@ -1744,13 +1855,8 @@ public class TVService extends Service implements TVConfig.Update{
 						}
 					}
 				}*/
-			}else if(name.equals("tv:check_program_lock")){
-				boolean enable = config.getBoolean("tv:check_program_lock");
-				if(!enable){
-					if((status == TVRunningStatus.STATUS_PLAY_ATV) || (status == TVRunningStatus.STATUS_PLAY_DTV)){
-						playCurrentProgramAV();
-					}
-				}
+			}else if(name.equals("tv:vchip:enable")){
+				resolveReplay(true);
 			}
 		}catch(Exception e){
 		}
@@ -1833,7 +1939,7 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	/*Restore factory setting*/
-	private void resolveRestoreFactorySetting(){
+	private void resolveRestoreFactorySetting(int flags){
 		stopPlaying();
 		stopScan(false);
 		stopRecording();
@@ -1848,9 +1954,17 @@ public class TVService extends Service implements TVConfig.Update{
 			programNum = null;
 			channelParams = null;
 		}
-
-		TVDataProvider.restore();
-		config.restore();
+		
+		/*restore database*/
+		if ((flags & RESTORE_FL_DATABASE) != 0){
+			TVDataProvider.restore();
+		}
+		/*restore config*/
+		if ((flags & RESTORE_FL_CONFIG) != 0){
+			config.restore();
+		}
+		
+		/**/
 	}
 	
 	/*Play a program.*/
@@ -1858,10 +1972,36 @@ public class TVService extends Service implements TVConfig.Update{
 		TVProgram p = getCurrentProgram();
 
 		if (p == null){
+			int id = -1;
 			Log.d(TAG, "Cannot play last played program, try first valid program.");
 			TVProgram fvp = TVProgram.selectFirstValid(this, getCurProgramType());
 			if (fvp != null){
-				TVPlayParams tp = TVPlayParams.playProgramByID(fvp.getID());
+				id = fvp.getID();
+			}else{
+				if(dtvMode == TVChannelParams.MODE_ATSC){
+					TVRegion curReg = getCurrentRegion();
+					if (curReg != null){
+						TVChannelParams para = curReg.getChannelParams(3);
+						if (para != null){
+							/*new add a DTV & ATV program, then try play*/
+							Log.d(TAG, "Creating analog program 3-0 in channel 3...");
+							TVChannelParams param = TVChannelParams.analogParams(para.getFrequency(), 0, 0, 0); 
+							TVChannel newChan = new TVChannel(this, param);
+							TVProgram newProg = new TVProgram(this, newChan.getID(), TVProgram.TYPE_ATV,
+								new TVProgramNumber(3, 0), 0);							
+							Log.d(TAG, "Creating digital program 3-1 in channel 3...");
+							param = TVChannelParams.atscParams(para.getFrequency()); 
+							newChan = new TVChannel(this, param);
+							newProg = new TVProgram(this, newChan.getID(), TVProgram.TYPE_TV,
+								new TVProgramNumber(3, 1), 0);
+							id = newProg.getID();
+						}
+					}
+				}
+			}
+			
+			if (id != -1){
+				TVPlayParams tp = TVPlayParams.playProgramByID(id);
 				resolvePlayProgram(tp);
 			}
 		}else{
@@ -1931,7 +2071,6 @@ public class TVService extends Service implements TVConfig.Update{
 		};
 		
 		recorder.open(device);
-		recorder.setStorage("/mnt/sda1");
 
 		TVDataProvider.openDatabase(this);
 		/*scan PVR records form storages to database*/
@@ -1939,17 +2078,16 @@ public class TVService extends Service implements TVConfig.Update{
 		config = new TVConfig(this);
 
 		try{
-			/*Must check the program lock*/
-			//config.set("tv:check_program_lock", new TVConfigValue(true));
-
+			recorder.setStorage(config.getString("tv:dtv:record_storage_path"));
 			String modeStr = config.getString("tv:dtv:mode");
-			int mode = TVChannelParams.getModeFromString(modeStr);
-			if(mode == -1)
+			dtvMode = TVChannelParams.getModeFromString(modeStr);
+			if(dtvMode == -1)
 				throw new Exception();
-			epgScanner.setSource(0, 0, mode);
-
+			epgScanner.setSource(0, 0, dtvMode);
+			
+			isAtvEnabled = config.getBoolean("tv:atv:enable");
+			
 			config.registerUpdate("tv:audio:language", this);
-			//config.registerUpdate("tv:check_program_lock", this);
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
 		}catch(Exception e){

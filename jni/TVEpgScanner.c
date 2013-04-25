@@ -17,6 +17,7 @@
 #define EVENT_PROGRAM_AV_UPDATE      7
 #define EVENT_PROGRAM_NAME_UPDATE    8
 #define EVENT_PROGRAM_EVENTS_UPDATE  9
+#define EVENT_TS_UPDATE              10 
 
 static JavaVM   *gJavaVM = NULL;
 static jclass    gEventClass;
@@ -108,6 +109,11 @@ static void epg_evt_callback(int dev_no, int event_type, void *param, void *user
 			edata.programID = (int)param;
 			epg_on_event(priv_data->obj, &edata);
 			break;
+		case AM_EPG_EVT_UPDATE_TS:
+			edata.type = EVENT_TS_UPDATE;
+			edata.channelID = (int)param;
+			epg_on_event(priv_data->obj, &edata);
+			break;
 		default:
 			break;
 	}
@@ -154,6 +160,7 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
+	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
 	AM_EPG_SetUserData(data->handle, (void*)data);
 }
 
@@ -170,6 +177,7 @@ static void epg_destroy(JNIEnv* env, jobject obj)
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
 		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
 		AM_EPG_Destroy(data->handle);
 		log_info("EPGScanner on demux%d sucessfully destroyed", data->dmx_id);
 		log_info("Closing demux%d ...", data->dmx_id);

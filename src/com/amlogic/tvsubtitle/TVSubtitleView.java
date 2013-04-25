@@ -18,8 +18,8 @@ import android.util.Log;
 public class TVSubtitleView extends View {
 	private static final String TAG="TVSubtitleView";
 
-	private static final int BUFFER_W = 720;
-	private static final int BUFFER_H = 576;
+	private static final int BUFFER_W = 1920;
+	private static final int BUFFER_H = 1080;
 
 	private static final int MODE_NONE=0;
 	private static final int MODE_DTV_TT=1;
@@ -52,6 +52,10 @@ public class TVSubtitleView extends View {
 	private native int native_sub_tt_next(int dir);
 	private native int native_sub_tt_set_search_pattern(String pattern, boolean casefold);
 	private native int native_sub_tt_search_next(int dir);
+	protected native int native_get_subtitle_picture_width();
+	protected native int native_get_subtitle_picture_height();
+	private native int native_sub_start_atsc_cc(int caption, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
+	private native int native_sub_stop_atsc_cc();
 
 	static{
 		System.loadLibrary("am_adp");
@@ -112,6 +116,24 @@ public class TVSubtitleView extends View {
 	}
 
 	static public class DTVCCParams{
+		private int caption_mode;
+		private int fg_color;
+		private int fg_opacity;
+		private int bg_color;
+		private int bg_opacity;
+		private int font_style;
+		private int font_size;
+
+		public DTVCCParams(int caption, int fg_color, int fg_opacity, 
+			int bg_color, int bg_opacity, int font_style, int font_size){
+			this.caption_mode = caption;
+			this.fg_color = fg_color;
+			this.fg_opacity = fg_opacity;
+			this.bg_color = bg_color;
+			this.bg_opacity = bg_opacity;
+			this.font_style = font_style;
+			this.font_size = font_size;
+		}
 	}
 
 	static public class ATVCCParams{
@@ -177,6 +199,9 @@ public class TVSubtitleView extends View {
 						break;
 					case MODE_DVB_SUB:
 						native_sub_stop_dvb_sub();
+						break;
+					case MODE_DTV_CC:
+						native_sub_stop_atsc_cc();
 						break;
 					default:
 						break;
@@ -255,6 +280,14 @@ public class TVSubtitleView extends View {
 	public void setSubParams(DTVTTParams params){
 		sub_params.mode = MODE_DTV_TT;
 		sub_params.dtv_tt = params;
+
+		if(play_mode==PLAY_SUB)
+			startSub();
+	}
+
+	public void setSubParams(DTVCCParams params){
+		sub_params.mode = MODE_DTV_CC;
+		sub_params.dtv_cc= params;
 
 		if(play_mode==PLAY_SUB)
 			startSub();
@@ -347,6 +380,16 @@ public class TVSubtitleView extends View {
 						sub_params.dtv_tt.page_no,
 						sub_params.dtv_tt.sub_page_no,
 						true);
+				break;
+			case MODE_DTV_CC:
+				ret = native_sub_start_atsc_cc(
+					sub_params.dtv_cc.caption_mode, 
+					sub_params.dtv_cc.fg_color,
+					sub_params.dtv_cc.fg_opacity,
+					sub_params.dtv_cc.bg_color,
+					sub_params.dtv_cc.bg_opacity,
+					sub_params.dtv_cc.font_style,
+					sub_params.dtv_cc.font_size);
 				break;
 			default:
 				break;
@@ -460,19 +503,21 @@ public class TVSubtitleView extends View {
 	@Override
 	public void onDraw(Canvas canvas){
 		Rect sr;
-		Rect dr = new Rect(disp_left, disp_top, getWidth()-disp_left-disp_right, getHeight()-disp_top - disp_bottom);
+		Rect dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight()- disp_bottom);
 
 		if(!visible || (play_mode==PLAY_NONE)){
 			return;
 		}
 
+		native_sub_lock();
+		
 		if(play_mode==PLAY_TT || sub_params.mode==MODE_DTV_TT || sub_params.mode==MODE_ATV_TT){
 			sr = new Rect(0, 0, 12*41, 10*25);
+		}else if (play_mode==PLAY_SUB){
+			sr = new Rect(0, 0, native_get_subtitle_picture_width(), native_get_subtitle_picture_height());
 		}else{
 			sr = new Rect(0, 0, BUFFER_W, BUFFER_H);
 		}
-
-		native_sub_lock();
 
 		canvas.drawBitmap(bitmap, sr, dr, new Paint());
 

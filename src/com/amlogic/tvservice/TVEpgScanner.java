@@ -39,6 +39,7 @@ abstract public class TVEpgScanner{
         public static final int EVENT_PROGRAM_AV_UPDATE     = 7;
         public static final int EVENT_PROGRAM_NAME_UPDATE   = 8;
         public static final int EVENT_PROGRAM_EVENTS_UPDATE = 9;
+        public static final int EVENT_CHANNEL_UPDATE        = 10;
 
         public int type;
         public int channelID;

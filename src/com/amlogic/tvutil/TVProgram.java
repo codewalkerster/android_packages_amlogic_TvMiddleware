@@ -33,7 +33,7 @@ public class TVProgram{
 	private TVProgramNumber number;
 	private int channelID;
 	private TVChannel channel;
-	private boolean skip;
+	private int skip;
 	private boolean lock;
 	private boolean scrambled;
 	private boolean favorite;
@@ -294,10 +294,11 @@ public class TVProgram{
 	private Audio audioes[];
 	private Subtitle subtitles[];
 	private Teletext teletexts[];
-
+	
 	private void constructFromCursor(Context context, Cursor c){
 		int col;
 		int num, type;
+		int major, minor;
 
 		this.context = context;
 
@@ -319,19 +320,19 @@ public class TVProgram{
 		col = c.getColumnIndex("name");
 		this.name = c.getString(col);
 
-		if(src != TVChannelParams.MODE_ATSC){
-			col = c.getColumnIndex("chan_num");
-			num = c.getInt(col);
-			this.number = new TVProgramNumber(num);
-		}else{
-			int major, minor;
-
-			col   = c.getColumnIndex("major_chan_num");
-			major = c.getInt(col);
-			col   = c.getColumnIndex("minor_chan_num");
-			minor = c.getInt(col);
-
+		col = c.getColumnIndex("chan_num");
+		num = c.getInt(col);
+			
+		col   = c.getColumnIndex("major_chan_num");
+		major = c.getInt(col);
+		
+		col   = c.getColumnIndex("minor_chan_num");
+		minor = c.getInt(col);
+		
+		if (src == TVChannelParams.MODE_ATSC || (src == TVChannelParams.MODE_ANALOG && major > 0)){
 			this.number = new TVProgramNumber(major, minor);
+		}else{
+			this.number = new TVProgramNumber(num);
 		}
 
 		col = c.getColumnIndex("service_type");
@@ -347,7 +348,7 @@ public class TVProgram{
 			this.type = TYPE_DATA;
 
 		col = c.getColumnIndex("skip");
-		this.skip = (c.getInt(col)!=0);
+		this.skip = c.getInt(col);
 
 		col = c.getColumnIndex("lock");
 		this.lock = (c.getInt(col)!=0);
@@ -405,6 +406,7 @@ public class TVProgram{
 			this.audioes[i] = new Audio(pid, lang, fmt);
 		}
 	}
+	
 	
 	private Cursor selectProgramInChannelByNumber(Context context, int channelID, TVProgramNumber num){
 		String cmd = "select * from srv_table where db_ts_id = " + channelID + " and ";
@@ -472,10 +474,11 @@ public class TVProgram{
 			}
 		}
 	}
-		
+	
 	public TVProgram(){
 	
 	}
+	
 
 	/**
 	 *根据记录ID查找指定TVProgram
@@ -511,7 +514,7 @@ public class TVProgram{
 		TVProgram p = null;
 		String cmd;
 
-		cmd = "select * from srv_table where ";
+		cmd = "select * from srv_table where skip = 0 and ";
 		if(type != TYPE_UNKNOWN){
 			if(type == TYPE_DTV){
 				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
@@ -521,19 +524,32 @@ public class TVProgram{
 		}
 
 		if(num.isATSCMode()){
-			int minorCheck = num.getMinorCheck();
-			if (minorCheck == TVProgramNumber.MINOR_CHECK_UP){
-				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num >= "+num.getMinor()+" ";
-				cmd += "order by minor_chan_num DESC limit 1";
-			}else if (minorCheck == TVProgramNumber.MINOR_CHECK_DOWN){
-				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num <= "+num.getMinor()+" ";
-				cmd += "order by minor_chan_num limit 1";
-			}else if (minorCheck == TVProgramNumber.MINOR_CHECK_NEAREST_UP){
-				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num >= "+num.getMinor()+" ";
-				cmd += "order by minor_chan_num limit 1";
-			}else if (minorCheck == TVProgramNumber.MINOR_CHECK_NEAREST_DOWN){
-				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num <= "+num.getMinor()+" ";
-				cmd += "order by minor_chan_num DESC limit 1";
+			if (num.getMinor() < 0){
+				/*recursive call*/
+				/*select dtv program first*/
+				p = selectByNumber(context,TYPE_DTV,new TVProgramNumber(num.getMajor(), 1, TVProgramNumber.MINOR_CHECK_NEAREST_UP));
+				if (p == null){
+					/*then try atv program*/
+					p = selectByNumber(context,TYPE_ATV,new TVProgramNumber(num.getMajor(), 0, TVProgramNumber.MINOR_CHECK_NONE));
+				}
+				return p;
+			}else if (num.getMinor() >= 1){
+				int minorCheck = num.getMinorCheck();
+				if (minorCheck == TVProgramNumber.MINOR_CHECK_UP){
+					cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num >= "+num.getMinor()+" ";
+					cmd += "order by minor_chan_num DESC limit 1";
+				}else if (minorCheck == TVProgramNumber.MINOR_CHECK_DOWN){
+					cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num <= "+num.getMinor()+" ";
+					cmd += "order by minor_chan_num limit 1";
+				}else if (minorCheck == TVProgramNumber.MINOR_CHECK_NEAREST_UP){
+					cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num >= "+num.getMinor()+" ";
+					cmd += "order by minor_chan_num limit 1";
+				}else if (minorCheck == TVProgramNumber.MINOR_CHECK_NEAREST_DOWN){
+					cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num <= "+num.getMinor()+" ";
+					cmd += "order by minor_chan_num DESC limit 1";
+				}else{
+					cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
+				}
 			}else{
 				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
 			}
@@ -567,7 +583,7 @@ public class TVProgram{
 		Cursor c;
 		TVProgram p = null;
 
-		cmd = "select * from srv_table where ";
+		cmd = "select * from srv_table where skip=0 and ";
 
 		if(type != TYPE_UNKNOWN){
 			if(type == TYPE_DTV){
@@ -598,7 +614,7 @@ public class TVProgram{
 
 		if(p != null) return p;
 
-		cmd = "select * from srv_table where ";
+		cmd = "select * from srv_table where skip=0 and ";
 
 		if(type != TYPE_UNKNOWN){
 			if(type == TYPE_DTV){
@@ -623,6 +639,7 @@ public class TVProgram{
 		if(c != null){
 			if(c.moveToFirst()){
 				p = new TVProgram(context, c);
+				Log.d(TAG, "selectUp "+p.getNumber().getMinor());
 			}
 			c.close();
 		}
@@ -642,7 +659,7 @@ public class TVProgram{
 		Cursor c;
 		TVProgram p = null;
 
-		cmd = "select * from srv_table where ";
+		cmd = "select * from srv_table where skip=0 and ";
 
 		if(type != TYPE_UNKNOWN){
 			if(type == TYPE_DTV){
@@ -673,7 +690,7 @@ public class TVProgram{
 
 		if(p != null) return p;
 
-		cmd = "select * from srv_table where ";
+		cmd = "select * from srv_table where skip=0 and ";
 
 		if(type != TYPE_UNKNOWN){
 			if(type == TYPE_DTV){
@@ -716,7 +733,7 @@ public class TVProgram{
 		Cursor c;
 
 		if((type == TYPE_TV) || (type == TYPE_DTV) || (type == TYPE_UNKNOWN)){
-			cmd = "select * from srv_table where service_type = "+TYPE_TV+" order by chan_num";
+			cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_TV+" order by chan_num";
 			c = context.getContentResolver().query(TVDataProvider.RD_URL,
 					null,
 					cmd,
@@ -732,7 +749,7 @@ public class TVProgram{
 		}
 
 		if((type == TYPE_RADIO) || (type == TYPE_DTV) || (type == TYPE_UNKNOWN)){
-			cmd = "select * from srv_table where service_type = "+TYPE_RADIO+" order by chan_num";
+			cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_RADIO+" order by chan_num";
 			c = context.getContentResolver().query(TVDataProvider.RD_URL,
 					null,
 					cmd,
@@ -748,7 +765,7 @@ public class TVProgram{
 		}
 
 		if((type == TYPE_ATV) || (type == TYPE_UNKNOWN)){
-			cmd = "select * from srv_table where service_type = "+TYPE_ATV+" order by chan_num";
+			cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_ATV+" order by chan_num";
 			c = context.getContentResolver().query(TVDataProvider.RD_URL,
 					null,
 					cmd,
@@ -780,10 +797,10 @@ public class TVProgram{
 	 *列出全部TVProgram
 	 *@param context 当前Context
 	 *@param type 节目类型
-	 *@param no_skip 不列出设为skip的节目
+	 *@param skip skip值
 	 *@return 返回TVProgram数组，null表示没有节目
 	 */
-	public static TVProgram[] selectByType(Context context, int type, boolean no_skip){
+	public static TVProgram[] selectByType(Context context, int type, int skip){
 		TVProgram p[] = null;
 		boolean where = false;
 		String cmd = "select * from srv_table ";
@@ -796,12 +813,10 @@ public class TVProgram{
 			where = true;
 		}
 
-		if(no_skip){
-			if(where){
-				cmd += " and skip = 0 ";
-			}else{
-				cmd += " where skip = 0 ";
-			}
+		if(where){
+			cmd += " and skip = " + skip + " ";
+		}else{
+			cmd += " where skip = " + skip + " ";;
 		}
 
 		cmd += " order by chan_order";
@@ -823,7 +838,57 @@ public class TVProgram{
 
 		return p;
 	}
+	
+	/**
+	 *列出全部TVProgram
+	 *@param context 当前Context
+	 *@param type 节目类型
+	 *@param no_skip 不列出设为skip的节目
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectByType(Context context, int type, boolean no_skip){
+		return selectByType(context, type, no_skip ? 0 : 1);
+	}
+	
+	/**
+	 *列出一个channel的全部TVProgram
+	 *@param context 当前Context
+	 *@param channelID channel id
+	 *@param type 节目类型
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectByChannel(Context context, int channelID, int type){
+		TVProgram p[] = null;
+		boolean where = false;
+		String cmd = "select * from srv_table ";
 
+		if(type == TYPE_DTV){
+			cmd += "where (service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") ";
+			where = true;
+		}else if(type != TYPE_UNKNOWN){
+			cmd += "where service_type = "+type+" ";
+			where = true;
+		}
+
+		cmd += " and db_ts_id = " + channelID + " order by chan_order";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
 
 	/**
 	 *取得Program的ID
@@ -1225,6 +1290,14 @@ public class TVProgram{
 	 *@return true 表示节目设置了跳过标志，false表示节目未设置跳过标志
 	 */
 	public boolean getSkipFlag(){
+		return (skip != 0);
+	}
+	
+	/**
+	 *取得节目跳过标志数值
+	 *@return true 跳过标志数值
+	 */
+	public int getSkip(){
 		return skip;
 	}
 
@@ -1274,7 +1347,7 @@ public class TVProgram{
 	 *@param f 跳过标志
 	 */
 	public void setSkipFlag(boolean f){
-		skip = f;
+		skip = f ? 1 : 0;;
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
 				null,
@@ -1461,19 +1534,9 @@ public class TVProgram{
 	 */
 	public static TVProgram[] selectByGroupMap(Context context, int group_id, boolean no_skip){
 		TVProgram p[] = null;
-		boolean where = false;
 		String cmd = "select * from srv_table left join grp_map_table on srv_table.db_id = grp_map_table.db_srv_id where grp_map_table.db_grp_id="+group_id ;
 	
-		where = true;
-
-		if(no_skip){
-			if(where){
-				cmd += " and srv_table.skip = 0 ";
-			}else{
-				cmd += " where srv_table.skip = 0 ";
-			}
-		}
-
+		cmd += " and srv_table.skip = " + (no_skip ? 0 : 1) + " ";
 		cmd += " order by chan_order";
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
@@ -1608,22 +1671,7 @@ public class TVProgram{
      *@param name 节目名称
      */
     public void setProgramSkip(boolean myskip){
-        if (this.skip != myskip)
-        {
-            this.skip = myskip;
-            int skipValue = 0;
-            if (myskip)
-                skipValue = 1;
-            
-            Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
-                    null,
-                    "update srv_table set skip = " + skipValue + " where srv_table.db_id = " + id,
-                    null, null);
-            if(c != null){
-                c.close();
-            }
-        }
-       
+    	setSkipFlag(myskip);
     }
 	
     /**

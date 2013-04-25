@@ -5,6 +5,7 @@
 #include <am_dmx.h>
 #include <am_pes.h>
 #include <am_misc.h>
+#include <am_cc.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <jni.h>
@@ -17,6 +18,7 @@ extern "C" {
         AM_SUB2_Handle_t sub_handle;
         AM_PES_Handle_t  pes_handle;
         AM_TT2_Handle_t  tt_handle;
+		AM_CC_Handle_t   cc_handle;
         int              dmx_id;
         int              filter_handle;
         jobject          obj;
@@ -25,6 +27,8 @@ extern "C" {
         int              bmp_h;
         int              bmp_pitch;
         uint8_t         *buffer;
+        int             sub_w;
+        int             sub_h;
     } TVSubtitleData;
 
 #ifdef LOG_TAG
@@ -99,6 +103,27 @@ extern "C" {
         sub_update(sub->obj);
     }
 
+	static void cc_draw_begin_cb(AM_CC_Handle_t handle, AM_CC_DrawPara_t *draw_para)
+    {
+        TVSubtitleData *sub = (TVSubtitleData*)AM_CC_GetUserData(handle);
+
+        pthread_mutex_lock(&sub->lock);
+    }
+
+    static void cc_draw_end_cb(AM_CC_Handle_t handle, AM_CC_DrawPara_t *draw_para)
+    {
+        TVSubtitleData *sub = (TVSubtitleData*)AM_CC_GetUserData(handle);
+
+        sub->bitmap->notifyPixelsChanged();
+
+		sub->sub_w = draw_para->caption_width;
+		sub->sub_h = draw_para->caption_height;
+
+        pthread_mutex_unlock(&sub->lock);
+
+        sub_update(sub->obj);
+    }
+
     static void pes_tt_cb(AM_PES_Handle_t handle, uint8_t *buf, int size)
     {
         TVSubtitleData *sub = (TVSubtitleData*)AM_PES_GetUserData(handle);
@@ -142,6 +167,8 @@ extern "C" {
         if(pic) {
             AM_SUB2_Region_t *rgn = pic->p_region;
 
+            sub->sub_w = pic->original_width;
+            sub->sub_h = pic->original_height;
             while(rgn) {
                 int sx, sy, dx, dy, rw, rh;
 
@@ -320,6 +347,18 @@ error:
         }
     }
 
+	static jint get_subtitle_piture_width(JNIEnv *env, jobject obj)
+    {
+       TVSubtitleData *data = sub_get_data(env, obj);
+       return data->sub_w;
+    }
+
+    static jint get_subtitle_piture_height(JNIEnv *env, jobject obj)
+    {
+       TVSubtitleData *data = sub_get_data(env, obj);
+       return data->sub_h;
+    }
+
     static jint sub_init(JNIEnv *env, jobject obj)
     {
         TVSubtitleData *data;
@@ -355,6 +394,10 @@ error:
             free(data);
             return -1;
         }
+
+		/*just init, no effect*/
+		data->sub_w = 720;
+		data->sub_h = 576;
 
         return 0;
     }
@@ -597,6 +640,68 @@ error:
         return 0;
     }
 
+	static jint sub_start_atsc_cc(JNIEnv *env, jobject obj, jint caption, jint fg_color, 
+		jint fg_opacity, jint bg_color, jint bg_opacity, jint font_style, jint font_size)
+	{
+		TVSubtitleData *data = sub_get_data(env, obj);
+		AM_CC_CreatePara_t cc_para;
+		AM_CC_StartPara_t spara;
+		int ret;
+
+		LOGI("start cc: caption %d, fgc %d, bgc %d, fgo %d, bgo %d, fsize %d, fstyle %d",
+			caption, fg_color, bg_color, fg_opacity, bg_opacity, font_size, font_style);
+		
+		cc_para.bmp_buffer = data->buffer;
+		cc_para.pitch = data->bmp_pitch;
+		cc_para.draw_begin = cc_draw_begin_cb;
+		cc_para.draw_end = cc_draw_end_cb;
+		cc_para.user_data = (void*)data;
+		
+		spara.caption                  = (AM_CC_CaptionMode_t)caption;
+		spara.user_options.bg_color    = (AM_CC_Color_t)bg_color;
+		spara.user_options.fg_color    = (AM_CC_Color_t)fg_color;
+		spara.user_options.bg_opacity  = (AM_CC_Opacity_t)bg_opacity;
+		spara.user_options.fg_opacity  = (AM_CC_Opacity_t)fg_opacity;
+		spara.user_options.font_size   = (AM_CC_FontSize_t)font_size;
+		spara.user_options.font_style  = (AM_CC_FontStyle_t)font_style;
+
+		ret = AM_CC_Create(&cc_para, &data->cc_handle);
+		if (ret != AM_SUCCESS)
+			goto error;
+
+		ret = AM_CC_Start(data->cc_handle, &spara);
+		if (ret != AM_SUCCESS)
+			goto error;
+
+		LOGI("start cc successfully!");
+		return 0;
+error:
+		if (data->cc_handle != NULL){
+			AM_CC_Destroy(data->cc_handle);
+		}
+		LOGI("start cc failed!");
+		return -1;
+	}
+
+	static jint sub_stop_atsc_cc(JNIEnv *env, jobject obj)
+	{
+		TVSubtitleData *data = sub_get_data(env, obj);
+
+		LOGI("stop cc");
+		AM_CC_Destroy(data->cc_handle);
+
+		pthread_mutex_lock(&data->lock);
+		clear_bitmap(data);
+		data->bitmap->notifyPixelsChanged();
+		pthread_mutex_unlock(&data->lock);
+
+		sub_update(obj);
+
+		data->cc_handle= NULL;
+
+		return 0;
+	}
+
     static JNINativeMethod gMethods[] = {
         /* name, signature, funcPtr */
         {"native_sub_init", "()I", (void*)sub_init},
@@ -614,6 +719,10 @@ error:
         {"native_sub_tt_next", "(I)I", (void*)sub_tt_next},
         {"native_sub_tt_set_search_pattern", "(Ljava/lang/String;Z)I", (void*)sub_tt_set_search_pattern},
         {"native_sub_tt_search_next", "(I)I", (void*)sub_tt_search},
+        {"native_get_subtitle_picture_width", "()I", (void*)get_subtitle_piture_width},
+        {"native_get_subtitle_picture_height", "()I", (void*)get_subtitle_piture_height},
+        {"native_sub_start_atsc_cc", "(IIIIIII)I", (void*)sub_start_atsc_cc},
+        {"native_sub_stop_atsc_cc", "()I", (void*)sub_stop_atsc_cc},
     };
 
     JNIEXPORT jint

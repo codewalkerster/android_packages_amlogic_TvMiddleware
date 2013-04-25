@@ -63,6 +63,11 @@ public class TVMessage implements Parcelable{
     public static final int TYPE_VGA_ADJUST_DOING  = 26;
     /**信号改变*/
     public static final int TYPE_SIG_CHANGE        = 27;
+	/**切换至新节目*/
+	public static final int TYPE_PROGRAM_SWITCH    = 28;
+	/**在当前频点搜索DTV频道*/
+	public static final int TYPE_SCAN_DTV_CHANNEL  = 29;
+	
 	private static final String TAG="TVMessage";
 	private int type;
 	private int programID;
@@ -149,14 +154,18 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_INPUT_SOURCE) != 0){
 			inputSource = in.readInt();
 		}
-		if ((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS) {
-			scanProgress = in.readInt();
-			scanTotalChanCount = in.readInt();
-			scanCurChanNo = in.readInt();
-			scanCurChanParams = new TVChannelParams(in);
-			scanCurChanLocked = in.readInt();
-			scanProgramName = in.readString();
-			scanProgramType = in.readInt();
+		if ((flags & FLAG_SCAN) != 0){
+			if (type == TYPE_SCAN_PROGRESS){
+				scanProgress = in.readInt();
+				scanTotalChanCount = in.readInt();
+				scanCurChanNo = in.readInt();
+				scanCurChanParams = new TVChannelParams(in);
+				scanCurChanLocked = in.readInt();
+				scanProgramName = in.readString();
+				scanProgramType = in.readInt();
+			}else if (type == TYPE_SCAN_DTV_CHANNEL){
+				scanCurChanNo = in.readInt();
+			}	
 		}
 		if((flags & FLAG_STOP_RECORD) != 0){
 			stopRecordRequestType = in.readInt();
@@ -195,14 +204,18 @@ public class TVMessage implements Parcelable{
 			dest.writeInt(inputSource);
 		}
 
-		if((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS){
-			dest.writeInt(scanProgress);
-			dest.writeInt(scanTotalChanCount);
-			dest.writeInt(scanCurChanNo);
-			scanCurChanParams.writeToParcel(dest, flag);
-			dest.writeInt(scanCurChanLocked);
-			dest.writeString(scanProgramName);
-			dest.writeInt(scanProgramType);
+		if((flags & FLAG_SCAN) != 0){
+			if (type == TYPE_SCAN_PROGRESS){
+				dest.writeInt(scanProgress);
+				dest.writeInt(scanTotalChanCount);
+				dest.writeInt(scanCurChanNo);
+				scanCurChanParams.writeToParcel(dest, flag);
+				dest.writeInt(scanCurChanLocked);
+				dest.writeString(scanProgramName);
+				dest.writeInt(scanProgramType);
+			}else if (type == TYPE_SCAN_DTV_CHANNEL){
+				dest.writeInt(scanCurChanNo);
+			}	
 		}
 		if((flags & FLAG_STOP_RECORD) != 0){
 			dest.writeInt(stopRecordRequestType);
@@ -606,6 +619,20 @@ public class TVMessage implements Parcelable{
 
 		return msg;
 	}
+	
+	/**
+	 *创建一个ProgramSwitch消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programSwitch(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_SWITCH;
+		msg.programID = programID;
+
+		return msg;
+	}
 
 	/**
 	 *创建一个SignalLost消息
@@ -806,7 +833,20 @@ public class TVMessage implements Parcelable{
         return msg;
     }
     
+	/**
+	 *创建一个开始搜索当前Channel的DTV节目消息,一般用于ATSC频道分析
+	 *@param channelNo 频点在频率表中的序号
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage scanDTVChannelStart(int channelNo){
+		TVMessage msg = new TVMessage();
 	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_SCAN_DTV_CHANNEL;
+		msg.scanCurChanNo = channelNo;
+
+		return msg;
+	}
 	
 	public int describeContents(){
 		return 0;

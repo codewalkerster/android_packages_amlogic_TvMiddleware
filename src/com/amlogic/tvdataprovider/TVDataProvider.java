@@ -61,7 +61,7 @@ public class TVDataProvider extends ContentProvider{
 		db.getWritableDatabase().execSQL("delete from ts_table");
 		db.getWritableDatabase().execSQL("delete from srv_table");
 		db.getWritableDatabase().execSQL("delete from evt_table");
-		db.getWritableDatabase().execSQL("delete from rec_table");
+		db.getWritableDatabase().execSQL("delete from booking_table");
 		db.getWritableDatabase().execSQL("delete from grp_table");
 		db.getWritableDatabase().execSQL("delete from grp_map_table");
 		db.getWritableDatabase().execSQL("delete from subtitle_table");
@@ -70,6 +70,9 @@ public class TVDataProvider extends ContentProvider{
 		db.getWritableDatabase().execSQL("delete from sat_para_table");
 		db.getWritableDatabase().execSQL("delete from region_table");
 		modified = true;
+		
+		/*load all builtin data*/
+		db.loadBuiltins();
 	}
 
 	@Override

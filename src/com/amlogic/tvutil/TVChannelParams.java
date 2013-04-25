@@ -756,6 +756,10 @@ public class TVChannelParams  implements Parcelable {
 		if(this.mode != params.mode)
 			return false;
 
+		if (this.mode == MODE_ANALOG && 
+		    Math.abs(this.frequency - params.frequency) > 2000000)
+		    return false;
+		    
 		if(this.frequency != params.frequency)
 			return false;
 

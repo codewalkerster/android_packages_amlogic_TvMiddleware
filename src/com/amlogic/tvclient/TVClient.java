@@ -29,13 +29,18 @@ import com.amlogic.tvutil.TvinInfo;
  */
 abstract public class TVClient
 {
+	/*Restore flags*/
+	public static final int RESTORE_FL_DATABASE  = 0x1;
+	public static final int RESTORE_FL_CONFIG    = 0x2;
+	public static final int RESTORE_FL_ALL       = RESTORE_FL_DATABASE | RESTORE_FL_CONFIG;
+
     private static final String TAG="TVClient";
     private static final String SERVICE_NAME="com.amlogic.tvservice.TVService";
 
     private static final int MSG_CONNECTED    = 1949;
     private static final int MSG_DISCONNECTED = 1950;
     private static final int MSG_MESSAGE      = 1951;
-
+    
     private ITVService service;
     private Context context;
     private Handler handler;
@@ -816,9 +821,17 @@ abstract public class TVClient
 	 *恢复出厂设置
 	 */
 	public void restoreFactorySetting(){
+		restoreFactorySetting(RESTORE_FL_ALL);
+	}
+	
+	/**
+	 *恢复出厂设置
+	 *@param flags 需要恢复的项，如DATABASE CONFIG等
+	 */
+	public void restoreFactorySetting(int flags){
 		if(service != null){
 			try{
-				service.restoreFactorySetting();
+				service.restoreFactorySetting(flags);
 			}catch(RemoteException e){
 			}
 		}

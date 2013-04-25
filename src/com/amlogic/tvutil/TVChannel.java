@@ -57,7 +57,7 @@ public class TVChannel{
 			col = c.getColumnIndex("aud_mode");
 			int aud_mode = c.getInt(col);
 			col = c.getColumnIndex("flags");
-            int afc_flag = c.getInt(col);
+			int afc_flag = c.getInt(col);
 			this.params = TVChannelParams.analogParams(freq,std, aud_mode,afc_flag);
 		}
 
@@ -120,7 +120,7 @@ public class TVChannel{
 			c.close();
 		}
 	}
-
+		
 	/**
 	 *根据记录ID查找对应的TVChannel
 	 *@param context 当前Context
@@ -133,6 +133,30 @@ public class TVChannel{
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
 				"select * from ts_table where ts_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				chan = new TVChannel(context, c);
+			}
+			c.close();
+		}
+
+		return chan;
+	}
+
+	/**
+	 *根据频率信息查找对应的TVChannel
+	 *@param context 当前Context
+	 *@param params 频率参数
+	 *@return 返回对应的TVChannel对像，null表示不存在该id所对应的对象
+	 */
+	public static TVChannel selectByParams(Context context, TVChannelParams params){
+		TVChannel chan = null;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from ts_table where ts_table.src = " + params.getMode() +
+				" and ts_table.freq = " + params.getFrequency(),
 				null, null);
 		if(c != null){
 			if(c.moveToFirst()){
