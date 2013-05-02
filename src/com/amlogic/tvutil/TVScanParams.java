@@ -258,7 +258,7 @@ public class TVScanParams implements Parcelable {
 	/**
 	 * 创建ATV/DTV一起搜索模式参数
 	 *@param fendID 前端设备号
-	 *@param tsSourceID DTV TS输入源ID
+	 *@param dtvTsSourceID DTV TS输入源ID
 	 *@return 返回新创建的搜索参数
 	 */
 	public static TVScanParams adtvScanParams(int fendID, int dtvTsSourceID){

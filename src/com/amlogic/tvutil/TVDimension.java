@@ -235,10 +235,10 @@ public class TVDimension{
 	}
 	
 	/**
-	 *根据记录ID取得对应的TVDimension
+	 *根据ID和名字取得对应的TVDimension
 	 *@param context 当前Context
 	 *@param ratingRegionID rating region ID
-	 *@param index RRT中对应的index_j
+	 *@param dimensionName dimension的名称
 	 *@return 返回对应的TVDimension对象
 	 */
 	public static TVDimension selectByName(Context context, int ratingRegionID, String dimensionName){
@@ -258,11 +258,8 @@ public class TVDimension{
 	}
 	
 	/**
-	 *根据记录ID取得对应的TVDimension
-	 *@param context 当前Context
-	 *@param ratingRegionID rating region ID
-	 *@param index RRT中对应的index_j
-	 *@return 返回对应的TVDimension对象
+	 *取得US downloadable TVDimension
+	 *@return 返回对应的TVDimension对象数组
 	 */
 	public static TVDimension[] selectUSDownloadable(Context context){
 		TVDimension[] d = null;
@@ -377,7 +374,7 @@ public class TVDimension{
 	
 	/**
 	 *取得该dimension的指定几个values的加锁状态
-	 *@param abrrevs 需要获取的value的abbrev集合
+	 *@param abbrevs 需要获取的value的abbrev集合
 	 *@return 返回指定values的加锁状态，0-未加锁，-1-无效值，即不能对该项进行设置，其他-已加锁
 	 */
 	public int[] getLockStatus(String[] abbrevs){

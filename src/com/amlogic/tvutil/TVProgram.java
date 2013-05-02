@@ -1667,8 +1667,8 @@ public class TVProgram{
 	}
 	
 	/**
-     *修改节目skip
-     *@param name 节目名称
+     *修改节目skip状态
+     *@param myskip 新的skip状态
      */
     public void setProgramSkip(boolean myskip){
     	setSkipFlag(myskip);
@@ -1676,7 +1676,7 @@ public class TVProgram{
 	
     /**
      *修改节目number
-     *@param name 节目名称
+     *@param number 新节目号
      */
     public void setProgramNumber(int number){
         if( this.number.getNumber() != number){
@@ -1694,7 +1694,7 @@ public class TVProgram{
     
     /**
      *修改volume
-     *@param name 节目名称
+     *@param mvolume 新设定音量
      */
     public void setProgramVolume(int mvolume){
         if( this.volume != mvolume){

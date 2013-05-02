@@ -3,6 +3,9 @@ package com.amlogic.tvutil;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+/**
+ *TV 节目号。对于一般电视节目，用一个整数表示节目。对于ATSC节目，用major和minor两个整数表示节目。
+ */
 public class TVProgramNumber implements Parcelable {
 	/**如果没有发现子频道，忽略用户的输入*/
 	public static final int MINOR_CHECK_NONE         = 0;

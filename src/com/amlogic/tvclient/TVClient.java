@@ -25,7 +25,7 @@ import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvutil.TvinInfo;
 
 /**
- *TV客户端
+ *TV功能客户端
  */
 abstract public class TVClient
 {
@@ -806,7 +806,7 @@ abstract public class TVClient
 
 	/**
 	 *模拟CVBS AMP OUT
-	 *@param AMP 
+	 *@param amp 新设定CVBS放大值 
 	 */
 	public void setCvbsAmpOut(int amp){
 		if(service != null){

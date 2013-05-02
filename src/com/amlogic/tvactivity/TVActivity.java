@@ -32,6 +32,8 @@ import com.amlogic.tvutil.TvinInfo;
 
 /**
  *TV Activity
+ *此类包含TVClient和字幕,TV播放等TV基本功能.
+ *是TV应用Activity的父类.
  */
 abstract public class TVActivity extends Activity
 {

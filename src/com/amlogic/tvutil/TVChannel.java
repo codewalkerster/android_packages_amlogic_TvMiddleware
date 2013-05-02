@@ -350,8 +350,8 @@ public class TVChannel{
 	
 	/**
      *修改ATV的频点
-     *@param fre是频点
-     *@return true 表示已经修改制式,false表示制式已经设置无需修改
+     *@param freq 是频点
+     *@return true 表示修改成功,false表示没有进行修改
      */
     public boolean setATVFreq(int freq){
         boolean ret = false;
@@ -362,6 +362,7 @@ public class TVChannel{
                     null,
                     "update ts_table set freq=" + params.frequency + " where db_id = " + id,
                     null, null);
+                ret = true;
             }
         }
         
@@ -371,8 +372,8 @@ public class TVChannel{
     
     /**
      *修改ATV的afc状态
-     *@param fre是频点
-     *@return true 表示已经修改制式,false表示制式已经设置无需修改
+     *@param data AFC 设定数据
+	 *@return true 表示修改成功,false表示没有进行修改
      */
     public boolean setATVAfcData(int data){
         boolean ret = false;
@@ -384,8 +385,8 @@ public class TVChannel{
                             null,
                             "update ts_table set flags=" + params.afc_data + " where db_id = " + id,
                             null, null);
+                    ret = true;
                 }
-               
             }
         }
         
