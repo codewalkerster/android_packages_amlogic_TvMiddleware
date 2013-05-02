@@ -4,6 +4,7 @@ import java.lang.UnsupportedOperationException;
 import android.database.Cursor;
 import android.content.Context;
 import com.amlogic.tvdataprovider.TVDataProvider;
+import android.util.Log;
 
 /**
  *TV Channel对应模拟电视中的一个频点，数字电视中的一个频点调制的TS流
@@ -78,10 +79,46 @@ public class TVChannel{
 				" and ts_table.freq = " + p.getFrequency(),
 				null, null);
 		if(c != null){
-			if(c.moveToFirst()){
-				/*Construct*/
-				constructFromCursor(context, c);
+			if(c.moveToFirst()&& p.getMode() != TVChannelParams.MODE_ANALOG){
+				Log.d("TVChannel","&&&&&&update............................p.getFrequency()="+p.getFrequency());
+				/*Using the new params*/
+				String cmd = "update ts_table set ";
+				int chanID = c.getInt(c.getColumnIndex("db_id"));
+				if (p.isDVBCMode()){
+					cmd += "symb=" + p.getSymbolRate();
+					cmd += ", mod=" + p.getModulation();
+				}else if (p.isDVBTMode()){
+					cmd += "bw=" + p.getBandwidth();
+				}else if (p.isDVBSMode()){
+					cmd += "symb=" + p.getSymbolRate();
+				}else if (p.isAnalogMode()){
+					cmd += "std=" + p.getStandard();
+					cmd += ", aud_mode=" + p.getAudioMode();
+				}else{
+					/*stub*/
+					cmd += "freq =" + p.getFrequency();
+				}
+				
+
+				cmd += " where db_id = " + chanID;
+				
+				context.getContentResolver().query(TVDataProvider.WR_URL,
+					null, cmd, null, null);
+				
+				/*re-query*/
+				c.close();
+				c = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					"select * from ts_table where db_id=" + chanID,
+					null, null);
+				if (c != null && c.moveToFirst()){
+					/*Construct*/
+					constructFromCursor(context, c);
+				}else{
+					/*Impossible*/
+				}
 			}else{
+				Log.d("TVChannel","....insert............................p.getFrequency()="+p.getFrequency());
 				String cmd = "insert into ts_table(src,freq,db_sat_para_id,polar,db_net_id,";
 				cmd += "ts_id,symb,mod,bw,snr,ber,strength,std,aud_mode,flags) ";
 				cmd += "values("+p.getMode()+","+p.getFrequency()+",";
@@ -105,7 +142,8 @@ public class TVChannel{
 				Cursor cr = context.getContentResolver().query(TVDataProvider.RD_URL,
 						null,
 						"select * from ts_table where ts_table.src = " + p.getMode() +
-						" and ts_table.freq = " + p.getFrequency(),
+						" and ts_table.freq = " + p.getFrequency()+
+					" order by db_id desc limit 1",						
 						null, null);
 				if(cr != null){
 					if(cr.moveToFirst()){
