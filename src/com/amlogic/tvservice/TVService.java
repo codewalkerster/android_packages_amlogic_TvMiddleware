@@ -1257,6 +1257,7 @@ public class TVService extends Service implements TVConfig.Update{
 			stopPlaying();
 			stopRecording();
 			stopScan(false);
+			channelParams = null;
 		}
 
 		device.setInputSource(src);
