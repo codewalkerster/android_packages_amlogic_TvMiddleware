@@ -175,6 +175,7 @@ public class TVMessage implements Parcelable{
 			recordErrorCode = in.readInt();
 		}
 		if((flags & FLAG_PROGRAM_BLOCK) != 0){
+			programBlockType = in.readInt();
 			parentalRating = in.readInt();
 			vchipDimension = in.readString();
 			vchipAbbrev    = in.readString();
@@ -225,6 +226,7 @@ public class TVMessage implements Parcelable{
 			dest.writeInt(recordErrorCode);
 		}
 		if((flags & FLAG_PROGRAM_BLOCK) != 0){
+			dest.writeInt(programBlockType);
 			dest.writeInt(parentalRating);
 			dest.writeString(vchipDimension);
 			dest.writeString(vchipAbbrev);
