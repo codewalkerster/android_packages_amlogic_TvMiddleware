@@ -45,7 +45,8 @@ abstract public class TVActivity extends Activity
 
     private VideoView videoView;
     private TVSubtitleView subtitleView;
-    private boolean connected = false;
+	private boolean connected = false;
+	private boolean externalVideoView = false;
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
     private int currTeletextPID = -1;
@@ -71,6 +72,12 @@ abstract public class TVActivity extends Activity
         }
     };
 
+	protected void onResume(){
+		Log.d(TAG, "onResume");
+        super.onResume();
+		updateVideoWindow();
+	}
+	
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
@@ -366,7 +373,10 @@ abstract public class TVActivity extends Activity
     SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback() {
         public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
             Log.d(TAG, "surfaceChanged");
-            //initSurface(holder);
+			try{
+            	initSurface(holder);
+			} catch(Exception e){
+			}
         }
         public void surfaceCreated(SurfaceHolder holder) {
             Log.d(TAG, "surfaceCreated");
@@ -435,7 +445,7 @@ abstract public class TVActivity extends Activity
     /**
      *在Activity上创建VideoView和SubtitleView
      */
-    public void openVideo() {
+    public void openVideo(VideoView view, boolean front) {
         Log.d(TAG, "openVideo");
 
         ViewGroup root = (ViewGroup)getWindow().getDecorView().findViewById(android.R.id.content);
@@ -443,13 +453,21 @@ abstract public class TVActivity extends Activity
         if(subtitleView == null) {
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
-            root.addView(subtitleView, 0);
+			if(front)
+				root.addView(subtitleView);
+			else
+            	root.addView(subtitleView, 0);
             initSubtitle();
         }
 
-        if(videoView == null) {
-            Log.d(TAG, "create video view");
+		if(view!=null){
+			videoView = view;
+			externalVideoView = true;
+			updateVideoWindow();
+        }else if(videoView == null) {
+			Log.d(TAG, "create video view");
             videoView = new VideoView(this);
+			externalVideoView = false;
             root.addView(videoView, 0);
             videoView.getHolder().addCallback(surfaceHolderCallback);
             videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE);
@@ -457,13 +475,17 @@ abstract public class TVActivity extends Activity
         }
     }
 
+	public void openVideo(){
+		openVideo(null, false);
+	}
+
 	/**
 	 *设定视频窗口的大小
 	 *@param r 窗口矩形
 	 */
     public void setVideoWindow(Rect r){
-    	if(videoView != null){
-    		videoView.layout(r.left, r.top, r.right, r.bottom);
+    	if(videoView != null && !externalVideoView){
+			videoView.layout(r.left, r.top, r.right, r.bottom);
             updateVideoWindow();
 		}
 
@@ -1111,5 +1133,111 @@ abstract public class TVActivity extends Activity
     public void unblock(){
     	client.unblock();
     }
+
+	/**
+	 *锁频，用于信号测试等
+	 *@param curParams 频点信息
+	 */
+	public void lock(TVChannelParams curParams){
+		client.lock(curParams);
+	}
+
+	/**
+	 *卫星设备LNB与Switch配置生效
+	 *@param curParams 配置信息
+	 */
+	public void sec_setLnbsSwitchCfgValid(TVChannelParams curParams){
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_LNBSSWITCHCFGVALID, curParams));
+	}
+
+	/**
+	 *diseqc马达停止转动
+	 */	
+	public void diseqcPositionerStopMoving() {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERSTOP));
+	}
+
+	/**
+	 *diseqc马达禁止限制
+	 */	
+	public void diseqcPositionerDisableLimit() {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERDISABLELIMIT));
+	}
+
+	/**
+	 *diseqc马达东向限制设置	
+	*/	
+	public void diseqcPositionerSetEastLimit() {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONEREASTLIMIT));
+	}
+
+	/**
+	 *diseqc马达西向限制设置	
+	*/	
+	public void diseqcPositionerSetWestLimit() {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERWESTLIMIT));
+	}
+
+	/**
+	 *diseqc马达东向转动	
+	 *@param curParams 配置信息	 
+	 *@param unit positioner转动单位	00 continuously 01-7F(单位second, e.g 01-one second 02-two second) 80-FF (单位step，e.g FF-one step FE-two step)  
+	*/	
+	public void diseqcPositionerMoveEast(TVChannelParams curParams, int unit) {
+		Log.d(TAG, "diseqcPositionerMoveEast " + unit);
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONEREAST, curParams, unit));
+	}
+
+	/**
+	 *diseqc马达西向转动	
+	 *@param curParams 配置信息	 
+	 *@param unit positioner转动单位	00 continuously 01-7F(单位second, e.g 01-one second 02-two second) 80-FF (单位step，e.g FF-one step FE-two step) 	 
+	*/	
+	public void diseqcPositionerMoveWest(TVChannelParams curParams, int unit) {
+		Log.d(TAG, "diseqcPositionerMoveWest " + unit);
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERWEST, curParams, unit));
+	}
+
+	/**
+	 *diseqc马达存储位置
+	 *@param curParams 配置信息	 
+	*/
+	public void diseqcPositionerStorePosition(TVChannelParams curParams) {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERSTORE, curParams));
+	}
+
+	/**
+	 *diseqc马达转动到指定位置
+	 *@param curParams 配置信息
+	 */
+	public void diseqcPositionerGotoPosition(TVChannelParams curParams) {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERGOTO, curParams));
+	}
+
+	/**
+	 *diseqc马达转动根据本地经纬度以及卫星经度
+	 *@param curParams 配置信息	 
+	 */	
+	public void diseqcPositionerGotoX(TVChannelParams curParams) {
+		client.secRequest(TVMessage.secRequest(TVMessage.TYPE_SEC_POSITIONERGOTOX, curParams));
+	}	
+
+	
+
+	/**
+	 *导入指定xml到当前数据库
+	 *@param inputXmlPath xml文件全路径	 
+	 */	
+	public void importDatabase(String inputXmlPath){
+		client.importDatabase(inputXmlPath);
+	}
+
+	/**
+	 *导出当前数据库到指定xml文件
+	 *@param outputXmlPath xml文件全路径	 
+	 */	
+	public void exportDatabase(String outputXmlPath){
+		client.exportDatabase(outputXmlPath);
+	}
 }
 

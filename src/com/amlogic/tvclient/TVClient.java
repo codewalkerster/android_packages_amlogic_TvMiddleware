@@ -23,6 +23,7 @@ import com.amlogic.tvutil.TVStatus;
 import com.amlogic.tvutil.DTVPlaybackParams;
 import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvutil.TvinInfo;
+import com.amlogic.tvutil.TVChannelParams;
 
 /**
  *TV功能客户端
@@ -914,6 +915,58 @@ abstract public class TVClient
 			}
 		}
     }
+
+	/**
+	 *锁频，用于信号测试等
+	 *@param curParams 频点信息
+	 */
+	public void lock(TVChannelParams curParams){
+		if(service != null){
+			try{
+				service.lock(curParams);
+			}catch(RemoteException e){
+			}
+		}
+	}
+
+    /**
+     *卫星设备控制
+     *@param sec_msg 卫星设备控制 消息
+     */
+    public void secRequest(TVMessage sec_msg) {
+        if(service != null) {
+            try {
+                service.secRequest(sec_msg);
+            } catch(RemoteException e) {
+            }
+        }
+    }	
+
+	/**
+	 *将指定xml文件导入到当前数据库
+	 *@param inputXmlPath xml文件全路径
+	 */
+	public void importDatabase(String inputXmlPath){
+		if(service != null){
+			try{
+				service.importDatabase(inputXmlPath);
+			}catch(RemoteException e){
+			}
+		}
+	}
+
+	/**
+	 *将当前数据库导出到指定xml文件
+	 *@param outputXmlPath xml文件全路径
+	 */
+	public void exportDatabase(String outputXmlPath){
+ 		if(service != null){
+			try{
+				service.exportDatabase(outputXmlPath);
+			}catch(RemoteException e){
+			}
+		}
+	}
     
 }
 

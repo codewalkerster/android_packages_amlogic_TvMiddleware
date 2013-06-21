@@ -187,6 +187,11 @@ public class TVChannelParams  implements Parcelable {
 	public static final int COLOR_PAL   =0x04000000;
     public static final int COLOR_NTSC  =0x08000000;
     public static final int COLOR_SECAM =0x10000000;
+
+	/**水平极性*/
+	public static final int SAT_POLARISATION_H = 0; 
+	/**垂直极限*/
+	public static final int SAT_POLARISATION_V = 1;	
     
 	public int mode;
 	public int frequency;
@@ -196,6 +201,9 @@ public class TVChannelParams  implements Parcelable {
 	public int audio;
 	public int standard;
 	public int afc_data;
+	public int sat_id;
+	public TVSatelliteParams tv_satparams;
+	public int sat_polarisation;
 
 	public static final Parcelable.Creator<TVChannelParams> CREATOR = new Parcelable.Creator<TVChannelParams>(){
 		public TVChannelParams createFromParcel(Parcel in) {
@@ -220,6 +228,13 @@ public class TVChannelParams  implements Parcelable {
 			standard = in.readInt();
 			afc_data = in.readInt();
 		}
+		if(mode == MODE_QPSK){
+			sat_id = in.readInt();
+			int satparams_notnull = in.readInt();
+			if(satparams_notnull == 1)
+				tv_satparams = new TVSatelliteParams(in);
+			sat_polarisation = in.readInt();			
+		}		
 	}
 
 	public void writeToParcel(Parcel dest, int flags){
@@ -236,14 +251,26 @@ public class TVChannelParams  implements Parcelable {
 			dest.writeInt(standard);
 			dest.writeInt(afc_data);
 		}
+		if(mode == MODE_QPSK){
+			dest.writeInt(sat_id);
+			int satparams_notnull = 0;
+			if(tv_satparams != null){
+				satparams_notnull = 1;
+			}else{
+				satparams_notnull = 0;
+			}				
+			dest.writeInt(satparams_notnull);
+			if(satparams_notnull == 1)
+				tv_satparams.writeToParcel(dest, flags);
+			dest.writeInt(sat_polarisation);		
+		}
 	}
 
 	public TVChannelParams(Parcel in){
 		readFromParcel(in);
 	}
 
-
-	TVChannelParams(int mode){
+	public TVChannelParams(int mode){
 		this.mode = mode;
 	}
 
@@ -282,14 +309,22 @@ public class TVChannelParams  implements Parcelable {
 	/**
 	 *创建DVBS参数
 	 *@param frequency 频率Hz为单位
-	 *@param symbolRate 符号率
+	 *@param symbolRate 符号率 
+	 *@param sat_id Tp属于的卫星id
+	 *@param sat_polarisation Tp极性	 
 	 *@return 返回新创建的参数
 	 */
-	public static TVChannelParams dvbsParams(int frequency, int symbolRate){
+	public static TVChannelParams dvbsParams(Context context, int frequency, int symbolRate, int sat_id, int sat_polarisation){
 		TVChannelParams tp = new TVChannelParams(MODE_QPSK);
 
 		tp.frequency  = frequency;
 		tp.symbolRate = symbolRate;
+		tp.sat_id = sat_id;
+		tp.sat_polarisation = sat_polarisation;
+
+		/*new tv_satparams*/
+		TVSatellite sat = TVSatellite.tvSatelliteSelect(context, sat_id);
+		tp.tv_satparams = sat.getParams();
 
 		return tp;
 	}
@@ -299,10 +334,11 @@ public class TVChannelParams  implements Parcelable {
 	 *@param frequency 频率Hz为单位
 	 *@return 返回新创建的参数
 	 */
-	public static TVChannelParams atscParams(int frequency){
+	public static TVChannelParams atscParams(int frequency, int modulation){
 		TVChannelParams tp = new TVChannelParams(MODE_ATSC);
 
 		tp.frequency  = frequency;
+		tp.modulation = modulation;
 
 		return tp;
 	}	
@@ -353,7 +389,7 @@ public class TVChannelParams  implements Parcelable {
 							/** get each frequency */
 							for (int i=0; i<channelList.length; i++) {
 								frequency = Integer.parseInt(flist[i]);
-								channelList[i] = TVChannelParams.dvbsParams(frequency, 0);
+								channelList[i] = TVChannelParams.dvbsParams(context, frequency, 0, 0, 0);
 							}
 						}
 						else if(mode == TVChannelParams.MODE_QAM){
@@ -383,7 +419,7 @@ public class TVChannelParams  implements Parcelable {
 							/** get each frequency */
 							for (int i=0; i<channelList.length; i++) {
 								frequency = Integer.parseInt(flist[i]);
-								channelList[i] = TVChannelParams.atscParams(frequency);
+								channelList[i] = TVChannelParams.atscParams(frequency, TVChannelParams.MODULATION_VSB_8);
 							}
 						}
 						else if(mode == TVChannelParams.MODE_ANALOG){
@@ -404,7 +440,6 @@ public class TVChannelParams  implements Parcelable {
 		return channelList;
 	}	
 
-	
 	public static CC_ATV_AUDIO_STANDARD AudioStd2Enum(int data){
 	    CC_ATV_AUDIO_STANDARD std = null;
 	    if( ((data & STD_PAL_DK) == STD_PAL_DK) ||
@@ -693,6 +728,14 @@ public class TVChannelParams  implements Parcelable {
 	}
 
 	/**
+	 *设置频率(单位Hz)
+	 @param frequency频率
+	 */
+	public void setFrequency(int frequency){
+		this.frequency = frequency;
+	}	
+
+	/**
 	 *取得伴音模式(模拟模式)
 	 *@return 返回伴音模式
 	 */
@@ -741,11 +784,55 @@ public class TVChannelParams  implements Parcelable {
 	 *@return 返回符号率
 	 */
 	public int getSymbolRate(){
-		if((mode != MODE_QPSK) || (mode != MODE_QAM))
+		if(!((mode == MODE_QPSK) || (mode == MODE_QAM)))
 			throw new UnsupportedOperationException();
 
 		return symbolRate;
 	}
+
+	/**
+	 *设置符号率(QPSK/QAM模式)
+	 *@param symbolRate 符号率
+	 */
+	public void setSymbolRate(int symbolRate){
+		if(!((mode == MODE_QPSK) || (mode == MODE_QAM)))
+			throw new UnsupportedOperationException();
+	
+		this.symbolRate = symbolRate;
+	}	
+
+	/**
+	 *取得卫星id(QPSK模式)
+	 *@return 返回卫星id
+	 */
+	public int getSatId(){
+		if(mode != MODE_QPSK)
+			throw new UnsupportedOperationException();
+
+		return sat_id;
+	}	
+
+	/**
+	 *取得极性(QPSK模式)
+	 *@return 返回极性
+	 */
+	public int getPolarisation(){
+		if(mode != MODE_QPSK)
+			throw new UnsupportedOperationException();
+
+		return this.sat_polarisation;
+	}	
+
+	/**
+	 *设置极性(QPSK模式)
+	 *@param sat_polarisation 极性
+	 */
+	public void setPolarisation(int sat_polarisation){
+		if(mode != MODE_QPSK)
+			throw new UnsupportedOperationException();
+	
+		this.sat_polarisation = sat_polarisation;
+	}	
 
 	/**
 	 *检测前端参数和当前参数是否相等
@@ -762,6 +849,28 @@ public class TVChannelParams  implements Parcelable {
 		    
 		if(this.frequency != params.frequency)
 			return false;
+
+		if(this.mode == MODE_QPSK){
+			if(this.sat_polarisation != params.sat_polarisation)
+				return false;
+
+			if(!(this.tv_satparams.equals(params.tv_satparams)))
+				return false;
+		}
+
+		return true;
+	}
+
+	public boolean equals_frontendevt(TVChannelParams params){
+		if(this.mode != params.mode)
+			return false;
+
+		if(this.mode == MODE_QPSK){
+			/*freq calc*/
+		} else {
+			if(this.frequency != params.frequency)
+				return false;
+		}
 
 		return true;
 	}

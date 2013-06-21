@@ -10,17 +10,18 @@ import android.util.Log;
  *TV Channel对应模拟电视中的一个频点，数字电视中的一个频点调制的TS流
  */
 public class TVChannel{
+	private static final String TAG="TVChannel";
 	private Context context;
 	private int id;
 	private int dvbTSID;
 	private int dvbOrigNetID;
 	private int fendID;
 	private int tsSourceID;
-	private TVChannelParams params;
+	public TVChannelParams params;
 
 	private void constructFromCursor(Context context, Cursor c){
 		int col;
-		int src, freq, mod, symb, bw;
+		int src, freq, mod, symb, bw, satid, satpolar;
 
 		this.context = context;
 
@@ -50,7 +51,9 @@ public class TVChannel{
 
 			this.params = TVChannelParams.dvbtParams(freq, bw);
 		}else if(src == TVChannelParams.MODE_ATSC){
-			this.params = TVChannelParams.atscParams(freq);
+			col = c.getColumnIndex("mod");
+			mod = c.getInt(col);
+			this.params = TVChannelParams.atscParams(freq, mod);
 		}		
 		else if(src == TVChannelParams.MODE_ANALOG){
 			col = c.getColumnIndex("std");
@@ -60,6 +63,18 @@ public class TVChannel{
 			col = c.getColumnIndex("flags");
 			int afc_flag = c.getInt(col);
 			this.params = TVChannelParams.analogParams(freq,std, aud_mode,afc_flag);
+		}
+		else if(src == TVChannelParams.MODE_QPSK){
+			col = c.getColumnIndex("symb");
+			symb = c.getInt(col);
+
+			col = c.getColumnIndex("db_sat_para_id");
+			satid = c.getInt(col);
+
+			col = c.getColumnIndex("polar");
+			satpolar = c.getInt(col);			
+			
+			this.params = TVChannelParams.dvbsParams(context, freq, symb, satid, satpolar);
 		}
 
 		this.fendID = 0;
@@ -73,10 +88,15 @@ public class TVChannel{
 	 *向数据库添加一个Channel
 	 */
 	public TVChannel(Context context, TVChannelParams p){
+		String cmd_select = "select * from ts_table where ts_table.src = " + p.getMode() + " and ts_table.freq = " + p.getFrequency();
+
+		if(p.isDVBSMode()){
+			cmd_select += " and ts_table.db_sat_para_id = " + p.getSatId() + " and ts_table.polar = " + p.getPolarisation();
+		}
+		
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
-				"select * from ts_table where ts_table.src = " + p.getMode() +
-				" and ts_table.freq = " + p.getFrequency(),
+				cmd_select,
 				null, null);
 		if(c != null){
 			if(c.moveToFirst()&& p.getMode() != TVChannelParams.MODE_ANALOG){
@@ -128,7 +148,7 @@ public class TVChannel{
 				}else if (p.isDVBTMode()){
 					cmd += "-1,-1,-1,65535,0,0,"+p.getBandwidth()+",0,0,0,0,0,0)";
 				}else if (p.isDVBSMode()){
-					cmd += "-1,-1,-1,65535,0,0,0,0,0,0,0,0,0)";
+					cmd += p.getSatId() + "," + p.getPolarisation() + ",-1,65535," + p.getSymbolRate() + ",0,0,0,0,0,0,0,0)";
 				}else if (p.isAnalogMode()){
 					cmd += "-1,-1,-1,65535,0,0,0,0,0,0,"+p.getStandard()+","+p.getAudioMode()+",0)";
 				}else if (p.isATSCMode()){
@@ -158,7 +178,47 @@ public class TVChannel{
 			c.close();
 		}
 	}
+
+	/**
+	 *创建当前卫星所有通道 
+	 *@param sat_id 卫星id
+	 *@return 返回创建的通道
+	 */
+	public static TVChannel[] tvChannelList(Context context, int sat_id){
+		TVChannel[] channelList = null;
+		int tschannel_count = 0;
+		int tschannel_index = 0;
+
+		String cmd = "select * from ts_table where db_sat_para_id = " + sat_id;
+		Cursor cur = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
 		
+		tschannel_count = cur.getCount();
+		if(tschannel_count > 0){
+
+			if(cur != null){
+
+				if(cur.moveToFirst()){
+					channelList = new TVChannel[tschannel_count];
+					
+					while (!cur.isAfterLast()) {				
+						channelList[tschannel_index] = new TVChannel(context, cur);
+				
+						cur.moveToNext();		
+
+						tschannel_index++;
+					}	
+				}
+				
+				cur.close();
+			}		     
+		}
+
+		return channelList;
+	}	
+
 	/**
 	 *根据记录ID查找对应的TVChannel
 	 *@param context 当前Context
@@ -183,18 +243,21 @@ public class TVChannel{
 	}
 
 	/**
-	 *根据频率信息查找对应的TVChannel
 	 *@param context 当前Context
 	 *@param params 频率参数
 	 *@return 返回对应的TVChannel对像，null表示不存在该id所对应的对象
 	 */
 	public static TVChannel selectByParams(Context context, TVChannelParams params){
 		TVChannel chan = null;
+		String cmd = "select * from ts_table where ts_table.src = " + params.getMode() + " and ts_table.freq = " + params.getFrequency();
 
+		if(params.isDVBSMode()){
+			cmd += " and ts_table.db_sat_para_id = " + params.getSatId() + " and ts_table.polar = " + params.getPolarisation();
+		}
+		
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
-				"select * from ts_table where ts_table.src = " + params.getMode() +
-				" and ts_table.freq = " + params.getFrequency(),
+				cmd,
 				null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -205,6 +268,43 @@ public class TVChannel{
 
 		return chan;
 	}
+
+	/*
+	 *根据通道id删除通道相关信息 
+	 */
+	public void tvChannelDel(Context context){
+		int ts_db_id = this.id;
+
+		TVProgram.tvProgramDelByChannelID(context, ts_db_id);
+	
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from ts_table where db_id = "+ ts_db_id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}	
+
+	/*
+	 *根据卫星id删除通道相关信息 
+	 *@param sat_id 卫星id	 	 
+	 */
+	public static void tvChannelDelBySatID(Context context, int sat_id){
+		Log.d(TAG, "tvChannelDelBySatID:" + sat_id);
+	
+		TVProgram.tvProgramDelBySatID(context, sat_id);
+	
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from ts_table where db_sat_para_id = "+ sat_id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+
+		return;
+	}		
 
 	/**
 	 *取得Channel ID
@@ -325,6 +425,45 @@ public class TVChannel{
 
 		return false;
 	}
+
+	/**
+	 *设置频率(单位Hz)
+	 @param frequency频率
+	 */
+	public void setFrequency(int frequency){
+		params.setFrequency(frequency);
+
+		context.getContentResolver().query(TVDataProvider.WR_URL,
+			null,
+			"update ts_table set freq=" + frequency + " where db_id = " + id,
+			null, null);		
+	}
+
+	/**
+	 *设置符号率(QPSK/QAM模式)
+	 *@param symbolRate 符号率
+	 */
+	public void setSymbolRate(int symbolRate){
+		params.setSymbolRate(symbolRate);
+
+		context.getContentResolver().query(TVDataProvider.WR_URL,
+			null,
+			"update ts_table set symb=" + symbolRate + " where db_id = " + id,
+			null, null);		
+	}	
+
+	/**
+	 *设置极性(QPSK模式)
+	 *@param sat_polarisation 极性
+	 */
+	public void setPolarisation(int sat_polarisation){
+		params.setPolarisation(sat_polarisation);
+
+		context.getContentResolver().query(TVDataProvider.WR_URL,
+			null,
+			"update ts_table set polar=" + sat_polarisation + " where db_id = " + id,
+			null, null);			
+	}		
 	
 	/**
 	 *修改模拟音频

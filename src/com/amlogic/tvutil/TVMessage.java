@@ -63,10 +63,40 @@ public class TVMessage implements Parcelable{
     public static final int TYPE_VGA_ADJUST_DOING  = 26;
     /**信号改变*/
     public static final int TYPE_SIG_CHANGE        = 27;
+	/**盲扫进度*/
+	public static final int TYPE_BLINDSCAN_PROGRESS = 28;
+	/**盲扫新Channel*/
+	public static final int TYPE_BLINDSCAN_NEWCHANNEL = 29;
+	/**盲扫结束*/
+	public static final int TYPE_BLINDSCAN_END = 30;
+	/**卫星设备LNB与Switch配置生效*/
+	public static final int TYPE_SEC_LNBSSWITCHCFGVALID = 31;
+	/**diseqc马达停止转动*/
+	public static final int TYPE_SEC_POSITIONERSTOP= 32;		
+	/**diseqc马达禁止限制*/
+	public static final int TYPE_SEC_POSITIONERDISABLELIMIT= 33;	
+	/**diseqc马达东向限制设置*/
+	public static final int TYPE_SEC_POSITIONEREASTLIMIT= 34;		
+	/**diseqc马达西向限制设置*/
+	public static final int TYPE_SEC_POSITIONERWESTLIMIT= 35;	
+	/**diseqc马达东向转动*/
+	public static final int TYPE_SEC_POSITIONEREAST= 36;	
+	/**diseqc马达西向转动*/
+	public static final int TYPE_SEC_POSITIONERWEST= 37;	
+	/**diseqc马达存储位置*/
+	public static final int TYPE_SEC_POSITIONERSTORE= 38;	
+	/**diseqc马达转动到指定位置*/
+	public static final int TYPE_SEC_POSITIONERGOTO= 39;	
+	/**diseqc马达转动根据本地经纬度以及卫星经度*/
+	public static final int TYPE_SEC_POSITIONERGOTOX= 40;	
 	/**切换至新节目*/
-	public static final int TYPE_PROGRAM_SWITCH    = 28;
+	public static final int TYPE_PROGRAM_SWITCH    = 41;
 	/**在当前频点搜索DTV频道*/
-	public static final int TYPE_SCAN_DTV_CHANNEL  = 29;
+	public static final int TYPE_SCAN_DTV_CHANNEL  = 42;
+	/**数据库导入/导出转换操作开始*/
+	public static final int TYPE_TRANSFORM_DB_START  = 43;
+	/**数据库导入/导出转换操作完成*/
+	public static final int TYPE_TRANSFORM_DB_END  = 44;
 	
 	private static final String TAG="TVMessage";
 	private int type;
@@ -84,6 +114,7 @@ public class TVMessage implements Parcelable{
 	private int scanCurChanLocked;	// 0 unlocked, 1 locked
 	private String scanProgramName; // Maybe null to indicate that no new program in this update
 	private int scanProgramType;
+	private String scanMsg;
 	private int inputSource;
 	private int stopRecordRequestProgramID;
 	private TvinInfo   tvin_info;
@@ -91,13 +122,18 @@ public class TVMessage implements Parcelable{
 	private String vchipDimension;
 	private String vchipAbbrev;
 	private String vchipText;
+	private TVChannelParams secCurParams;
+	private int secPositionerMoveUnit;	
 	
-	private int recordErrorCode;
+	private int errorCode;
 	public static final int REC_ERR_NONE        = 0; // Success, no error
 	public static final int REC_ERR_OPEN_FILE   = 1; // Cannot open output record file
 	public static final int REC_ERR_WRITE_FILE  = 2; // Cannot write data to record file
 	public static final int REC_ERR_ACCESS_FILE = 3; // Cannot access record file
 	public static final int REC_ERR_SYSTEM      = 4; // For other system reasons
+	public static final int TRANSDB_ERR_NONE           = 0; // Success, no error
+	public static final int TRANSDB_ERR_INVALID_FILE   = 1; // Invalid file format
+	public static final int TRANSDB_ERR_SYSTEM         = 2; // For other system reasons
 	
 	private int stopRecordRequestType;
 	/**停止录像以开始录制当前播放的频道*/
@@ -121,8 +157,9 @@ public class TVMessage implements Parcelable{
 	private static final int FLAG_INPUT_SOURCE   = 32;
 	private static final int FLAG_PROGRAM_NUMBER = 64;
 	private static final int FLAG_STOP_RECORD    = 128;
-	private static final int FLAG_RECORD_END     = 256;
-	private static final int FLAG_PROGRAM_BLOCK  = 512;
+	private static final int FLAG_PROGRAM_BLOCK  = 256;
+	private static final int FLAG_ERROR_CODE = 512;
+	private static final int FLAG_SEC = 1024;
 
 	public static final Parcelable.Creator<TVMessage> CREATOR = new Parcelable.Creator<TVMessage>(){
 		public TVMessage createFromParcel(Parcel in) {
@@ -154,25 +191,29 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_INPUT_SOURCE) != 0){
 			inputSource = in.readInt();
 		}
-		if ((flags & FLAG_SCAN) != 0){
-			if (type == TYPE_SCAN_PROGRESS){
-				scanProgress = in.readInt();
-				scanTotalChanCount = in.readInt();
-				scanCurChanNo = in.readInt();
-				scanCurChanParams = new TVChannelParams(in);
-				scanCurChanLocked = in.readInt();
-				scanProgramName = in.readString();
-				scanProgramType = in.readInt();
-			}else if (type == TYPE_SCAN_DTV_CHANNEL){
-				scanCurChanNo = in.readInt();
-			}	
-		}
+		if ((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS) {
+			scanProgress = in.readInt();
+			scanTotalChanCount = in.readInt();
+			scanCurChanNo = in.readInt();
+			scanCurChanParams = new TVChannelParams(in);
+			scanCurChanLocked = in.readInt();
+			scanProgramName = in.readString();
+			scanProgramType = in.readInt();
+		} else if ((flags & FLAG_SCAN) != 0 && type == TYPE_BLINDSCAN_PROGRESS) {
+			scanProgress = in.readInt();
+			scanMsg = in.readString();
+		} else if ((flags & FLAG_SCAN) != 0 && type == TYPE_BLINDSCAN_NEWCHANNEL) {
+			scanCurChanParams = new TVChannelParams(in);
+		}	
+		else if((flags & FLAG_SCAN) != 0 &&(type == TYPE_SCAN_DTV_CHANNEL)){
+                                scanCurChanNo = in.readInt();
+                        }	
 		if((flags & FLAG_STOP_RECORD) != 0){
 			stopRecordRequestType = in.readInt();
 			stopRecordRequestProgramID = in.readInt();
 		}
-		if((flags & FLAG_RECORD_END) != 0){
-			recordErrorCode = in.readInt();
+		if((flags & FLAG_ERROR_CODE) != 0){
+			errorCode = in.readInt();
 		}
 		if((flags & FLAG_PROGRAM_BLOCK) != 0){
 			programBlockType = in.readInt();
@@ -181,6 +222,20 @@ public class TVMessage implements Parcelable{
 			vchipAbbrev    = in.readString();
 			vchipText      = in.readString();
 		}
+		if((flags & FLAG_SEC) != 0){
+			if((type == TYPE_SEC_LNBSSWITCHCFGVALID)
+				|| (type == TYPE_SEC_POSITIONEREAST)
+				|| (type == TYPE_SEC_POSITIONERWEST)
+				|| (type == TYPE_SEC_POSITIONERSTORE)
+				|| (type == TYPE_SEC_POSITIONERGOTO)
+				|| (type == TYPE_SEC_POSITIONERGOTOX)){
+				secCurParams = new TVChannelParams(in);
+			}
+			if((type == TYPE_SEC_POSITIONEREAST) || (type == TYPE_SEC_POSITIONERWEST)){
+				secPositionerMoveUnit = in.readInt();
+			}			
+		}
+		
 	}
 
 	public void writeToParcel(Parcel dest, int flag){
@@ -205,25 +260,29 @@ public class TVMessage implements Parcelable{
 			dest.writeInt(inputSource);
 		}
 
-		if((flags & FLAG_SCAN) != 0){
-			if (type == TYPE_SCAN_PROGRESS){
-				dest.writeInt(scanProgress);
-				dest.writeInt(scanTotalChanCount);
-				dest.writeInt(scanCurChanNo);
-				scanCurChanParams.writeToParcel(dest, flag);
-				dest.writeInt(scanCurChanLocked);
-				dest.writeString(scanProgramName);
-				dest.writeInt(scanProgramType);
-			}else if (type == TYPE_SCAN_DTV_CHANNEL){
-				dest.writeInt(scanCurChanNo);
-			}	
+		if((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_PROGRESS){
+			dest.writeInt(scanProgress);
+			dest.writeInt(scanTotalChanCount);
+			dest.writeInt(scanCurChanNo);
+			scanCurChanParams.writeToParcel(dest, flag);
+			dest.writeInt(scanCurChanLocked);
+			dest.writeString(scanProgramName);
+			dest.writeInt(scanProgramType);
+		} else if ((flags & FLAG_SCAN) != 0 && type == TYPE_BLINDSCAN_PROGRESS) {
+			dest.writeInt(scanProgress);
+			dest.writeString(scanMsg);
+		} else if ((flags & FLAG_SCAN) != 0 && type == TYPE_BLINDSCAN_NEWCHANNEL) {
+			scanCurChanParams.writeToParcel(dest, flag);
 		}
+		else if((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_DTV_CHANNEL){
+                                dest.writeInt(scanCurChanNo);
+                        }
 		if((flags & FLAG_STOP_RECORD) != 0){
 			dest.writeInt(stopRecordRequestType);
 			dest.writeInt(stopRecordRequestProgramID);
 		}
-		if((flags & FLAG_RECORD_END) != 0){
-			dest.writeInt(recordErrorCode);
+		if((flags & FLAG_ERROR_CODE) != 0){
+			dest.writeInt(errorCode);
 		}
 		if((flags & FLAG_PROGRAM_BLOCK) != 0){
 			dest.writeInt(programBlockType);
@@ -232,6 +291,19 @@ public class TVMessage implements Parcelable{
 			dest.writeString(vchipAbbrev);
 			dest.writeString(vchipText);
 		}
+		if((flags & FLAG_SEC) != 0){
+			if((type == TYPE_SEC_LNBSSWITCHCFGVALID)
+				|| (type == TYPE_SEC_POSITIONEREAST)
+				|| (type == TYPE_SEC_POSITIONERWEST)				
+				|| (type == TYPE_SEC_POSITIONERSTORE)
+				|| (type == TYPE_SEC_POSITIONERGOTO)
+				|| (type == TYPE_SEC_POSITIONERGOTOX)){
+				secCurParams.writeToParcel(dest, flag);
+			}
+			if((type == TYPE_SEC_POSITIONEREAST) || (type == TYPE_SEC_POSITIONERWEST)){
+				dest.writeInt(secPositionerMoveUnit);
+			}			
+		}	
 	}
 
 	public TVMessage(Parcel in){
@@ -391,6 +463,17 @@ public class TVMessage implements Parcelable{
 
 		return scanProgramType;
 	}
+
+	/**
+	 *搜索中搜索消息
+	 *@return 返回搜索中搜索消息
+	 */
+	public String getScanMsg() {
+		if((flags & FLAG_SCAN) != FLAG_SCAN)
+			throw new UnsupportedOperationException();
+
+		return scanMsg;
+	}
 	
 	/**
 	 *取得停止当前录像请求类型
@@ -415,14 +498,14 @@ public class TVMessage implements Parcelable{
 	}
 	
 	/**
-	 *取得录像结束的错误码
+	 *取得错误代码
 	 *@return 返回错误码
 	 */
-	public int getRecordErrorCode() {
-		if((flags & FLAG_RECORD_END) != FLAG_RECORD_END)
+	public int getErrorCode() {
+		if((flags & FLAG_ERROR_CODE) != FLAG_ERROR_CODE)
 			throw new UnsupportedOperationException();
 
-		return recordErrorCode;
+		return errorCode;
 	}
 
 	/**
@@ -501,6 +584,28 @@ public class TVMessage implements Parcelable{
 
 		return vchipText;
 	}
+
+	/**
+	 *卫星设备控制中取得sec配置信息
+	 @return 返回当前sec配置信息
+	 */
+	public TVChannelParams getSecCurChanParams() {
+		if((flags & FLAG_SEC) != FLAG_SEC)
+			throw new UnsupportedOperationException();
+
+		return secCurParams;
+	}	
+
+	/**
+	 *卫星设备控制中取得positioner转动单位
+	 @return 返回当前positioner转动单位
+	 */
+	public int getSecPositionerMoveUnit() {
+		if((flags & FLAG_SEC) != FLAG_SEC)
+			throw new UnsupportedOperationException();
+
+		return secPositionerMoveUnit;
+	}	
 
 	/**
 	 *创建一个ProgramBlock消息，适用用户加锁节目导致的block
@@ -775,6 +880,36 @@ public class TVMessage implements Parcelable{
 		return msg;
 	}
 
+	public static TVMessage blindScanProgressUpdate(int progressVal, String scanMsg) {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_BLINDSCAN_PROGRESS;
+		msg.scanProgress = progressVal;
+		msg.scanMsg = scanMsg;
+		
+		return msg;
+	}
+
+	public static TVMessage blindScanNewChannelUpdate(TVChannelParams curChanParam) {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_BLINDSCAN_NEWCHANNEL;
+		msg.scanCurChanParams = curChanParam;
+		
+		return msg;
+	}	
+
+	public static TVMessage blindScanEnd() {
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_SCAN;
+		msg.type = TYPE_BLINDSCAN_END;
+
+		return msg;
+	}
+
 	public static TVMessage timeUpdate(){
 		TVMessage msg = new TVMessage();
 		msg.type = TYPE_TIME_UPDATE;
@@ -820,8 +955,8 @@ public class TVMessage implements Parcelable{
 		TVMessage msg = new TVMessage();
 
 		msg.type = TYPE_RECORD_END;
-		msg.flags = FLAG_RECORD_END;
-		msg.recordErrorCode = errCode;
+		msg.flags = FLAG_ERROR_CODE;
+		msg.errorCode = errCode;
 
 		return msg;
 	}
@@ -842,14 +977,90 @@ public class TVMessage implements Parcelable{
 	 */
 	public static TVMessage scanDTVChannelStart(int channelNo){
 		TVMessage msg = new TVMessage();
-	
-		msg.flags = FLAG_SCAN;
-		msg.type = TYPE_SCAN_DTV_CHANNEL;
-		msg.scanCurChanNo = channelNo;
+	  	msg.flags = FLAG_SCAN;
+                msg.type = TYPE_SCAN_DTV_CHANNEL;
+                msg.scanCurChanNo = channelNo;
+
+                return msg;
+        }
+
+
+	/**
+	 *创建一个secRequest消息 
+	 *@param type 配置信息	 
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage secRequest(int type){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_SEC;
+		msg.type = type;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个secRequest消息 
+	 *@param type 配置信息
+	 *@param seccurparams sec配置信息 
+	 *@return 返回创建的新消息
+	 */	
+	public static TVMessage secRequest(int type, TVChannelParams seccurparams){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_SEC;
+		msg.type = type;
+		msg.secCurParams = seccurparams;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个secRequest消息
+	 *@param type 配置信息
+	 *@param seccurparams sec配置信息 	 
+	 *@param secpositionermoveunit positioner转动单位	 
+	 *@return 返回创建的新消息
+	 */	
+	public static TVMessage secRequest(int type, TVChannelParams seccurparams, int secpositionermoveunit){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_SEC;
+		msg.type = type;
+		msg.secCurParams = seccurparams;
+		msg.secPositionerMoveUnit = secpositionermoveunit;
 
 		return msg;
 	}
 	
+	
+	/**
+	 *创建一个数据库导入/导出转换操作开始的消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage transformDBStart(){
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = 0;
+		msg.type = TYPE_TRANSFORM_DB_START;
+
+		return msg;
+	}
+
+	/**
+	 *创建一个数据库导入/导出转换操作已结束的消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage transformDBEnd(int errCode){
+		TVMessage msg = new TVMessage();
+	
+		msg.flags = FLAG_ERROR_CODE;
+		msg.type = TYPE_TRANSFORM_DB_END;
+		msg.errorCode = errCode;
+
+		return msg;
+	}
+
 	public int describeContents(){
 		return 0;
 	}

@@ -49,6 +49,9 @@ public class TVEvent{
 
 		col = c.getColumnIndex("parental_rating");
 		this.dvbViewAge = c.getInt(col);
+
+		col = c.getColumnIndex("sub_flag");
+		this.sub_flag = c.getInt(col);
 		
 		col = c.getColumnIndex("rrt_ratings");
 		String rrtRatings = c.getString(col);
@@ -93,6 +96,24 @@ public class TVEvent{
 
 		return e;
 	}
+
+	/**
+	 *根据节目记录ID删除对应的TVEvent
+	 *@param context 当前Context
+	 *@param db_srv_id 节目记录ID
+	 */
+	public static void tvEventDelBySrvID(Context context, int db_srv_id){
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"delete from evt_table where evt_table.db_srv_id = " + db_srv_id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+
+		return;
+	}	
 
 	/**
 	 *取得事件的ID
@@ -170,6 +191,18 @@ public class TVEvent{
 	 */
 	public int getSubFlag(){
 		return this.sub_flag;
+	}
+
+	public void setSubFlag(int f){
+		this.sub_flag = f;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update evt_table set sub_flag = "+f+" where evt_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
 	}
 
 	/**

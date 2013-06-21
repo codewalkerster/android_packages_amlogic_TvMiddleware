@@ -47,6 +47,7 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_pause();
 	private native void native_resume();
 	private native void native_seek_to(int pos);
+	private native void native_setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit);
 
 	static{
 		System.loadLibrary("am_adp");
@@ -227,5 +228,10 @@ abstract public class TVDeviceImpl extends TVDevice{
 	public void setVGAAutoAdjust()
     {
     }
+
+	public void setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit)
+	{
+		native_setSecRequest(secType, secCurParams, secPositionerMoveUnit);
+	}
 }
 

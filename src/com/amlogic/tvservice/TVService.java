@@ -33,6 +33,7 @@ import com.amlogic.tvutil.TvinInfo;
 import com.amlogic.tvutil.TVDimension;
 import com.amlogic.tvutil.TVEvent;
 import com.amlogic.tvutil.TVRegion;
+import com.amlogic.tvutil.TVDBTransformer;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.Looper;
 import com.amlogic.tvutil.TvinInfo;
@@ -75,6 +76,8 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_CHECK_BLOCK         = 1978;
 	private static final int MSG_UNBLOCK             = 1979;
 	private static final int MSG_CVBS_AMP_OUT        = 1980;
+	private static final int MSG_SEC             = 1981;
+	private static final int MSG_LOCK             = 1982;
 	
 	/*Restore flags*/
 	private static final int RESTORE_FL_DATABASE  = 0x1;
@@ -252,6 +255,14 @@ public class TVService extends Service implements TVConfig.Update{
 			return device.getCurInputSource().ordinal();
 		}
 
+		public void importDatabase(String inputXmlPath){
+			new transformDBThread(transformDBThread.IMPORT, inputXmlPath).start();
+		}
+
+		public void exportDatabase(String outputXmlPath){
+			new transformDBThread(transformDBThread.EXPORT, outputXmlPath).start();
+		}
+
 		public void setProgramType(int type){
 			Message msg = handler.obtainMessage(MSG_SET_PROGRAM_TYPE, new Integer(type));
 			handler.sendMessage(msg);
@@ -377,6 +388,16 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 
+		public void secRequest(TVMessage sec_msg){
+			Message msg = handler.obtainMessage(MSG_SEC, sec_msg);
+			handler.sendMessage(msg);
+		}	
+
+		public void lock(TVChannelParams curParams){
+			Message msg = handler.obtainMessage(MSG_LOCK, curParams);
+			handler.sendMessage(msg);
+		}		
+
         @Override
         public int GetSrcInputType(){
             return device.GetSrcInputType();
@@ -494,6 +515,12 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_UNBLOCK:
 					resolveUnblock();
 					break;
+				case MSG_LOCK:
+					resolveLock((TVChannelParams)msg.obj);
+					break;		
+				case MSG_SEC:
+					resolveSec((TVMessage)msg.obj);
+					break;					
 			}
 		}
 	};
@@ -559,6 +586,44 @@ public class TVService extends Service implements TVConfig.Update{
 			dataSyncHandler.postDelayed(this, 5000);
 		}
 	};
+
+	private class transformDBThread extends Thread {
+		public static final int IMPORT = 0;
+		public static final int EXPORT = 1;
+		
+		private int transformType = -1;
+		private String strXmlPath = "";
+		
+		public transformDBThread(int type, String xmlPath){
+			transformType = type;
+			strXmlPath = xmlPath;
+		}
+		public void run(){
+			int errorCode = TVMessage.TRANSDB_ERR_NONE;
+			
+			sendMessage(TVMessage.transformDBStart());
+
+			try{
+				Log.d(TAG, "Start transform database, type: "+
+					transformType+", xml path: "+strXmlPath);
+				
+				if (transformType == IMPORT && !strXmlPath.isEmpty()){
+					TVDataProvider.importDatabase(TVService.this, strXmlPath);
+				}else if (transformType == EXPORT && !strXmlPath.isEmpty()){
+					TVDataProvider.exportDatabase(TVService.this, strXmlPath);
+				}
+			}catch (TVDBTransformer.InvalidFileException e){
+				errorCode = TVMessage.TRANSDB_ERR_INVALID_FILE;
+				Log.d(TAG, "Transform failed: " + e.getMessage());
+			}catch (Exception e){
+				errorCode = TVMessage.TRANSDB_ERR_SYSTEM;
+				Log.d(TAG, "Transform failed: " + e.getMessage());
+			}
+
+			sendMessage(TVMessage.transformDBEnd(errorCode));
+			Log.d(TAG, "Transform done !");
+		}
+	}
 
 	private enum TVRunningStatus{
 		STATUS_SET_INPUT_SOURCE,
@@ -733,6 +798,14 @@ public class TVService extends Service implements TVConfig.Update{
 		synchronized(this){
 			programID = -1;
 		}
+		
+		/* ternminate the current viewing book */
+		TVBooking[] viewingBook = TVBooking.selectPlayBookingsByStatus(this, TVBooking.ST_STARTED);
+		if (viewingBook != null){
+			for (int i=0; i<viewingBook.length; i++){
+				viewingBook[i].updateStatus(TVBooking.ST_END);
+			}
+		}
 	}
 
 	private void stopScan(boolean store){
@@ -863,36 +936,27 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 		
 		TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
+		param.booking = new TVBooking(playingProgram, time.getTime(), 0);
 		if (isTimeshift){
-			param.booking = new TVBooking(playingProgram, time.getTime(), 0);
 			/* In timeshifting mode, start the playback first to 
 			 * receive the record data */
-			if (param.booking != null){
-				TVProgram.Audio auds[] = param.booking.getAllAudio();
-				DTVPlaybackParams dtp = new DTVPlaybackParams(
-					recorder.getStorage() + "/" + TVRecorder.TIMESHIFTING_FILE,
-					600*1000,
-					param.booking.getVideo(),
-					auds!=null ? auds[0] : null);
-				/* Stop current play */
-				stopPlaying();
-				/* Start the playback */
-				device.startTimeshifting(dtp);
-				status = TVRunningStatus.STATUS_TIMESHIFTING;
-			}
-		}else{
-			int bookingID = TVBooking.bookProgram(this, playingProgram, TVBooking.FL_RECORD, time.getTime(), 0);
-			param.booking = TVBooking.selectByID(this, bookingID);
+			TVProgram.Audio auds[] = param.booking.getAllAudio();
+			DTVPlaybackParams dtp = new DTVPlaybackParams(
+				recorder.getStorage() + "/" + TVRecorder.TIMESHIFTING_FILE,
+				600*1000,
+				param.booking.getVideo(),
+				auds!=null ? auds[0] : null);
+			/* Stop current play */
+			stopPlaying();
+			/* Start the playback */
+			device.startTimeshifting(dtp);
+			status = TVRunningStatus.STATUS_TIMESHIFTING;
 		}
-		if (param.booking != null){
-			/* Start the recorder */
-			param.isTimeshift = isTimeshift;
-			param.fendLocked = isTimeshift ? true : (programID != -1);
-			recorder.startRecord(param);
-		}else{
-			/* can this case be ture ?? */
-			Log.d(TAG, "Error for booking the current program");
-		}
+		
+		/* Start the recorder */
+		param.isTimeshift = isTimeshift;
+		param.fendLocked = isTimeshift ? true : (programID != -1);
+		recorder.startRecord(param);
 	}
 
 	private void stopRecording(){
@@ -1031,6 +1095,8 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	private void playCurrentProgramAV(){
+		Log.d(TAG, "try to playCurrentProgramAV");
+		
 		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 			TVProgram p;
 		
@@ -1105,6 +1171,8 @@ public class TVService extends Service implements TVConfig.Update{
 		TVProgram p = null;
 		TVChannelParams fe_params;
 
+		Log.d(TAG, "try to playCurrentProgram");
+
 		if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 			if(atvPlayParams == null){
 				status = TVRunningStatus.STATUS_STOPPED;
@@ -1130,6 +1198,24 @@ public class TVService extends Service implements TVConfig.Update{
 			return;
 
 		fe_params = p.getChannel().getParams();
+		if(fe_params.getMode() == TVChannelParams.MODE_QPSK){
+			try{
+				boolean ub_switch = config.getBoolean("tv:dtv:unicable_switch");
+				int user_band = -1;
+				int ub_freq= 0;
+				
+				if(ub_switch){
+					user_band = config.getInt("tv:dtv:unicableuseband");
+					ub_freq = config.getInt("tv:dtv:unicableuseband" + user_band + "freq");						
+				}
+
+				fe_params.tv_satparams.setUnicableParams(user_band, ub_freq);			
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.d(TAG, "Cannot read dtv sx unicable !!!");
+			}		
+		}
+		
 		if((channelParams == null) || !channelParams.equals(fe_params)){
 			if (recorder.isRecording()){
 				/*Channel will change, but currently is recording,
@@ -1153,6 +1239,8 @@ public class TVService extends Service implements TVConfig.Update{
 		}else{
 			Log.d(TAG, "Program number: "+programNum.getNumber());
 		}
+
+		Log.d(TAG, "try to playCurrentProgram lock");
 
 		if((channelParams == null) || !channelParams.equals(fe_params)){
 			channelParams = fe_params;
@@ -1315,6 +1403,7 @@ public class TVService extends Service implements TVConfig.Update{
 		/*Get the program*/
 		TVProgram prog = playParamsToProgram(tp);
 		if(prog == null){
+
 			if (isAtvEnabled && playType == TVPlayParams.PLAY_PROGRAM_NUMBER){
 				try{
 					TVProgramNumber num = tp.getProgramNumber();
@@ -1335,7 +1424,7 @@ public class TVService extends Service implements TVConfig.Update{
 			Log.d(TAG, "Cannot get the program to play.");
 			return;
 		}
-
+		
 		/*Stop playing*/
 		if(prog.getID() != programID){
 			stopPlaying();
@@ -1509,12 +1598,35 @@ public class TVService extends Service implements TVConfig.Update{
 		TVChannelParams[] channelList = null;
 		if (sp.getTvMode() != TVScanParams.TV_MODE_ATV &&
 			sp.getDtvMode() == TVScanParams.DTV_MODE_ALLBAND) {
+
 			
 			TVRegion rg = getCurrentRegion();
-			if (rg != null){
+			
+			if(sp.getTsSourceID() == TVChannelParams.MODE_QPSK){
+				channelList= sp.getCnannelChooseList();
+			}
+			else if (rg != null){
 				channelList = rg.getChannelParams();
 			}
 		} 
+
+		if(sp.getTsSourceID() == TVChannelParams.MODE_QPSK){
+			try{
+				boolean ub_switch = config.getBoolean("tv:dtv:unicable_switch");
+				int user_band = -1;
+				int ub_freq= 0;
+				
+				if(ub_switch){
+					user_band = config.getInt("tv:dtv:unicableuseband");
+					ub_freq = config.getInt("tv:dtv:unicableuseband" + user_band + "freq");						
+				}
+
+				tsp.setDtvSxUnicableParams(user_band, ub_freq);			
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.d(TAG, "Cannot read dtv sx unicable !!!");
+			}		
+		}		
 		
 		tsp.setDtvParams(0, channelList);
 
@@ -1682,7 +1794,7 @@ public class TVService extends Service implements TVConfig.Update{
 				break;
 			case TVDevice.Event.EVENT_FRONTEND:
 				if(isInTVMode()){
-					if(channelParams!=null && event.feParams.equals(channelParams)){
+					if(channelParams!=null && event.feParams.equals_frontendevt(channelParams)){
 						if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 							/*Start EPG scanner.*/
 							if(channelID !=-1){
@@ -1766,6 +1878,7 @@ public class TVService extends Service implements TVConfig.Update{
 	/*Solve the events from the channel scanner.*/
 	private void resolveScanEvent(TVScanner.Event event){
 		Log.d(TAG, "Channel scan event: " + event.type);
+
 		if (status == TVRunningStatus.STATUS_SCAN){
 			switch (event.type) {
 				case TVScanner.Event.EVENT_SCAN_PROGRESS:
@@ -1788,6 +1901,18 @@ public class TVService extends Service implements TVConfig.Update{
 					Log.d(TAG, "Scan end");
 					sendMessage(TVMessage.scanEnd());
 					break;
+				case TVScanner.Event.EVENT_BLINDSCAN_PROGRESS:
+					Log.d(TAG, "Blind Scan Progress");
+					sendMessage(TVMessage.blindScanProgressUpdate(event.percent, event.msg));
+					break;
+				case TVScanner.Event.EVENT_BLINDSCAN_NEWCHANNEL:
+					Log.d(TAG, "Blind Scan New Channel");
+					sendMessage(TVMessage.blindScanNewChannelUpdate(event.channelParams));
+					break;
+				case TVScanner.Event.EVENT_BLINDSCAN_END:
+					Log.d(TAG, "Blind Scan end");
+					sendMessage(TVMessage.blindScanEnd());
+					break;						
 				default:
 					break;
 					
@@ -1858,6 +1983,12 @@ public class TVService extends Service implements TVConfig.Update{
 				}*/
 			}else if(name.equals("tv:vchip:enable")){
 				resolveReplay(true);
+			}else if(name.equals("tv:dtv:record_storage_path")){
+				String path = config.getString("tv:dtv:record_storage_path");
+
+				Log.d(TAG, "tv:dtv:record_storage_path -> "+path);
+
+				recorder.setStorage(path);
 			}
 		}catch(Exception e){
 		}
@@ -1991,11 +2122,20 @@ public class TVService extends Service implements TVConfig.Update{
 							TVProgram newProg = new TVProgram(this, newChan.getID(), TVProgram.TYPE_ATV,
 								new TVProgramNumber(3, 0), 0);							
 							Log.d(TAG, "Creating digital program 3-1 in channel 3...");
-							param = TVChannelParams.atscParams(para.getFrequency()); 
-							newChan = new TVChannel(this, param);
-							newProg = new TVProgram(this, newChan.getID(), TVProgram.TYPE_TV,
-								new TVProgramNumber(3, 1), 0);
-							id = newProg.getID();
+							try{								
+								String strAntenna = config.getString("tv:atsc:antenna:source");
+								if (strAntenna.equals("cable")){
+									param = TVChannelParams.atscParams(para.getFrequency(), TVChannelParams.MODULATION_QAM_256);
+								}else{
+									param = TVChannelParams.atscParams(para.getFrequency(), TVChannelParams.MODULATION_VSB_8);
+								}
+								newChan = new TVChannel(this, param);
+								newProg = new TVProgram(this, newChan.getID(), TVProgram.TYPE_TV,
+										new TVProgramNumber(3, 1), 0);
+								id = newProg.getID();
+							}catch (Exception e){
+								e.printStackTrace();
+							}
 						}
 					}
 				}
@@ -2057,6 +2197,47 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 	}
 
+	/*lock.*/
+	private void resolveLock(TVChannelParams curParams){
+		Log.d(TAG, "try to lock");		
+
+		device.setFrontend(curParams);
+	}
+
+	/*sec.*/
+	private void resolveSec(TVMessage sec_msg){
+		Log.d(TAG, "try to sec");
+
+		int sectype = sec_msg.getType();
+		TVChannelParams seccurparams = sec_msg.getSecCurChanParams();
+
+
+		if((sectype == TVMessage.TYPE_SEC_LNBSSWITCHCFGVALID)
+			|| (sectype == TVMessage.TYPE_SEC_POSITIONEREAST)
+			|| (sectype == TVMessage.TYPE_SEC_POSITIONERWEST)
+			|| (sectype == TVMessage.TYPE_SEC_POSITIONERSTORE)
+			|| (sectype == TVMessage.TYPE_SEC_POSITIONERGOTO)
+			|| (sectype == TVMessage.TYPE_SEC_POSITIONERGOTOX)){
+				try{
+					boolean ub_switch = config.getBoolean("tv:dtv:unicable_switch");
+					int user_band = -1;
+					int ub_freq= 0;
+					
+					if(ub_switch){
+						user_band = config.getInt("tv:dtv:unicableuseband");
+						ub_freq = config.getInt("tv:dtv:unicableuseband" + user_band + "freq");						
+					}
+	
+					seccurparams.tv_satparams.setUnicableParams(user_band, ub_freq);			
+				} catch (Exception e) {
+					e.printStackTrace();
+					Log.d(TAG, "Cannot read dtv sx unicable !!!");
+				}				
+		}		
+
+		device.setSecRequest(sectype, seccurparams, sec_msg.getSecPositionerMoveUnit());
+	}
+
 	public IBinder onBind (Intent intent){
 		return mBinder;
 	}
@@ -2089,6 +2270,7 @@ public class TVService extends Service implements TVConfig.Update{
 			isAtvEnabled = config.getBoolean("tv:atv:enable");
 			
 			config.registerUpdate("tv:audio:language", this);
+			config.registerUpdate("tv:dtv:record_storage_path", this);
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
 		}catch(Exception e){

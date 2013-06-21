@@ -27,72 +27,61 @@ public class TVRegion{
 		col = c.getColumnIndex("db_id");
 		this.id = c.getInt(col);
 		
-		col = c.getColumnIndex("source");
+		col = c.getColumnIndex("fe_type");
 		this.sourceMode = c.getInt(col);
 
 		col = c.getColumnIndex("name");
 		this.name = c.getString(col);
-		this.country = name.substring(name.lastIndexOf(' ')+1);
-		this.source = name.substring(0, name.lastIndexOf(' ')-1);
-		
-		col = c.getColumnIndex("frequencies");
-		String freqs = c.getString(col);
-		if (freqs != null && freqs.length() > 0) {
-			String[] flist = freqs.split(" ");
-		
-			if (flist !=null && flist.length > 0) {
+		this.country = name.substring(0, name.indexOf(','));
+		this.source = name.substring(name.indexOf(',') + 1);
+
+		Cursor cur = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select * from region_table where name = '" + name + "' and fe_type = " + sourceMode,
+				null, null);
+		if(cur != null){
+			if(cur.moveToFirst()){
 				int frequency = 0;
-				int bandwidth = 0;
-				int mode = this.sourceMode;
-				if(mode == TVChannelParams.MODE_QPSK){
-					this.channels = new TVChannelParams[flist.length];
-					/** get each frequency */
-					for (int i=0; i<this.channels.length; i++) {
-						frequency = Integer.parseInt(flist[i]);
-						this.channels[i] = TVChannelParams.dvbsParams(frequency, 0);
-					}
-				}
-				else if(mode == TVChannelParams.MODE_QAM){
-					this.channels = new TVChannelParams[flist.length];
-					/** get each frequency */
-					for (int i=0; i<this.channels.length; i++) {
-						frequency = Integer.parseInt(flist[i]);
-						this.channels[i] = TVChannelParams.dvbcParams(frequency, 0, 0);
-					}
-				}
-				else if(mode == TVChannelParams.MODE_OFDM){
-					this.channels = new TVChannelParams[flist.length/2];
+				int bandwidth;
+				int modulation;
+				int symbolRate;
+				int ofdmMode;
+				int channelCount = 0;
 				
-					/** get each frequency and bandwidth */
-					for (int i=0; i<flist.length; i++) {
-					
-						if(i%2 == 0){
-							frequency = Integer.parseInt(flist[i]);
-						}else{
-							bandwidth = Integer.parseInt(flist[i]);
-							this.channels[i/2] = TVChannelParams.dvbtParams(frequency, bandwidth);
-						}
-					}								
-				}
-				else if(mode == TVChannelParams.MODE_ATSC){
-					this.channels = new TVChannelParams[flist.length];
-					/** get each frequency */
-					for (int i=0; i<this.channels.length; i++) {
-						frequency = Integer.parseInt(flist[i]);
-						this.channels[i] = TVChannelParams.atscParams(frequency);
+				this.channels = new TVChannelParams[cur.getCount()];
+				
+				do{
+					col = cur.getColumnIndex("frequency");
+					frequency = cur.getInt(col);
+					col = cur.getColumnIndex("modulation");
+					modulation = cur.getInt(col);
+					col = cur.getColumnIndex("bandwidth");
+					bandwidth = cur.getInt(col);
+					col = cur.getColumnIndex("symbol_rate");
+					symbolRate = cur.getInt(col);
+					col = cur.getColumnIndex("ofdm_mode");
+					ofdmMode = cur.getInt(col);
+
+					switch (sourceMode){
+						case TVChannelParams.MODE_QAM:
+							channels[channelCount++] = TVChannelParams.dvbcParams(frequency, modulation, symbolRate);
+							break;
+						case TVChannelParams.MODE_OFDM:
+							channels[channelCount++] = TVChannelParams.dvbtParams(frequency,bandwidth);
+							break;
+						case TVChannelParams.MODE_ATSC:
+							channels[channelCount++] = TVChannelParams.atscParams(frequency, modulation);
+							break;
+						case TVChannelParams.MODE_ANALOG:
+							channels[channelCount++] = TVChannelParams.analogParams(frequency, 0, 0, 0);
+							break;
+						default:
+							break;
 					}
-				}
-				else if(mode == TVChannelParams.MODE_ANALOG){
-					this.channels = new TVChannelParams[flist.length];
-					/** get each frequency */
-					for (int i=0; i<this.channels.length; i++) {
-						frequency = Integer.parseInt(flist[i]);
-						this.channels[i] = TVChannelParams.analogParams(frequency, 0, 0, 0);
-					}
-				}
+				}while (cur.moveToNext());
 			}
+			cur.close();
 		}
-		
 	}
 
 	/**
@@ -162,11 +151,12 @@ public class TVRegion{
 			if(c.moveToFirst()){
 				int col;
 				String name;
+				HashSet set = new HashSet();
 				ArrayList list = new ArrayList();
 				do{
 					col = c.getColumnIndex("name");
 					name = c.getString(col);
-					if (name.contains(countryName)){
+					if (name.contains(countryName) && set.add(name)){
 						list.add(new TVRegion(context, c));
 					}
 				}while(c.moveToNext());
@@ -197,7 +187,7 @@ public class TVRegion{
 				do{
 					col = c.getColumnIndex("name");
 					name = c.getString(col);
-					countryName = name.substring(name.lastIndexOf(' ')+1);
+					countryName = name.substring(0, name.indexOf(','));
 					set.add(countryName);
 				}while(c.moveToNext());
 				ret = (String[])set.toArray(new String[0]);

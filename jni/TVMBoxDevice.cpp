@@ -61,6 +61,8 @@ static jfieldID  gChanParamsFreqID;
 static jfieldID  gChanParamsModID;
 static jfieldID  gChanParamsSymID;
 static jfieldID  gChanParamsBWID;
+static jfieldID  gChanParamsSatPolarID;
+static jfieldID  gChanParamsSatParaID;
 static jfieldID  gEventFEParamsID;
 static jfieldID  gEventFEStatusID;
 static jfieldID  gEventSourceID;
@@ -125,7 +127,7 @@ static void on_event(jobject obj, jobject event)
 
 static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendParameters_t *para)
 {
-	jint mode, freq, mod, sym, bw;
+	jint mode, freq, mod, sym, bw, polar;
 
 	memset(para, 0, sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
 
@@ -150,6 +152,14 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 		case FE_ATSC:
 			para->atsc.para.frequency = freq;
 			break;	
+		case FE_QPSK:
+			sym = env->GetIntField(chan, gChanParamsSymID);
+			polar = env->GetIntField(chan, gChanParamsSatPolarID);
+			para->sat.para.frequency = freq;
+			para->sat.para.u.qpsk.symbol_rate = sym;
+			para->sat.polarisation = (AM_FEND_Polarisation_t)polar;
+			break;
+			
 	}
 }
 
@@ -168,9 +178,65 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 			env->SetIntField(obj, gChanParamsSymID, para->u.qam.symbol_rate);
 			env->SetIntField(obj, gChanParamsModID, para->u.qam.modulation);
 			break;
+		case FE_QPSK:
+			env->SetIntField(obj, gChanParamsSymID, para->u.qpsk.symbol_rate);
+			break;			
 	}
 
 	return obj;
+}
+
+static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SEC_DVBSatelliteEquipmentControl_t *sat_para)
+{
+    jfieldID lof_hi,lof_lo,lof_threshold,signal_22khz,voltage_mode;
+    jfieldID pos_num, lo, la, diseqc_mode, toneburst;
+    jfieldID cdc, ucdc, repeats, cmd_order, fast_diseqc, seq_repeat, sat_lo;
+    jfieldID ub, ub_freq;
+
+    jclass objclass = env->FindClass("com/amlogic/tvutil/TVSatelliteParams");
+
+    lof_hi = env->GetFieldID(objclass, "lnb_lof_hi", "I");
+    lof_lo = env->GetFieldID(objclass, "lnb_lof_lo", "I");
+    lof_threshold = env->GetFieldID(objclass, "lnb_lof_threadhold", "I");
+    signal_22khz = env->GetFieldID(objclass, "sec_22k_status", "I");
+    voltage_mode = env->GetFieldID(objclass, "sec_voltage_status", "I");
+    pos_num = env->GetFieldID(objclass, "motor_position_num", "I");
+    lo = env->GetFieldID(objclass, "local_longitude", "D");
+    la = env->GetFieldID(objclass, "local_latitude", "D");
+    diseqc_mode = env->GetFieldID(objclass, "diseqc_mode", "I");
+    toneburst = env->GetFieldID(objclass, "sec_tone_burst", "I");
+    cdc = env->GetFieldID(objclass, "diseqc_committed", "I");
+    ucdc = env->GetFieldID(objclass, "diseqc_uncommitted", "I");
+    repeats = env->GetFieldID(objclass, "diseqc_repeat_count", "I");
+    cmd_order = env->GetFieldID(objclass, "diseqc_order", "I");
+    fast_diseqc = env->GetFieldID(objclass, "diseqc_fast", "I");
+    seq_repeat = env->GetFieldID(objclass, "diseqc_sequence_repeat", "I");
+    sat_lo = env->GetFieldID(objclass, "sat_longitude", "D");
+    ub = env->GetFieldID(objclass, "user_band", "I");
+    ub_freq = env->GetFieldID(objclass, "ub_freq", "I");	    
+    
+    sat_para->m_lnbs.m_lof_hi = env->GetIntField(para, lof_hi);
+    sat_para->m_lnbs.m_lof_lo = env->GetIntField(para, lof_lo);
+    sat_para->m_lnbs.m_lof_threshold = env->GetIntField(para, lof_threshold);
+    sat_para->m_lnbs.m_cursat_parameters.m_22khz_signal = (AM_SEC_22khz_Signal)(env->GetIntField(para, signal_22khz));
+    sat_para->m_lnbs.m_cursat_parameters.m_voltage_mode = (AM_SEC_Voltage_Mode)(env->GetIntField(para, voltage_mode));
+    sat_para->m_lnbs.m_cursat_parameters.m_rotorPosNum = env->GetIntField(para, pos_num);
+    sat_para->m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_longitude = env->GetDoubleField(para, lo);
+    sat_para->m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_latitude = env->GetDoubleField(para, la);
+    sat_para->m_lnbs.m_diseqc_parameters.m_diseqc_mode = (AM_SEC_Diseqc_Mode)(env->GetIntField(para, diseqc_mode));
+    sat_para->m_lnbs.m_diseqc_parameters.m_toneburst_param = (AM_SEC_Toneburst_Param)(env->GetIntField(para, toneburst));
+    sat_para->m_lnbs.m_diseqc_parameters.m_committed_cmd = (unsigned char)env->GetIntField(para, cdc);
+    sat_para->m_lnbs.m_diseqc_parameters.m_uncommitted_cmd = (unsigned char)env->GetIntField(para, ucdc);
+    sat_para->m_lnbs.m_diseqc_parameters.m_repeats = env->GetIntField(para, repeats);
+    sat_para->m_lnbs.m_diseqc_parameters.m_command_order = env->GetIntField(para, cmd_order);
+    sat_para->m_lnbs.m_diseqc_parameters.m_use_fast = env->GetIntField(para, fast_diseqc);
+    sat_para->m_lnbs.m_diseqc_parameters.m_seq_repeat = env->GetIntField(para, seq_repeat);
+    sat_para->m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_sat_longitude = env->GetDoubleField(para, sat_lo);    
+    sat_para->m_lnbs.LNBNum = sat_para->m_lnbs.m_diseqc_parameters.m_toneburst_param==B ? 2 : 1;
+    sat_para->m_lnbs.SatCR_idx = env->GetIntField(para, ub);
+    sat_para->m_lnbs.SatCRvco = env->GetIntField(para, ub_freq);	         
+
+    return 0;
 }
 
 static jobject recendpara_to_para(JNIEnv *env, jobject object, AM_REC_RecEndPara_t *para)
@@ -494,6 +560,7 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 {
 	AM_FENDCTRL_DVBFrontendParameters_t fpara;
+	AM_SEC_DVBSatelliteEquipmentControl_t sec;
 	AM_DMX_Source_t src;
 
 	TVDevice *dev = get_dev(env, obj);
@@ -519,6 +586,14 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 	}
 
 	chan_to_fpara(env, params, &fpara);
+
+        if (fpara.m_type == FE_QPSK) {
+            jobject sp = env->GetObjectField(params, gChanParamsSatParaID);
+            memset(&sec, 0, sizeof(sec));            
+            get_sat_para(env, obj, sp, &sec);   
+
+            AM_SEC_SetSetting(FEND_DEV_NO, &sec);           
+        }
 
 	dev->fend_mode = fpara.m_type;
 
@@ -797,6 +872,81 @@ static void dev_seek_to(JNIEnv *env, jobject obj, jint pos)
 	AM_AV_SeekTimeshift(AV_DEV_NO, pos, AM_TRUE);
 }
 
+static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject secCurParams, jint secPositionerMoveUnit)
+{
+	AM_FENDCTRL_DVBFrontendParameters_t fpara;
+	AM_SEC_DVBSatelliteEquipmentControl_t sec;
+	AM_DMX_Source_t src;
+
+	TVDevice *dev = get_dev(env, obj);
+
+	if(!dev->dev_open){
+		AM_FEND_OpenPara_t fend_para;
+		AM_AV_OpenPara_t av_para;
+		AM_DMX_OpenPara_t dmx_para;
+
+		memset(&fend_para, 0, sizeof(fend_para));
+		fend_para.mode = FEND_DEF_MODE;
+
+		AM_FEND_Open(FEND_DEV_NO, &fend_para);
+		AM_FEND_SetCallback(FEND_DEV_NO, fend_cb, dev);
+
+		memset(&dmx_para, 0, sizeof(dmx_para));
+		AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+
+		memset(&av_para, 0, sizeof(av_para));
+		AM_AV_Open(AV_DEV_NO, &av_para);
+
+		dev->dev_open = AM_TRUE;
+	}
+
+	memset(&sec, 0, sizeof(sec));
+
+	if((secType == TYPE_SEC_LNBSSWITCHCFGVALID)
+		|| (secType == TYPE_SEC_POSITIONEREAST)
+		|| (secType == TYPE_SEC_POSITIONERWEST)
+		|| (secType == TYPE_SEC_POSITIONERSTORE)
+		|| (secType == TYPE_SEC_POSITIONERGOTO)
+		|| (secType == TYPE_SEC_POSITIONERGOTOX)){
+		chan_to_fpara(env, secCurParams, &fpara);
+
+		if (fpara.m_type == FE_QPSK) {
+			jobject sp = env->GetObjectField(secCurParams, gChanParamsSatParaID);
+			get_sat_para(env, obj, sp, &sec);
+		}
+
+		if((secType == TYPE_SEC_POSITIONEREAST) || (secType == TYPE_SEC_POSITIONERWEST)){
+			sec.m_lnbs.m_rotor_parameters.m_rotor_move_unit = secPositionerMoveUnit;
+		}		
+		
+	}
+	else if((secType == TYPE_SEC_POSITIONERSTOP)
+			|| (secType == TYPE_SEC_POSITIONERDISABLELIMIT)
+			|| (secType == TYPE_SEC_POSITIONEREASTLIMIT)
+			|| (secType == TYPE_SEC_POSITIONERWESTLIMIT)){
+		memset(&fpara, 0, sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
+		/*not change sec setting, exclude sec_cmd*/
+		AM_SEC_GetSetting(FEND_DEV_NO, &sec);	
+	}
+
+	sec.sec_cmd = (AM_SEC_Cmd_t)secType;
+
+	AM_SEC_SetSetting(FEND_DEV_NO, &sec);	
+	
+	dev->fend_mode = fpara.m_type;
+
+	AM_SEC_ExecSecCmd(FEND_DEV_NO, &fpara);
+
+	AM_FEND_GetTSSource(FEND_DEV_NO, &src);
+
+	if(src != dev->ts_src){
+		AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)src);
+		AM_DMX_SetSource(DMX_DEV_NO, src);
+
+		dev->ts_src = src;
+	}
+}
+
 static JNINativeMethod gMethods[] = {
 	/* name, signature, funcPtr */
 	{"native_device_init", "()V", (void*)dev_init},
@@ -829,7 +979,8 @@ static JNINativeMethod gMethods[] = {
 	{"native_fast_backward", "(I)V", (void*)dev_fast_backward},
 	{"native_pause", "()V", (void*)dev_pause},
 	{"native_resume", "()V", (void*)dev_resume},
-	{"native_seek_to", "(I)V", (void*)dev_seek_to}
+	{"native_seek_to", "(I)V", (void*)dev_seek_to},
+	{"native_setSecRequest", "(ILcom/amlogic/tvutil/TVChannelParams;I)V", (void*)dev_setSecRequest}
 };
 
 JNIEXPORT jint
@@ -874,6 +1025,8 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gChanParamsModID  = env->GetFieldID(gChanParamsClass, "modulation", "I");
 	gChanParamsSymID  = env->GetFieldID(gChanParamsClass, "symbolRate", "I");
 	gChanParamsBWID   = env->GetFieldID(gChanParamsClass, "bandwidth", "I");
+	gChanParamsSatPolarID   = env->GetFieldID(gChanParamsClass, "sat_polarisation", "I");
+	gChanParamsSatParaID = env->GetFieldID(gChanParamsClass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;");
 	gChanParamsInitID = env->GetMethodID(gChanParamsClass, "<init>", "(I)V");
 	gRecParamsClass   = env->FindClass("com/amlogic/tvutil/DTVRecordParams");
 	gRecParamsClass   = (jclass)env->NewGlobalRef((jobject)gRecParamsClass);

@@ -3,7 +3,8 @@ package com.amlogic.tvutil;
 import android.util.Log;
 import android.os.Parcel;
 import android.os.Parcelable;
-
+import java.util.List;
+import java.util.ArrayList;
 /**
  *搜索参数
  */
@@ -17,6 +18,12 @@ public class TVScanParams implements Parcelable {
 	public static final int DTV_MODE_MANUAL = 2;
 	public static final int DTV_MODE_ALLBAND= 3;
 	public static final int DTV_MODE_BLIND  = 4;
+
+	/** DTV scan options, DONOT channge */
+	public static final int DTV_OPTION_UNICABLE = 0x10;      //Satellite unicable mode
+	public static final int DTV_OPTION_FTA      = 0x20;      //Only store free programs
+	public static final int DTV_OPTION_NO_TV    = 0x40;      //Only store tv programs
+	public static final int DTV_OPTION_NO_RADIO = 0x80;      //Only store radio programs
 	
 	/** ATV scan mode */
 	public static final int ATV_MODE_AUTO   = 1;
@@ -26,8 +33,12 @@ public class TVScanParams implements Parcelable {
 	private int fendID;
 	/** DTV parameters */
 	private int dtvMode;
+	private int dtvOptions;
+	private int sat_id;
+	private TVSatelliteParams tv_satparams;
 	private int tsSourceID;
 	private TVChannelParams startParams;
+	private TVChannelParams chooseListParams[];
 	/** ATV parameters */
 	private int atvMode;
 	private int startFreq;
@@ -49,9 +60,25 @@ public class TVScanParams implements Parcelable {
 		fendID = in.readInt();
 		if (mode == TV_MODE_DTV || mode == TV_MODE_ADTV) {
 			dtvMode = in.readInt();
+			dtvOptions = in.readInt();
 			tsSourceID = in.readInt();
 			if(dtvMode == DTV_MODE_MANUAL)
 				startParams = new TVChannelParams(in);
+			if((dtvMode == DTV_MODE_BLIND) || (dtvMode == DTV_MODE_ALLBAND)){
+				sat_id = in.readInt();
+				int satparams_notnull = in.readInt();
+				if(satparams_notnull == 1)				
+					tv_satparams = new TVSatelliteParams(in);	
+			}
+			if(dtvMode == DTV_MODE_ALLBAND){
+				int length = in.readInt();
+
+				if(length > 0){
+					chooseListParams=new TVChannelParams[length];
+					in.readTypedArray(chooseListParams, TVChannelParams.CREATOR);
+				}
+				
+			}
 		}  else if (mode == TV_MODE_ATV) {
 			atvMode = in.readInt();
 			startFreq = in.readInt();
@@ -65,9 +92,29 @@ public class TVScanParams implements Parcelable {
 		dest.writeInt(fendID);
 		if (mode == TV_MODE_DTV || mode == TV_MODE_ADTV) {
 			dest.writeInt(dtvMode);
+			dest.writeInt(dtvOptions);
 			dest.writeInt(tsSourceID);
 			if(dtvMode == DTV_MODE_MANUAL)
 				startParams.writeToParcel(dest, flags);
+			if((dtvMode == DTV_MODE_BLIND) || (dtvMode == DTV_MODE_ALLBAND)){
+				dest.writeInt(sat_id);
+				int satparams_notnull =0;
+				if(tv_satparams != null){
+					satparams_notnull = 1;
+				}else{
+					satparams_notnull = 0;
+				}					
+				dest.writeInt(satparams_notnull);
+				if(satparams_notnull == 1)				
+					tv_satparams.writeToParcel(dest, flags);
+			}			
+			if(dtvMode == DTV_MODE_ALLBAND){
+				int length = chooseListParams.length;
+				
+				dest.writeInt(length);
+				if(length > 0)
+					dest.writeTypedArray(chooseListParams, flags);
+			}
 		} else if (mode == TV_MODE_ATV) {
 			dest.writeInt(atvMode);
 			dest.writeInt(startFreq);
@@ -114,16 +161,30 @@ public class TVScanParams implements Parcelable {
 	public void setAtvStartFreq(int sf) {
 		startFreq = sf;
 	}
-    
-    	public int getAtvChannelID() {
+
+	public int getAtvChannelID() {
 		return channelID;
 	}
 
 	public void setAtvChannelID(int chanID) {
 		channelID = chanID;
 	}
-    
-    
+      
+	public int getSatID() {
+		return sat_id;
+	}	
+
+	public TVChannelParams[] getCnannelChooseList() {
+		return chooseListParams;
+	}
+
+	public void setDtvOptions(int options) {
+		dtvOptions = options;
+	}
+
+	public int getDtvOptions() {
+		return dtvOptions;
+	}
 
 	/**
 	 *创建新的搜索参数
@@ -132,9 +193,13 @@ public class TVScanParams implements Parcelable {
 	public TVScanParams(TVScanParams sp){
 		mode = sp.mode;
 		dtvMode = sp.dtvMode;
+		dtvOptions = sp.dtvOptions;
+		sat_id = sp.sat_id;
+		tv_satparams = sp.tv_satparams;
 		fendID = sp.fendID;
 		tsSourceID = sp.tsSourceID;
 		startParams = sp.startParams;
+		chooseListParams = sp.chooseListParams;
 		atvMode = sp.atvMode;
 		startFreq = sp.startFreq;
 		direction = sp.direction;
@@ -176,18 +241,38 @@ public class TVScanParams implements Parcelable {
 	/**
 	 *创建盲搜参数
 	 *@param fendID 前端设备参数
+	 *@param sat_id Tp属于的卫星id	 
 	 *@param tsSourceID TS输入源ID
 	 *@return 返回新创建的搜索参数
 	 */
-	public static TVScanParams dtvBlindScanParams(int fendID, int tsSourceID){
+	public static TVScanParams dtvBlindScanParams(int fendID, int sat_id, int tsSourceID){
 		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
 
 		sp.dtvMode = DTV_MODE_BLIND;
 		sp.fendID = fendID;
+		sp.sat_id = sat_id;
 		sp.tsSourceID  = tsSourceID;
 
 		return sp;
 	}
+
+	/**
+	 *创建盲搜参数
+	 *@param fendID 前端设备参数
+	 *@param tv_satparams 卫星参数	 
+	 *@param tsSourceID TS输入源ID
+	 *@return 返回新创建的搜索参数
+	 */
+	public static TVScanParams dtvBlindScanParams(int fendID, TVSatelliteParams tv_satparams, int tsSourceID){
+		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
+
+		sp.dtvMode = DTV_MODE_BLIND;
+		sp.fendID = fendID;
+		sp.tv_satparams = tv_satparams;
+		sp.tsSourceID  = tsSourceID;	
+
+		return sp;
+	}	
 
 	/**
 	 * Get DTV allband scan mode params
@@ -204,6 +289,66 @@ public class TVScanParams implements Parcelable {
 
 		return sp;
 	}
+	
+	/**
+	 * Get DTV all band scan mode params, user put chanel list
+	 *@param fendID frontend device number	 
+	 *@param tsSourceID frontend type 
+	 *@param channelList channel list	 
+	 *@return the new TVScanParams object
+	 */
+	public static TVScanParams dtvAllbandScanParams(int fendID, int tsSourceID, TVChannelParams[] channelList){
+		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
+
+		sp.dtvMode = DTV_MODE_ALLBAND;
+		sp.fendID = fendID;
+		sp.tsSourceID  = tsSourceID;
+		sp.chooseListParams = channelList;
+
+		if(tsSourceID == TVChannelParams.MODE_QPSK){
+			sp.sat_id = channelList[0].sat_id;
+			sp.tv_satparams = channelList[0].tv_satparams;	
+		}
+
+		return sp;
+	}	
+
+	/**
+	 * Get DTV all band scan mode params, user put chanel list
+	 *@param fendID frontend device number	 
+	 *@param tsSourceID frontend type 
+	 *@param channelList channel list	 
+	 *@return the new TVScanParams object
+	 */
+	public static TVScanParams dtvAllbandScanParams(int fendID, int tsSourceID, ArrayList<TVChannelParams> channelList){
+		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
+		
+		sp.dtvMode = DTV_MODE_ALLBAND;
+		sp.fendID = fendID;
+		sp.tsSourceID  = tsSourceID;
+
+		TVChannelParams[] channelParaList = null; 
+		if(channelList.size()>0){
+			channelParaList = new TVChannelParams[channelList.size()];
+			for (int i=0; i<channelList.size(); i++) {
+				channelParaList[i] = new TVChannelParams(TVChannelParams.MODE_QPSK);
+				channelParaList[i].frequency= channelList.get(i).frequency;
+				channelParaList[i].symbolRate= channelList.get(i).symbolRate;	
+				channelParaList[i].sat_id= channelList.get(i).sat_id;
+				channelParaList[i].sat_polarisation= channelList.get(i).sat_polarisation;	
+				channelParaList[i].tv_satparams = channelList.get(i).tv_satparams;
+			}
+			
+			sp.chooseListParams = channelParaList;
+
+			if(tsSourceID == TVChannelParams.MODE_QPSK){
+				sp.sat_id = channelParaList[0].sat_id;
+				sp.tv_satparams = channelParaList[0].tv_satparams;	
+			}
+		}	
+
+		return sp;
+	}	
 
 	/**
 	 * Get ATV manual scan mode params

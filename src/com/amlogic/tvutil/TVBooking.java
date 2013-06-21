@@ -19,13 +19,20 @@ public class TVBooking{
 	public static final int FL_RECORD = 0x2;
 	
 	/**预约状态: 等待开始，尚未临近开始时间*/
-	public static final int ST_NOT_START = 0;
-	/**预约状态: 临近开始时间，且得到用户确认，待到达开始时间后自动开始*/
-	public static final int ST_CONFIRMED = 1;
+	public static final int ST_WAIT_START = 0;
+	/**预约状态: 开始时间已到，但被用户取消*/
+	public static final int ST_CANCELLED = 1;
 	/**预约状态: 预约指定的操作已经开始*/
 	public static final int ST_STARTED   = 2;
 	/**预约状态: 预约指定的操作已经结束*/
 	public static final int ST_END       = 3;
+	
+	/**预约重复类型：不重复，仅此一次*/
+	public static final int RP_NONE   = 0;
+	/**预约重复类型：每天同一时间重复一次*/
+	public static final int RP_DAILY  = 1;
+	/**预约重复类型：每星期同一时间重复一次*/
+	public static final int RP_WEEKLY = 2;
 
 	/**预约错误码: 预约参数错误*/
 	public static final int ERR_PARAM      = -1;
@@ -35,6 +42,7 @@ public class TVBooking{
 	private int id;
 	private int status;
 	private int flag;
+	private int repeat;
 	private long start;
 	private long duration;
 	private Context context;
@@ -79,6 +87,8 @@ public class TVBooking{
 		this.recFilePath = c.getString(col);
 		col = c.getColumnIndex("from_storage");
 		this.recStoragePath = c.getString(col);
+		col = c.getColumnIndex("repeat");
+		this.repeat = c.getInt(col);
 		
 		p = program;
 		if (p == null) {
@@ -188,6 +198,13 @@ public class TVBooking{
 	}
 	
 	/**
+	 *预约时间段冲突异常 
+	 */
+	public static class TVBookingConflictException extends Exception{
+		
+	}
+	
+	/**
 	 *根据记录ID查找指定TVBooking
 	 *@param context 当前Context
 	 *@param id 记录ID
@@ -209,6 +226,32 @@ public class TVBooking{
 	}
 	
 	/**
+	 *根据预约状态查找指定的预约记录
+	 *@param context 当前Context
+	 *@param st 预约状态
+	 *@return 返回对应的TVBooking对象，null表示不存在对应的对象
+	 */
+	public static TVBooking[] selectByStatus(Context context, int st){
+		TVBooking bookings[] = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
+			"select * from booking_table where status="+st+" order by start", 
+			null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				bookings = new TVBooking[c.getCount()];
+				do{
+					bookings[id++] = new TVBooking(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+		
+		return bookings;
+	}
+
+	/**
 	 *根据预约状态查找指定的录像TVBooking
 	 *@param context 当前Context
 	 *@param st 预约状态
@@ -218,7 +261,7 @@ public class TVBooking{
 		TVBooking bookings[] = null;
 		
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where (flag & "+FL_RECORD+") != 0 and status="+st, 
+			"select * from booking_table where (flag & "+FL_RECORD+") != 0 and status="+st+" order by start", 
 			null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -244,7 +287,7 @@ public class TVBooking{
 		TVBooking bookings[] = null;
 		
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where (flag & "+FL_PLAY+") != 0 and status="+st, 
+			"select * from booking_table where (flag & "+FL_PLAY+") != 0 and status="+st+" order by start", 
 			null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -269,7 +312,7 @@ public class TVBooking{
 		TVBooking bookings[] = null;
 		
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where (flag & "+FL_PLAY+") != 0" , null, null);
+			"select * from booking_table where (flag & "+FL_PLAY+") != 0 order by start" , null, null);
 		if(c != null){
 			if(c.moveToFirst()){
 				int id = 0;
@@ -293,7 +336,7 @@ public class TVBooking{
 		TVBooking bookings[] = null;
 		
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where (flag & "+FL_RECORD+") != 0" , null, null);
+			"select * from booking_table where (flag & "+FL_RECORD+") != 0 order by start" , null, null);
 		if(c != null){
 			if(c.moveToFirst()){
 				int id = 0;
@@ -307,7 +350,7 @@ public class TVBooking{
 		
 		return bookings;
 	}
-	
+
 	/**
 	 *预约一个Program
 	 *@param context 当前Context
@@ -315,27 +358,26 @@ public class TVBooking{
 	 *@param flag 预约标志，可以为FL_RECORD|FL_PLAY
 	 *@param start 起始时间 ms
 	 *@param duration 持续时间 ms
-	 *@return 返回对应的TVBooking ID，< 0 表示预约失败
-	 *        ERR_PARAM: 预约参数错误
-	 *        ERR_CONFLICT: 预约时间段冲突
+	 *@param repeat 重复类型，可以为 RP_NONE, RP_DAILY, RP_WEEKLY
+	 *@param allowConflict 是否允许预约时间段冲突
+	 *@throws TVBookingConflictException
 	 */
-	public static int bookProgram(Context context, TVProgram program, int flag, long start, long duration){
+	public static void bookProgram(Context context, TVProgram program, int flag, long start, long duration, int repeat, boolean allowConflict) throws TVBookingConflictException {
 		if (program == null || start < 0 ||
-			((flag&FL_PLAY)==0 && (flag&FL_RECORD)==0)) {
+			(flag & (FL_PLAY|FL_RECORD)) == 0) {
 			Log.d(TAG, "Invalid param for booking program");
-			return ERR_PARAM;	
+			return;	
 		}
 		
-		int status;
-		if (duration <= 0) {
-			/* can only be used for real-time record or timeshifting record */
-			status = ST_STARTED;
-		} else {
+		int status = ST_WAIT_START;
+		if (! allowConflict){
 			/*check conflict*/
 			long end = start + duration;
+			int s = (int)(start/1000);
+			int e = (int)(end/1000);
 			String sql = "select * from booking_table where status<="+ST_STARTED;
-			sql += " and ((start<="+start+" and (start+duration)>="+start+")";
-			sql += " or (start<="+end+" and (start+duration)>="+end+")) limit 1";
+			sql += " and ((start<="+s+" and (start+duration)>="+s+")";
+			sql += " or (start<="+e+" and (start+duration)>="+e+")) limit 1";
 			Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, sql, null, null);
 			if(c != null){
 				if(c.moveToFirst()){
@@ -343,11 +385,10 @@ public class TVBooking{
 					int cid = c.getInt(col);
 					Log.d(TAG, "Conflict with booking "+cid+", cannot book.");
 					c.close();
-					return ERR_CONFLICT;
+					throw new TVBookingConflictException();
 				}
 				c.close();
 			}
-			status = ST_NOT_START;
 		}
 		
 		/*book this program*/
@@ -409,21 +450,6 @@ public class TVBooking{
 		cmd += ",'','')";
                 
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
-		
-		/* Query the id */
-		int retid = ERR_PARAM;
-		cmd = "select * from booking_table where db_srv_id="+program.getID();
-		cmd += " and start="+start/1000+" and status="+status;
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, cmd, null, null);
-		if(c != null){
-			if(c.moveToFirst()){
-				int col = c.getColumnIndex("db_id");
-				retid = c.getInt(col);
-			}
-			c.close();
-		}
-		
-		return retid;
 	}
 	
 	/**
@@ -431,25 +457,74 @@ public class TVBooking{
 	 *@param context 当前Context
 	 *@param event 需要预约的节目
 	 *@param flag 预约标志，可以为FL_RECORD|FL_PLAY
-	 *@return 返回对应的TVBooking ID，< 0 表示预约失败
-	 *        ERR_PARAM: 预约参数错误
-	 *        ERR_CONFLICT: 预约时间段冲突
+	 *@param repeat 重复类型，可以为 RP_NONE, RP_DAILY, RP_WEEKLY
+	 *@param allowConflict 是否允许预约时间段冲突
+	 *@throws TVBookingConflictException
 	 */
-	public static int bookEvent(Context context, TVEvent event, int flag){
+	public static void bookEvent(Context context, TVEvent event, int flag, int repeat, boolean allowConflict) throws TVBookingConflictException{
 		if (event == null) {
 			Log.d(TAG, "Invalid param for booking event");
-			return ERR_PARAM;
-		}
-		int ret = bookProgram(context, event.getProgram(), 
-			flag, event.getStartTime(), 
-			event.getEndTime()-event.getStartTime());
-		if (ret >= 0){
-			String cmd = "update booking_table set evt_name='"+sqliteEscape(event.getName());
-			cmd += "' where db_id=" + ret;
-			context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+			return;
 		}
 		
-		return ret;
+		/* book its program */
+		bookProgram(context, 
+			event.getProgram(), 
+			flag, event.getStartTime(), 
+			event.getEndTime()-event.getStartTime(),
+			repeat, allowConflict);
+		
+		/* update the event info */
+		int start = (int)(event.getStartTime()/1000);
+		int duration = (int)((event.getEndTime()-event.getStartTime())/1000);
+		String cmd = "update booking_table set evt_name='"+sqliteEscape(event.getName());
+		cmd += "',db_evt_id="+event.getID()+" where db_srv_id="+event.getProgram().getID();
+		cmd += " and start="+start+" and duration="+duration;
+		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+		
+		cmd = "update evt_table set sub_flag="+flag+" where db_id="+event.getID();
+		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+	}
+	
+	
+	/**
+	 *判断某个给定时间上该预约是否已经开始
+	 *@param timeInMs 
+	 *@return true为已经开始，false为未开始
+	 */
+	public boolean isTimeStart(long timeInMs){
+		long tmpStart=start, tmpTime=timeInMs;
+		final long MS_PER_DAY = (24 * 3600 * 1000);
+		final long MS_PER_WEEK = MS_PER_DAY * 7;
+		
+		if (repeat == RP_DAILY){
+			tmpStart %= MS_PER_DAY;
+			tmpTime  %= MS_PER_DAY;
+		}else if (repeat == RP_WEEKLY){
+			tmpStart %= MS_PER_WEEK;
+			tmpTime  %= MS_PER_WEEK;
+		}
+		
+		long ret = tmpTime - tmpStart;
+		if (ret <= 0){
+			return false;
+		}
+		
+		return true;
+	}
+	
+	/**
+	 *判断某个给定时间上该预约是否已经结束
+	 *@param timeInMs 
+	 *@return true为已经结束，false为未结束
+	 */
+	public boolean isTimeEnd(long timeInMs){
+		if (duration <= 0){
+			/* infinite end time */
+			return false;
+		}
+		
+		return isTimeStart(timeInMs - duration);
 	}
 	
 	/**
@@ -506,6 +581,14 @@ public class TVBooking{
 	 */
 	public int getStatus(){
 		return this.status;
+	}
+	
+	/**
+	 *获取预约重复类型
+	 *@return 预约重复类型
+	 */
+	public int getRepeat(){
+		return this.repeat;
 	}
 	
 	/**
@@ -569,7 +652,7 @@ public class TVBooking{
 	 *@param status 预约状态
 	 */
 	public void updateStatus(int status){
-		if (status < ST_NOT_START || status > ST_END) {
+		if (status < ST_WAIT_START || status > ST_END) {
 			Log.d(TAG, "Invalid booking status "+status);
 			return;
 		}

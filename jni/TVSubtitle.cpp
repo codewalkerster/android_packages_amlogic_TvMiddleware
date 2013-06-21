@@ -379,9 +379,10 @@ error:
 
         data->obj = env->NewGlobalRef(obj);
 
-        bmp = env->GetObjectField(obj, gBitmapID);
+		bmp_clazz = env->FindClass("android/graphics/Bitmap");
 
-        bmp_clazz = env->FindClass("android/graphics/Bitmap");
+        bmp = env->GetStaticObjectField(env->FindClass("com/amlogic/tvsubtitle/TVSubtitleView"), gBitmapID);
+
         fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
 
         hbmp = env->GetIntField(bmp, fid);
@@ -752,7 +753,7 @@ error:
 
         gUpdateID = env->GetMethodID(clazz, "update", "()V");
         gHandleID = env->GetFieldID(clazz, "native_handle", "I");
-        gBitmapID = env->GetFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");
+        gBitmapID = env->GetStaticFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");
 
         LOGI("load jnitvsubtitle ok");
         return JNI_VERSION_1_4;

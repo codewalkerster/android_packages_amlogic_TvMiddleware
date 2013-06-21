@@ -11,6 +11,9 @@ abstract public class TVScanner{
 		public static final int EVENT_STORE_BEGIN   = 1;
 		public static final int EVENT_STORE_END     = 2;
 		public static final int EVENT_SCAN_END		= 3;
+		public static final int EVENT_BLINDSCAN_PROGRESS = 4;
+		public static final int EVENT_BLINDSCAN_NEWCHANNEL	= 5;
+		public static final int EVENT_BLINDSCAN_END	= 6;
 
 		public int type;
 		public int percent;
@@ -20,7 +23,8 @@ abstract public class TVScanner{
 		public TVChannelParams channelParams;
 		public String programName;
 		public int programType;
-
+		public String msg;
+		
 		public Event(int type){
 			this.type = type;
 		}
@@ -55,6 +59,10 @@ abstract public class TVScanner{
 		private int demuxID;
 		private TVChannelParams ChannelParamsList[];
 
+		/** Dtv-Sx set Unicable settings*/
+		private int user_band;
+		private int ub_freq;//!< kHz
+
 		public TVScannerParams(TVScanParams sp) {
 			super(sp);
 		}
@@ -62,9 +70,24 @@ abstract public class TVScanner{
 		public void setDtvParams(int dmxID, TVChannelParams[] chanelList) {
 			this.demuxID = dmxID;
 			this.ChannelParamsList = chanelList;
+
+			/*
+			Log.d(TAG, "setDtvParams " + this.ChannelParamsList.length);
+			for(int i = 0; i < this.ChannelParamsList.length; i++){
+				Log.d(TAG, "setDtvParams " + i + " " + this.ChannelParamsList[i].tv_satparams);
+			}
+			*/
+			
 		}
 
+
+		public void setDtvSxUnicableParams(int user_band, int ub_freq) {
+                        this.user_band = user_band;
+                        this.ub_freq = ub_freq;
+                }
+
 		public void setAtvParams(int minf, int maxf, int tunerStd, int chanID) {
+
 			this.minFreq = minf;
 			this.maxFreq = maxf;
 			this.tunerStd = tunerStd;
@@ -74,6 +97,9 @@ abstract public class TVScanner{
 	};
 
 	public void scan(TVScannerParams params){
+		
+		
+		
 		hScan = native_tv_scan_start(params);
 	}
 

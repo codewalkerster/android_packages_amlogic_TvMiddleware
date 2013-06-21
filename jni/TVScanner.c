@@ -35,6 +35,9 @@ enum {
     EVENT_STORE_BEGIN   = 1,
     EVENT_STORE_END     = 2,
     EVENT_SCAN_END      = 3,
+    EVENT_BLINDSCAN_PROGRESS = 4,
+    EVENT_BLINDSCAN_NEWCHANNEL = 5,
+    EVENT_BLINDSCAN_END = 6
 };
 
 
@@ -167,16 +170,23 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "symbolRate", "I"), pd->cur_tp.fend_para.cable.para.u.qam.symbol_rate);
     (*env)->SetIntField(env,cp,\
-                        (*env)->GetFieldID(env, gChanParamClass, "modulation", "I"), pd->cur_tp.fend_para.cable.para.u.qam.modulation);
+                        (*env)->GetFieldID(env, gChanParamClass, "modulation", "I"), pd->cur_tp.fend_para.cable.para.u.qam.modulation);/*qam and qpsk share to use, because same pos*/
     (*env)->SetIntField(env,cp,\
-                        (*env)->GetFieldID(env, gChanParamClass, "bandwidth", "I"), pd->cur_tp.fend_para.terrestrial.para.u.ofdm.bandwidth);
+                        (*env)->GetFieldID(env, gChanParamClass, "bandwidth", "I"), pd->cur_tp.fend_para.terrestrial.para.u.ofdm.bandwidth); 
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "audio", "I"), pd->cur_tp.fend_para.analog.para.u.analog.audmode);
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "standard", "I"), pd->cur_tp.fend_para.analog.para.u.analog.std);
+    (*env)->SetIntField(env,cp,\
+                        (*env)->GetFieldID(env, gChanParamClass, "sat_polarisation", "I"), pd->cur_tp.fend_para.sat.polarisation);       
     (*env)->SetObjectField(env,event,\
                            (*env)->GetFieldID(env, gEventClass, "channelParams", "Lcom/amlogic/tvutil/TVChannelParams;"), cp);
 
+
+    (*env)->SetObjectField(env,event,\
+                           (*env)->GetFieldID(env, gEventClass, "msg", "Ljava/lang/String;"), pd->msg[0] ? get_java_string(pd->msg) : NULL);
+    /* Clear the msg */
+    pd->msg[0] = 0;
 
     log_info("Call tvscanner java onevent, event type %d", evt_type);
     /*Call the java method*/
@@ -185,150 +195,6 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
     if(attached) {
         (*gJavaVm)->DetachCurrentThread(gJavaVm);
     }
-}
-
-static void tv_scan_notify_atsc_program(ProgressData *pd, AM_SCAN_TS_t * ts)
-{
-	vct_section_info_t *vct;
-	vct_channel_info_t *vcinfo;
-
-	AM_SI_LIST_BEGIN(ts->digital.vcts, vct)
-	AM_SI_LIST_BEGIN(vct->vct_chan_info, vcinfo)
-		/*Skip inactive program*/
-		if (vcinfo->program_number == 0  || vcinfo->program_number == 0xffff)
-			continue;
-
-		/*从VCT表中查找该service并获取信息*/
-		if (vcinfo->channel_TSID == vct->transport_stream_id &&
-		    (vcinfo->service_type == 2 || vcinfo->service_type == 3))
-		{
-			pd->cur_srv_type = vcinfo->service_type==2 ? AM_SCAN_SRV_DTV : AM_SCAN_SRV_DRADIO;
-			memcpy(pd->cur_name, vcinfo->short_name, sizeof(vcinfo->short_name));
-			pd->cur_name[sizeof(vcinfo->short_name)] = 0;
-			log_info("Native scan notify: %s, prog_type %d, sid=%d\n", pd->cur_name,pd->cur_srv_type, vcinfo->program_number);
-			tv_scan_onevent(EVENT_SCAN_PROGRESS, pd);
-		}
-	AM_SI_LIST_END()
-	AM_SI_LIST_END()
-
-}
-
-static void tv_scan_notify_dvb_program(ProgressData *pd, AM_SCAN_TS_t * ts)
-{
-    dvbpsi_pmt_t *pmt;
-    dvbpsi_sdt_t *sdt;
-    dvbpsi_pmt_es_t *es;
-    dvbpsi_sdt_service_t *srv;
-    dvbpsi_descriptor_t *descr;
-    uint16_t srv_id;
-    char name[AM_DB_MAX_SRV_NAME_LEN + 1];
-    AM_Bool_t name_found;
-    AM_Bool_t has_audio, has_video;
-    jobject obj = pd->obj;
-
-    /*遍历PMT表*/
-    AM_SI_LIST_BEGIN(ts->digital.pmts, pmt)
-    srv_id = pmt->i_program_number;
-    name[0] = '\0';
-    name_found = AM_FALSE;
-    has_audio = AM_FALSE;
-    has_video = AM_FALSE;
-    /*取ES流信息*/
-    AM_SI_LIST_BEGIN(pmt->p_first_es, es)
-    if (has_audio && has_video)
-        break;
-
-    switch (es->i_type) {
-        /*override by parse descriptor*/
-    case 0x6:
-        AM_SI_LIST_BEGIN(es->p_first_descriptor, descr)
-        if (!has_audio && (descr->i_tag == AM_SI_DESCR_AC3 ||
-                           descr->i_tag == AM_SI_DESCR_ENHANCED_AC3 ||
-                           descr->i_tag == AM_SI_DESCR_AAC ||
-                           descr->i_tag == AM_SI_DESCR_DTS) && es->i_pid < 0x1fff) {
-            has_audio = AM_TRUE;
-        }
-        AM_SI_LIST_END()
-        break;
-        /*video*/
-    case 0x1:
-    case 0x2:
-    case 0x10:
-    case 0x1b:
-    case 0xea:
-        if (!has_video && es->i_pid < 0x1fff)
-            has_video = AM_TRUE;
-        break;
-        /*audio*/
-    case 0x3:
-    case 0x4:
-    case 0x0f:
-    case 0x11:
-    case 0x81:
-    case 0x8A:
-    case 0x82:
-    case 0x85:
-    case 0x86:
-        if (!has_audio && es->i_pid < 0x1fff)
-            has_audio = AM_TRUE;
-        break;
-    default:
-        break;
-    }
-    AM_SI_LIST_END()
-
-    AM_SI_LIST_BEGIN(ts->digital.sdts, sdt)
-    AM_SI_LIST_BEGIN(sdt->p_first_service, srv)
-    /*从SDT表中查找该service并获取信息*/
-    if (srv->i_service_id == srv_id) {
-        AM_SI_LIST_BEGIN(srv->p_first_descriptor, descr)
-        if (descr->p_decoded && descr->i_tag == AM_SI_DESCR_SERVICE) {
-            dvbpsi_service_dr_t *psd = (dvbpsi_service_dr_t*)descr->p_decoded;
-
-            if (psd->i_service_name_length <= 0 && (has_video || has_audio)) {
-                name_found = AM_FALSE;
-            } else {
-                name_found = AM_TRUE;
-
-            }
-
-            /*无有效音视频PID的电视广播节目不通知*/
-            if (name_found && ((psd->i_service_type != 0x1 && psd->i_service_type != 0x2) ||
-                               ((psd->i_service_type == 0x1 || psd->i_service_type == 0x2) && (has_video || has_audio)))) {
-                /*取节目名称*/
-                if (psd->i_service_name_length > 0) {
-                    AM_SI_ConvertDVBTextCode((char*)psd->i_service_name, psd->i_service_name_length,\
-                                       name, AM_DB_MAX_SRV_NAME_LEN);
-                    name[AM_DB_MAX_SRV_NAME_LEN] = 0;
-
-                    /*service type 0x16 and 0x19 is user defined, as digital television service*/
-                    /*0xc0 is the type of partial reception service in ISDBT*/
-                    if((psd->i_service_type == 0x16) || (psd->i_service_type == 0x19) || (psd->i_service_type == 0xc0)) {
-                        pd->cur_srv_type = AM_SCAN_SRV_DTV;
-                    } else {
-                        pd->cur_srv_type = psd->i_service_type==1 ? AM_SCAN_SRV_DTV : AM_SCAN_SRV_DRADIO;
-                    }
-                    log_info("Native scan notify: %s, prog_type %d, sid=%d\n", name, pd->cur_srv_type, srv->i_service_id);
-                    strcpy(pd->cur_name, name);
-                    tv_scan_onevent(EVENT_SCAN_PROGRESS, pd);
-                }
-            }
-            /*跳出多层循环*/
-            goto SDT_END;
-        }
-        AM_SI_LIST_END()
-    }
-    AM_SI_LIST_END()
-    AM_SI_LIST_END()
-SDT_END:
-    if (! name_found && (has_video || has_audio)) {
-        strcpy(name, "No Name");
-        strcpy(pd->cur_name, name);
-        pd->cur_srv_type = has_video ? AM_SCAN_SRV_DTV : AM_SCAN_SRV_DRADIO;
-        tv_scan_onevent(EVENT_SCAN_PROGRESS, pd);
-    }
-
-    AM_SI_LIST_END()
 }
 
 /**\brief 搜索事件回调*/
@@ -375,18 +241,10 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
         }
         break;
         case AM_SCAN_PROGRESS_TS_END: {
-            AM_SCAN_TS_t *ts = (AM_SCAN_TS_t*)evt->data;
-
-            if (ts != NULL) {
-                if (prog->standard == AM_SCAN_DTV_STD_ATSC)
-                    tv_scan_notify_atsc_program(prog, ts);
-                else
-                    tv_scan_notify_dvb_program(prog, ts);
-            }
         }
         break;
         case AM_SCAN_PROGRESS_PAT_DONE:
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
+            if (prog->tp_count == 1) {
                 tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
             }
 
@@ -395,7 +253,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             dvbpsi_sdt_t *sdts = (dvbpsi_sdt_t *)evt->data;
             dvbpsi_sdt_t *sdt;
 
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
+            if (prog->tp_count == 1) {
                 prog->progress += 25;
                 if (prog->progress >= 100)
                     prog->progress = 99;
@@ -406,7 +264,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
         case AM_SCAN_PROGRESS_CAT_DONE: {
             dvbpsi_cat_t *cat = (dvbpsi_cat_t *)evt->data;
 
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
+            if (prog->tp_count == 1) {
                 prog->progress += 25;
                 if (prog->progress >= 100)
                     prog->progress = 99;
@@ -418,7 +276,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
         case AM_SCAN_PROGRESS_PMT_DONE: {
             dvbpsi_pmt_t *pmt = (dvbpsi_pmt_t *)evt->data;
 
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
+            if (prog->tp_count == 1) {
                 prog->progress += 25;
                 if (prog->progress >= 100)
                     prog->progress = 99;
@@ -430,7 +288,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
         case AM_SCAN_PROGRESS_MGT_DONE: {
             mgt_section_info_t *mgt = (mgt_section_info_t*)evt->data;
 
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
+            if (prog->tp_count == 1) {
                 prog->progress += 10;
                 if (prog->progress >= 100)
                     prog->progress = 99;
@@ -441,7 +299,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
         break;
         case AM_SCAN_PROGRESS_VCT_DONE: {
             /*ATSC TVCT*/
-            if (prog->mode & AM_SCAN_DTVMODE_MANUAL && prog->tp_count == 1) {
+            if (prog->tp_count == 1) {
                 prog->progress += 30;
                 if (prog->progress >= 100)
                     prog->progress = 99;
@@ -450,8 +308,46 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             }
         }
         break;
+        case AM_SCAN_PROGRESS_NEW_PROGRAM: {
+            /* Notify the new searched programs */
+            AM_SCAN_ProgramProgress_t *pp = (AM_SCAN_ProgramProgress_t*)evt->data;
+            if (pp != NULL){
+                prog->cur_srv_type = pp->service_type;
+                strcpy(prog->cur_name, pp->name);
+                tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
+            }
+        }
+        break;
         case AM_SCAN_PROGRESS_BLIND_SCAN: {
+		AM_SCAN_DTVBlindScanProgress_t *bs_prog = (AM_SCAN_DTVBlindScanProgress_t*)evt->data;
+		
+		if (bs_prog){
+                    prog->progress = bs_prog->progress;
 
+                    snprintf(prog->msg, sizeof(prog->msg),"%s/%s %dMHz", 
+                                bs_prog->polar==AM_FEND_POLARISATION_H?"H":"V",
+                                bs_prog->lo==AM_FEND_LOCALOSCILLATORFREQ_L?"L-LOF":"H-LOF",
+                                bs_prog->freq/1000);
+
+                    tv_scan_onevent(EVENT_BLINDSCAN_PROGRESS, prog);
+		
+			if (bs_prog->new_tp_cnt > 0){
+                            int i = 0;
+				for (i = 0; i < bs_prog->new_tp_cnt; i++){
+					log_info("====New tp: %dkS/s %d====", bs_prog->new_tps[i].frequency, 
+					bs_prog->new_tps[i].u.qpsk.symbol_rate);
+
+                                    ((struct dvb_frontend_parameters*)&prog->cur_tp.fend_para)->frequency = bs_prog->new_tps[i].frequency;
+                                    prog->cur_tp.fend_para.sat.para.u.qpsk.symbol_rate = bs_prog->new_tps[i].u.qpsk.symbol_rate;
+                                    prog->cur_tp.fend_para.sat.polarisation = bs_prog->polar;
+                                    tv_scan_onevent(EVENT_BLINDSCAN_NEWCHANNEL, prog);
+				}
+			}
+			if (bs_prog->progress >= 100){
+                            tv_scan_onevent(EVENT_BLINDSCAN_END, prog);
+                            prog->progress = 0;
+			}
+		}            
         }
         break;
         case AM_SCAN_PROGRESS_STORE_BEGIN:
@@ -500,9 +396,12 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
     symbol_rate = (*env)->GetFieldID(env,objclass, "symbolRate", "I");
     modulation =(*env)->GetFieldID(env,objclass, "modulation", "I");
     bandwidth=(*env)->GetFieldID(env,objclass, "bandwidth", "I");
+    polar=(*env)->GetFieldID(env,objclass, "sat_polarisation", "I");
 
-    if(!(*ppfp = malloc(sizeof(AM_FENDCTRL_DVBFrontendParameters_t))))
-        return -1;
+    if (*ppfp == NULL){
+        if(!(*ppfp = malloc(sizeof(AM_FENDCTRL_DVBFrontendParameters_t))))
+            return -1;
+    }
 
     fparam = *ppfp;
     memset(fparam, 0, sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
@@ -521,9 +420,13 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
         break;
     case FE_QPSK:
         fparam[i].sat.para.frequency = (*env)->GetIntField(env, para, freq);
+        fparam[i].sat.para.inversion = 0;
+        fparam[i].sat.para.u.qpsk.symbol_rate = (*env)->GetIntField(env, para, symbol_rate);
+        fparam[i].sat.polarisation = (*env)->GetIntField(env, para, polar);
         break;
     case FE_ATSC:
-        fparam[i].atsc.para.frequency = (*env)->GetIntField(env, para, freq);		
+        fparam[i].atsc.para.frequency = (*env)->GetIntField(env, para, freq);	
+        fparam[i].atsc.para.u.vsb.modulation = (*env)->GetIntField(env, para, modulation);
         break;
     default:
         break;
@@ -534,7 +437,6 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
 
 static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jobjectArray freqs, AM_FENDCTRL_DVBFrontendParameters_t **ppfp)
 {
-    jfieldID freq = 0, bandwidth = 0; 	
     int i;
     AM_FENDCTRL_DVBFrontendParameters_t *pfp;
 
@@ -546,46 +448,15 @@ static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jobjectArray
     int size = (*env)->GetArrayLength(env, freqs);
     if(size<=0) return size;
 
-	jclass objclass=(*env)->FindClass(env, "com/amlogic/tvutil/TVChannelParams");
-
-	if(freq == 0) {
-		freq = (*env)->GetFieldID(env, objclass, "frequency", "I"); 
-		if (freq == 0) 
-			return -1;	
-	}
-
     if(!(*ppfp = calloc(size, sizeof(AM_FENDCTRL_DVBFrontendParameters_t))))
         return -1;
 
     pfp = *ppfp;
     memset(pfp, 0, size * sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
     for (i = 0; i < size; i++,pfp++) {
-		jobject fend_para = ((*env)->GetObjectArrayElement(env, freqs, i));
+        jobject fend_para = ((*env)->GetObjectArrayElement(env, freqs, i));
 		
-        pfp->m_type = src;
-        ((struct dvb_frontend_parameters*)pfp)->frequency = (*env)->GetIntField(env, fend_para, freq);
-        switch (pfp->m_type) {
-        case FE_QAM:
-            ((struct dvb_frontend_parameters*)pfp)->u.qam.symbol_rate = 6875000;
-            ((struct dvb_frontend_parameters*)pfp)->u.qam.modulation = QAM_64;
-            break;
-        case FE_OFDM:
-		if(bandwidth == 0) {
-			bandwidth=(*env)->GetFieldID(env, objclass, "bandwidth", "I"); 
-			if (bandwidth == 0) 
-				return -1; 
-		}
-			
-            ((struct dvb_frontend_parameters*)pfp)->u.ofdm.bandwidth = (*env)->GetIntField(env, fend_para, bandwidth);
-            break;
-        case FE_QPSK:
-            break;
-        case FE_ATSC:
-            break;
-        default:
-            break;
-        }
-
+        tv_scan_get_channel_para(env, obj, fend_para, &pfp);
     }
 
     return size;
@@ -593,45 +464,33 @@ static int tv_scan_get_fe_paras(JNIEnv *env, jobject obj, jint src, jobjectArray
 
 static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSatellitePara_t *sat_para)
 {
-    jfieldID name,lnb_num,lof_hi,lof_lo,lof_threshold,signal_22khz,voltage_mode;
-    jfieldID motor_num, pos_num, lo_dir, la_dir, lo, la, diseqc_mode, toneburst;
-    jfieldID cdc, ucdc, repeats, cmd_order, fast_diseqc, seq_repeat, ub, ub_freq, sat_lo;
-    double cof;
+    jfieldID lnb_num,lof_hi,lof_lo,lof_threshold,signal_22khz,voltage_mode;
+    jfieldID motor_num, pos_num, lo, la, diseqc_mode, toneburst;
+    jfieldID cdc, ucdc, repeats, cmd_order, fast_diseqc, seq_repeat, sat_lo;
 
-    jclass objclass =(*env)->FindClass(env,"com/amlogic/dvbmw/SatellitePara");
+    jclass objclass =(*env)->FindClass(env,"com/amlogic/tvutil/TVSatelliteParams");
 
-    name = (*env)->GetFieldID(env,objclass, "name", "Ljava/lang/String;");
     lnb_num = (*env)->GetFieldID(env,objclass, "lnb_num", "I");
-    lof_hi = (*env)->GetFieldID(env,objclass, "lof_hi", "I");
-    lof_lo = (*env)->GetFieldID(env,objclass, "lof_lo", "I");
-    lof_threshold = (*env)->GetFieldID(env,objclass, "lof_threshold", "I");
-    signal_22khz = (*env)->GetFieldID(env,objclass, "signal_22khz", "I");
-    voltage_mode = (*env)->GetFieldID(env,objclass, "voltage_mode", "I");
+    lof_hi = (*env)->GetFieldID(env,objclass, "lnb_lof_hi", "I");
+    lof_lo = (*env)->GetFieldID(env,objclass, "lnb_lof_lo", "I");
+    lof_threshold = (*env)->GetFieldID(env,objclass, "lnb_lof_threadhold", "I");
+    signal_22khz = (*env)->GetFieldID(env,objclass, "sec_22k_status", "I");
+    voltage_mode = (*env)->GetFieldID(env,objclass, "sec_voltage_status", "I");
     motor_num = (*env)->GetFieldID(env,objclass, "motor_num", "I");
-    pos_num = (*env)->GetFieldID(env,objclass, "position_number", "I");
-    lo_dir = (*env)->GetFieldID(env,objclass, "lo_direction", "I");
-    la_dir = (*env)->GetFieldID(env,objclass, "la_direction", "I");
-    lo = (*env)->GetFieldID(env,objclass, "longitude", "D");
-    la = (*env)->GetFieldID(env,objclass, "latitude", "D");
+    pos_num = (*env)->GetFieldID(env,objclass, "motor_position_num", "I");
+    lo = (*env)->GetFieldID(env,objclass, "local_longitude", "D");
+    la = (*env)->GetFieldID(env,objclass, "local_latitude", "D");
     diseqc_mode = (*env)->GetFieldID(env,objclass, "diseqc_mode", "I");
-    toneburst = (*env)->GetFieldID(env,objclass, "toneburst", "I");
-    cdc = (*env)->GetFieldID(env,objclass, "committed_cmd", "I");
-    ucdc = (*env)->GetFieldID(env,objclass, "uncommitted_cmd", "I");
-    repeats = (*env)->GetFieldID(env,objclass, "repeats", "I");
-    cmd_order = (*env)->GetFieldID(env,objclass, "cmd_order", "I");
-    fast_diseqc = (*env)->GetFieldID(env,objclass, "fast_diseqc", "I");
-    seq_repeat = (*env)->GetFieldID(env,objclass, "seq_repeat", "I");
-    ub = (*env)->GetFieldID(env,objclass, "user_band", "I");
-    ub_freq = (*env)->GetFieldID(env,objclass, "ub_freq", "I");
+    toneburst = (*env)->GetFieldID(env,objclass, "sec_tone_burst", "I");
+    cdc = (*env)->GetFieldID(env,objclass, "diseqc_committed", "I");
+    ucdc = (*env)->GetFieldID(env,objclass, "diseqc_uncommitted", "I");
+    repeats = (*env)->GetFieldID(env,objclass, "diseqc_repeat_count", "I");
+    cmd_order = (*env)->GetFieldID(env,objclass, "diseqc_order", "I");
+    fast_diseqc = (*env)->GetFieldID(env,objclass, "diseqc_fast", "I");
+    seq_repeat = (*env)->GetFieldID(env,objclass, "diseqc_sequence_repeat", "I");
     sat_lo = (*env)->GetFieldID(env,objclass, "sat_longitude", "D");
-
-    jstring sname = (*env)->GetObjectField(env, para, name);
-    const char *str = (*env)->GetStringUTFChars(env, sname, 0);
+    
     memset(sat_para->sat_name, 0, sizeof(sat_para->sat_name));
-    if (str != NULL) {
-        strncpy(sat_para->sat_name, str, sizeof(sat_para->sat_name) - 1);
-        (*env)->ReleaseStringUTFChars(env ,sname, str);
-    }
 
     sat_para->lnb_num = (*env)->GetIntField(env, para, lnb_num);
     sat_para->sec.m_lnbs.m_lof_hi = (*env)->GetIntField(env, para, lof_hi);
@@ -641,17 +500,8 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSate
     sat_para->sec.m_lnbs.m_cursat_parameters.m_voltage_mode = (*env)->GetIntField(env, para, voltage_mode);
     sat_para->motor_num = (*env)->GetIntField(env, para, motor_num);
     sat_para->sec.m_lnbs.m_cursat_parameters.m_rotorPosNum = (*env)->GetIntField(env, para, pos_num);
-    if ((*env)->GetIntField(env, para, lo_dir) == 0)
-        cof = 1.0;
-    else
-        cof = -1.0;
-    sat_para->sec.m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_longitude = (*env)->GetDoubleField(env, para, lo) * cof;
-    if ((*env)->GetIntField(env, para, la_dir) == 0)
-        cof = 1.0;
-    else
-        cof = -1.0;
-    sat_para->sec.m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_latitude = (*env)->GetDoubleField(env, para, la) * cof;
-    sat_para->sec.m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_sat_longitude = (*env)->GetDoubleField(env, para, sat_lo);
+    sat_para->sec.m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_longitude = (*env)->GetDoubleField(env, para, lo);
+    sat_para->sec.m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_latitude = (*env)->GetDoubleField(env, para, la);
     sat_para->sec.m_lnbs.m_diseqc_parameters.m_diseqc_mode = (*env)->GetIntField(env, para, diseqc_mode);
     sat_para->sec.m_lnbs.m_diseqc_parameters.m_toneburst_param = (*env)->GetIntField(env, para, toneburst);
     sat_para->sec.m_lnbs.m_diseqc_parameters.m_committed_cmd = (unsigned char)(*env)->GetIntField(env, para, cdc);
@@ -660,8 +510,7 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSate
     sat_para->sec.m_lnbs.m_diseqc_parameters.m_command_order = (*env)->GetIntField(env, para, cmd_order);
     sat_para->sec.m_lnbs.m_diseqc_parameters.m_use_fast = (*env)->GetIntField(env, para, fast_diseqc);
     sat_para->sec.m_lnbs.m_diseqc_parameters.m_seq_repeat = (*env)->GetIntField(env, para, seq_repeat);
-    sat_para->sec.m_lnbs.SatCR_idx = (*env)->GetIntField(env, para, ub);
-    sat_para->sec.m_lnbs.SatCRvco = (*env)->GetIntField(env, para, ub_freq);
+    sat_para->sec.m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_sat_longitude = (*env)->GetDoubleField(env, para, sat_lo);    
     sat_para->sec.m_lnbs.LNBNum = sat_para->sec.m_lnbs.m_diseqc_parameters.m_toneburst_param==B ? 2 : 1;
 
     return 0;
@@ -670,8 +519,9 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_DTVSate
 /**\brief Get the start scan params*/
 static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_SCAN_CreatePara_t *start_para)
 {
-	jfieldID amode, min_freq, max_freq, start_freq, direction, std;
-	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id, chan_id;
+	jfieldID amode, min_freq, max_freq, start_freq, direction, std, doptions;
+	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id, chan_id,sat_id,sat_para;
+	jfieldID ub, ub_freq;
 	int java_mode;
 	
 	jclass objclass =(*env)->FindClass(env,"com/amlogic/tvservice/TVScanner$TVScannerParams"); 
@@ -684,12 +534,17 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	std = (*env)->GetFieldID(env,objclass, "tunerStd", "I"); 
 	mode = (*env)->GetFieldID(env,objclass, "mode", "I"); 
 	dmode = (*env)->GetFieldID(env,objclass, "dtvMode", "I"); 
+	doptions = (*env)->GetFieldID(env,objclass, "dtvOptions", "I"); 
 	fend_id = (*env)->GetFieldID(env,objclass, "fendID", "I"); 
 	dmx_id = (*env)->GetFieldID(env,objclass, "demuxID", "I"); 
 	chan_id = (*env)->GetFieldID(env,objclass, "channelID", "I"); 
 	source = (*env)->GetFieldID(env,objclass, "tsSourceID", "I"); 
 	chan_para = (*env)->GetFieldID(env,objclass, "startParams", "Lcom/amlogic/tvutil/TVChannelParams;"); 
 	freqs = (*env)->GetFieldID(env,objclass, "ChannelParamsList", "[Lcom/amlogic/tvutil/TVChannelParams;"); 
+	sat_id = (*env)->GetFieldID(env,objclass, "sat_id", "I"); 
+	sat_para = (*env)->GetFieldID(env,objclass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;"); 
+	ub = (*env)->GetFieldID(env,objclass, "user_band", "I");
+	ub_freq = (*env)->GetFieldID(env,objclass, "ub_freq", "I");	
 	
 	start_para->fend_dev_id = (*env)->GetIntField(env, para, fend_id); 
 	java_mode = (*env)->GetIntField(env, para, mode); 
@@ -741,6 +596,8 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
         start_para->atv_para.mode = AM_SCAN_ATVMODE_NONE;
         /* Only search DTV */
         start_para->dtv_para.mode = (*env)->GetIntField(env, para, dmode);
+        start_para->dtv_para.mode |= (*env)->GetIntField(env, para, doptions);
+		log_info("DTV mode 0x%x" , start_para->dtv_para.mode);
         start_para->dtv_para.source = (*env)->GetIntField(env, para, source);
         start_para->dtv_para.dmx_dev_id = (*env)->GetIntField(env, para, dmx_id);
         if ((start_para->dtv_para.mode&0x07) == AM_SCAN_DTVMODE_AUTO ||
@@ -753,10 +610,45 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
             }
             /* use the fe_type  specified by user */
             start_para->dtv_para.source = start_para->dtv_para.fe_paras[0].m_type;
+            if (start_para->dtv_para.source == FE_QPSK) {
+                jclass tmp_objclass =(*env)->FindClass(env,"com/amlogic/tvutil/TVChannelParams"); 
+                jfieldID tmp_sat_para = (*env)->GetFieldID(env,tmp_objclass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;");
+                jobject sp = (*env)->GetObjectField(env, cp, tmp_sat_para);
+                get_sat_para(env, thiz, sp, &(start_para->dtv_para.sat_para));        
+
+                start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx = (*env)->GetIntField(env, para, ub);
+                start_para->dtv_para.sat_para.sec.m_lnbs.SatCRvco = (*env)->GetIntField(env, para, ub_freq);
+                if (start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx >= 0 &&
+                    start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx <= 7) {
+                    start_para->dtv_para.mode |= AM_SCAN_DTVMODE_SAT_UNICABLE;
+                }
+            }
+        } else if((start_para->dtv_para.mode&0x07) == AM_SCAN_DTVMODE_SAT_BLIND) {                
+                jobject sp = (*env)->GetObjectField(env, para, sat_para);
+                get_sat_para(env, thiz, sp, &(start_para->dtv_para.sat_para));   
+
+                start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx = (*env)->GetIntField(env, para, ub);
+                start_para->dtv_para.sat_para.sec.m_lnbs.SatCRvco = (*env)->GetIntField(env, para, ub_freq);	
+                if (start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx >= 0 &&
+                    start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx <= 7) {
+                    start_para->dtv_para.mode |= AM_SCAN_DTVMODE_SAT_UNICABLE;
+                }
         } else {
             jobjectArray freq_list = (*env)->GetObjectField(env, para, freqs);
             start_para->dtv_para.fe_cnt = tv_scan_get_fe_paras(env, thiz, start_para->dtv_para.source,
                                           freq_list, &start_para->dtv_para.fe_paras);
+
+            if (start_para->dtv_para.source == FE_QPSK) {
+                jobject sp = (*env)->GetObjectField(env, para, sat_para);
+                get_sat_para(env, thiz, sp, &(start_para->dtv_para.sat_para));   
+
+                start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx = (*env)->GetIntField(env, para, ub);
+                start_para->dtv_para.sat_para.sec.m_lnbs.SatCRvco = (*env)->GetIntField(env, para, ub_freq);
+                if (start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx >= 0 &&
+                    start_para->dtv_para.sat_para.sec.m_lnbs.SatCR_idx <= 7) {
+                    start_para->dtv_para.mode |= AM_SCAN_DTVMODE_SAT_UNICABLE;
+                }
+            }            
         }
         if (start_para->dtv_para.source == FE_ATSC) {
             start_para->dtv_para.standard = AM_SCAN_DTV_STD_ATSC;
@@ -770,7 +662,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
         start_para->mode = AM_SCAN_MODE_ADTV;
         start_para->atv_para.mode = AM_SCAN_ATVMODE_NONE;
         start_para->dtv_para.mode = AM_SCAN_DTVMODE_ALLBAND;
-       
+        start_para->dtv_para.mode |= (*env)->GetIntField(env, para, doptions);       
         start_para->dtv_para.source = (*env)->GetIntField(env, para, source);
         start_para->dtv_para.dmx_dev_id = (*env)->GetIntField(env, para, dmx_id);
        
@@ -832,7 +724,7 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
     AM_DMX_SetSource(para.dtv_para.dmx_dev_id, AM_DMX_SRC_TS2);
     prog->dmx_id = para.dtv_para.dmx_dev_id;
     prog->fend_id = para.fend_dev_id;
-    prog->mode = para.dtv_para.mode&0x7;
+    prog->mode = para.dtv_para.mode;
 	
     /* Start Scan */
     if (AM_SCAN_Create(&para, &handle) != AM_SUCCESS) {

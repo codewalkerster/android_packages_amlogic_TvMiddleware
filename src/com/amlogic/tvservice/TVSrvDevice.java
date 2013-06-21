@@ -248,7 +248,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         else if (params.mode == TVChannelParams.MODE_OFDM)
             tv.SetFrontEnd(params.mode, params.frequency, params.bandwidth, 0);
         else if (params.mode == TVChannelParams.MODE_ATSC)
-            tv.SetFrontEnd(params.mode, params.frequency, 0, 0);
+            tv.SetFrontEnd(params.mode, params.frequency, params.modulation, 0);
         
     }
 
@@ -600,7 +600,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 break;
             case TVChannelParams.MODE_ATSC:
                 Log.v(TAG, " MODE_ATSC");
-                tvChannelPara = TVChannelParams.atscParams(freq);
+                tvChannelPara = TVChannelParams.atscParams(freq, para1);
                 break;
         }
 
@@ -874,6 +874,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             return myvalue;
         }
     }
+
+	public void setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit)
+	{
+	}
 
 
     private void SetWindowSize(int mode ,int x , int y , int w , int h) {

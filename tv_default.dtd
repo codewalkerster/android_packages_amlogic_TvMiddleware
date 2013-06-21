@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<!DOCTYPE db [
+	<!--对于卫星应用db内有多个satellite,对于其他应用db内有多个channel-->
+	<!ELEMENT db (satellite*, channel*, program_group*, channel_list*)>
+
+	<!--卫星参数定义-->
+	<!ELEMENT satellite (transponder*)>
+	<!ATTLIST satellite
+		name CDATA #REQUIRED
+		longitude CDATA
+		lof_lo CDATA
+		lof_hi CDATA
+		lof_threshold CDATA
+		lnb_power (13v|18v|13/18v|off) "13/18v" #REQUIRED
+		signal_22khz (on/off/auto) "auto" #REQUIRED
+		toneburst (bursta|burstb|none) "none" #REQUIRED
+		diseqc1_0 (lnb1|lnb2|lnb3|lnb4|none) "none" #REQUIRED
+		diseqc1_1 (lnb1|lnb2|lnb3|lnb4|lnb5|lnb6|lnb7|lnb8|lnb9|lnb10|lnb11|lnb12|lnb13|lnb14|lnb15|lnb16|none) "none" #REQUIRED
+		motor (diseqc1.2|diseqc1.3|none) "none" #REQUIRED
+	>
+	
+	<!--转发器参数定义-->
+	<!ELEMENT transponder (program*)>
+	<!ATTLIST
+		frequency CDATA #REQUIRED
+		symbol_rate CDATA #REQUIRED
+		polarisation (h|v)
+		original_network_id CDATA
+		ts_id CDATA
+	>
+	
+	<!--频点参数-->
+	<!ELEMENT channel (program*)>
+	<!ATTLIST channel
+		fe_type (dvbc|dvbt|atsc|analog) "dvbc" #REQUIRED
+		sound_sys (a2|btsc|eiaj|nicam)
+		video_standard (auto|pal|ntsc|secam) "auto"
+		audio_standard (dk|i|bg|m|l|auto) "auto"
+		frequency CDATA #REQUIRED
+		modulation (qam16|qam32|qam64|qam128|qam256|qamauto|qpsk|vsb8|vsb16|psk8|apsk16|apsk32|dqpsk)
+		bandwidth (8|7|6|auto|5|10|1_712)
+		symbol_rate CDATA
+		original_network_id CDATA
+		ts_id CDATA
+	>
+	
+	<!--节目参数。对于模拟节目，每个channel下应有一个program(type="atv")-->
+	<!ELEMENT program (video?, audio*, subtitle*, teletext*)>
+	<!ATTLIST program
+		id ID
+		name CDATA
+		service_id CDATA
+		channel_number CDATA
+		type (radio|dtv|atv|other) "dtv" #REQUIRED
+		scrambled (true|false) "false"
+		parental_lock (true|false) "false"
+		skip (true|false) "false"
+	>
+
+	<!--节目视频-->
+	<!ELEMENT video EMPTY>
+	<!ATTLIST video
+		pid CDATA #REQUIRED
+		format (mpeg12|mpeg4|h264|real|vc1|avs) "mpeg12" #REQUIRED
+	>
+	
+	<!--节目音频-->
+	<!ELEMENT audio EMPTY>
+	<!ATTLIST audio
+		pid CDATA #REQUIRED
+		format (mpeg|aac|ac3|dts|aac_latm|wma|wma_pro|eac3) "mpeg" #REQUIRED
+		language CDATA
+	>
+
+	<!--DVB字幕-->
+	<!ELEMENT subtitle EMPTY>
+	<!ATTLIST subtitle
+		pid CDATA #REQUIRED
+		composition_page_id CDATA #REQUIRED
+		ancillary_page_id CDATA #REQUIRED
+	>
+
+	<!--Teletext-->
+	<!ELEMENT teletext EMPTY>
+	<!ATTLIST teletext
+		pid CDATA #REQUIRED
+		magazine_number CDATA #REQUIRED
+		page_number CDATA #REQUIRED
+		type CDATA #REQUIRED
+	>
+
+	<!--节目分组-->
+	<!ELEMENT program_group EMPTY>
+	<!ATTLIST program_group
+		name CDATA #REQUIRED
+		programs IDREFS
+	>
+
+	<!--频道表-->
+	<!ELEMENT channel_list (channel_entry)>
+	<!ATTLIST channel_list
+		name CDATA #REQUIRED
+		fe_type (dvbc|dvbt|atsc|analog) "dvbc" #REQUIRED
+		modulation (qam16|qam32|qam64|qam128|qam256|qamauto|qpsk|vsb8|vsb16|psk8|apsk16|apsk32|dqpsk)
+		bandwidth (8|7|6|auto|5|10|1_712) 
+		symbol_rate CDATA
+		ofdm_mode (dvbt|dvbt2) "dvbt"
+	>
+
+	<!--频道表中的频点参数-->
+	<!ELEMENT channel_entry EMPTY>
+	<!ATTLIST channel_entry
+		frequency CDATA #REQUIRED
+		modulation (qam16|qam32|qam64|qam128|qam256|qamauto|qpsk|vsb8|vsb16|psk8|apsk16|apsk32|dqpsk)
+		bandwidth (8|7|6|auto|5|10|1_712)
+		symbol_rate CDATA
+		ofdm_mode (dvbt|dvbt2) "dvbt"
+	>
+]>

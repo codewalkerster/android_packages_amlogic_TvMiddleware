@@ -419,6 +419,7 @@ public class TVProgram{
 				null,
 				cmd,
 				null, null);
+
 	}
 	
 	private TVProgram(Context context, Cursor c){
@@ -891,6 +892,166 @@ public class TVProgram{
 	}
 
 	/**
+	 *根据记录ID查找指定TVProgram
+	 *@param context 当前Context
+	 *@param sat_id 卫星ID
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectBySatID(Context context, int sat_id){
+		TVProgram p[] = null;
+		String cmd;
+
+		cmd = "select * from srv_table where db_sat_para_id = " + sat_id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
+	
+	/**
+	 *根据节目名称中的关键字查找指定TVProgram
+	 *@param context 当前Context
+	 *@param key 名称关键字
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+
+	public static TVProgram[] selectByName(Context context, String key){
+		TVProgram p[] = null;
+		String cmd;
+
+		cmd = "select * from srv_table where name like '%" + key + "%'";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *根据记录ID删除指定TVProgram
+	 *@param context 当前Context
+	 *@param sat_id 卫星ID
+	 */
+	public static void tvProgramDelByChannelID(Context context, int channel_id){
+		TVProgram p[] = null;
+		String cmd;
+		int idx = 0;
+		int count = 0;
+
+		Log.d(TAG, "tvProgramDelByChannelID:" + channel_id);
+		
+		cmd = "select * from srv_table where db_ts_id = " + channel_id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		count = c.getCount();
+		if(c != null){
+			if(c.moveToFirst()){
+				
+				p = new TVProgram[count];
+				do{
+					p[idx++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		for(idx = 0; idx < count; idx++){
+			TVEvent.tvEventDelBySrvID(context, p[idx].getID());
+			p[idx].deleteSubtitle();
+			p[idx].deleteTeletext();
+			p[idx].deleteFromGroupBySrvID();
+		}
+	
+		Cursor cur = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from srv_table where db_ts_id = "+ channel_id,
+				null, null);
+		if(cur != null){
+			cur.close();
+		}
+
+		return;
+	}
+	
+	/**
+	 *根据记录ID删除指定TVProgram
+	 *@param context 当前Context
+	 *@param sat_id 卫星ID
+	 */
+	public static void tvProgramDelBySatID(Context context, int sat_id){
+		TVProgram p[] = null;
+		String cmd;
+		int idx = 0;
+		int count = 0;
+
+		Log.d(TAG, "tvProgramDelBySatID:" + sat_id);
+		
+		cmd = "select * from srv_table where db_sat_para_id = " + sat_id;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		count = c.getCount();
+		if(c != null){
+			if(c.moveToFirst()){
+				
+				p = new TVProgram[count];
+				do{
+					p[idx++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		for(idx = 0; idx < count; idx++){
+			TVEvent.tvEventDelBySrvID(context, p[idx].getID());
+			p[idx].deleteSubtitle();
+			p[idx].deleteTeletext();
+			p[idx].deleteFromGroupBySrvID();
+		}
+	
+		Cursor cur = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from srv_table where db_sat_para_id = "+ sat_id,
+				null, null);
+		if(cur != null){
+			cur.close();
+		}
+
+		return;
+	}
+
+
+	/**
 	 *取得Program的ID
 	 *@return 返回ID值
 	 */
@@ -1085,6 +1246,19 @@ public class TVProgram{
 	}
 
 	/**
+	 *删除当前节目Subtitle
+	 */
+	private void deleteSubtitle(){
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from subtitle_table where db_srv_id = "+ this.id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}	
+
+	/**
 	 *取得字幕总数
 	 *@return 返回字幕总数
 	 */
@@ -1192,6 +1366,19 @@ public class TVProgram{
 				}
 				c.close();
 			}
+		}
+	}
+
+	/**
+	 *删除当前节目Teletext
+	 */
+	private void deleteTeletext(){
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from teletext_table where db_srv_id = "+ this.id,
+				null, null);
+		if(c != null){
+			c.close();
 		}
 	}
 
@@ -1588,6 +1775,19 @@ public class TVProgram{
 			c.close();
 		}
 	}
+
+	/**
+	 *删除当前节目分组
+	 */
+	private void deleteFromGroupBySrvID(){
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"delete from grp_map_table where db_srv_id = "+ this.id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}	
 
 	/**
 	 *检测当前节目是否属于分组

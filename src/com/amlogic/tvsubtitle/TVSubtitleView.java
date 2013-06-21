@@ -173,7 +173,7 @@ public class TVSubtitleView extends View {
 	private boolean   visible;
 	private boolean   destroy;
 	private int       native_handle;
-	private Bitmap    bitmap;
+	private static Bitmap bitmap = null;
 
 	private void update() {
 		postInvalidate();
@@ -218,7 +218,11 @@ public class TVSubtitleView extends View {
 		destroy    = false;
 		tt_params  = new TTParams();
 		sub_params = new SubParams();
-		bitmap     = Bitmap.createBitmap(BUFFER_W, BUFFER_H, Bitmap.Config.ARGB_8888);
+		
+		if(bitmap==null){
+			bitmap = Bitmap.createBitmap(BUFFER_W, BUFFER_H, Bitmap.Config.ARGB_8888);
+		}
+		
 		if(native_sub_init()<0){
 		}
 	}

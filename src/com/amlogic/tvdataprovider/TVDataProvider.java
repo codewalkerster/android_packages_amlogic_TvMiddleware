@@ -75,6 +75,15 @@ public class TVDataProvider extends ContentProvider{
 		db.loadBuiltins();
 	}
 
+	public synchronized static void importDatabase(Context context, String inputXmlPath) throws Exception{
+		db.importFromXml(inputXmlPath);
+		modified = true;
+	}
+
+	public synchronized static void exportDatabase(Context context, String outputXmlPath) throws Exception{
+		db.exportToXml(outputXmlPath);
+	}
+	
 	@Override
 	public boolean onCreate()
 	{
