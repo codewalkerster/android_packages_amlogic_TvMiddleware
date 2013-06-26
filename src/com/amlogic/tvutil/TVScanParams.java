@@ -109,7 +109,9 @@ public class TVScanParams implements Parcelable {
 					tv_satparams.writeToParcel(dest, flags);
 			}			
 			if(dtvMode == DTV_MODE_ALLBAND){
-				int length = chooseListParams.length;
+				int length = 0;
+				if(chooseListParams != null)
+					length = chooseListParams.length;
 				
 				dest.writeInt(length);
 				if(length > 0)
