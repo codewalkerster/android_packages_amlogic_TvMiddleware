@@ -848,7 +848,50 @@ public class TVProgram{
 	 *@return 返回TVProgram数组，null表示没有节目
 	 */
 	public static TVProgram[] selectByType(Context context, int type, boolean no_skip){
-		return selectByType(context, type, no_skip ? 0 : 1);
+		TVProgram p[] = null;
+		boolean where = false;
+		String cmd = "select * from srv_table ";
+
+		if(type == TYPE_DTV){
+			cmd += "where (service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") ";
+			where = true;
+		}else if(type != TYPE_UNKNOWN){
+			cmd += "where service_type = "+type+" ";
+			where = true;
+		}
+
+		if(no_skip){			
+			if(where){				
+				cmd += " and skip = 0 ";			
+			}else{				
+				cmd += " where skip = 0 ";			
+			}		
+		}else{
+			if(where){				
+				cmd += " and skip <= 1 ";			
+			}else{				
+				cmd += " where skip <= 1 ";			
+			}
+		}
+
+		cmd += " order by chan_order";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
 	}
 	
 	/**
