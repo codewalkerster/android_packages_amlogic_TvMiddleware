@@ -3,6 +3,7 @@ package com.amlogic.tvutil;
 import android.database.Cursor;
 import android.content.Context;
 import android.util.Log;
+import java.util.ArrayList;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
 /**
@@ -24,6 +25,8 @@ public class TVProgram{
 	public static final int TYPE_DATA  = 4;
 	/**数字节目*/
 	public static final int TYPE_DTV   = 5;
+	/** PVR/Timeshifting playback program*/
+	public static final int TYPE_PLAYBACK = 6;
 
 	private Context context;
 	private int id;
@@ -40,6 +43,7 @@ public class TVProgram{
     private int volume;
     private int src;
     private int sourceID;
+	private int audioTrack;
 	/**
 	 *Service中的基础元素信息
 	 */
@@ -329,6 +333,9 @@ public class TVProgram{
 		col   = c.getColumnIndex("minor_chan_num");
 		minor = c.getInt(col);
 		
+		col   = c.getColumnIndex("aud_track");
+		this.audioTrack = c.getInt(col);
+		
 		if (src == TVChannelParams.MODE_ATSC || (src == TVChannelParams.MODE_ANALOG && major > 0)){
 			this.number = new TVProgramNumber(major, minor);
 		}else{
@@ -344,6 +351,8 @@ public class TVProgram{
 			this.type = TYPE_RADIO;
 		else if(type == 3)
 			this.type = TYPE_ATV;
+		else if (type == 6)
+			this.type = TYPE_PLAYBACK;
 		else
 			this.type = TYPE_DATA;
 
@@ -405,6 +414,117 @@ public class TVProgram{
 			lang = langs[i];
 			this.audioes[i] = new Audio(pid, lang, fmt);
 		}
+
+		/* parse subtitles */
+		String cids[]=null, aids[]=null;
+		pids = null;
+		langs = null;
+		col = c.getColumnIndex("sub_pids");
+		str = c.getString(col);
+		if(str.length() != 0)
+			pids = str.split(" ");
+
+		col = c.getColumnIndex("sub_composition_page_ids");
+		str = c.getString(col);
+		if(str.length() != 0)
+			cids = str.split(" ");
+
+		col = c.getColumnIndex("sub_ancillary_page_ids");
+		str = c.getString(col);
+		if(str.length() != 0)
+			aids = str.split(" ");
+
+		col = c.getColumnIndex("sub_langs");
+		str = c.getString(col);
+		if(str.length() != 0)
+			langs = str.split(" ");
+
+		if(pids != null){
+			count = pids.length;
+		}else{
+			count = 0;
+			this.subtitles = null;
+		}
+
+		/* parse teletexts */
+		int ttx_count = 0, ttx_sub_count = 0;
+		String ttx_pids[]=null, ttx_types[]=null, mag_nos[]=null, page_nos[]=null, ttx_langs[]=null;
+		col = c.getColumnIndex("ttx_pids");
+		str = c.getString(col);
+		if(str.length() != 0)
+			ttx_pids = str.split(" ");
+
+		col = c.getColumnIndex("ttx_types");
+		str = c.getString(col);
+		if(str.length() != 0)
+			ttx_types = str.split(" ");
+
+		col = c.getColumnIndex("ttx_magazine_nos");
+		str = c.getString(col);
+		if(str.length() != 0)
+			mag_nos = str.split(" ");
+
+		col = c.getColumnIndex("ttx_page_nos");
+		str = c.getString(col);
+		if(str.length() != 0)
+			page_nos = str.split(" ");
+
+		col = c.getColumnIndex("ttx_langs");
+		str = c.getString(col);
+		if(str.length() != 0)
+			ttx_langs = str.split(" ");
+
+		if(ttx_pids != null){
+			for(i=0; i<ttx_pids.length; i++){
+				int ttype = Integer.parseInt(ttx_types[i]);
+				if (ttype == 0x2 || ttype == 0x5){
+					ttx_sub_count++;
+				}else{
+					ttx_count++;
+				}
+			}
+
+			if (ttx_count > 0){
+				this.teletexts = new Teletext[ttx_count];
+			}else{
+				this.teletexts = null;
+			}
+		}else{
+			ttx_count = 0;
+			this.teletexts = null;
+		}
+
+		if ((count+ttx_sub_count) > 0){
+			this.subtitles = new Subtitle[count + ttx_sub_count];
+		}else{
+			this.subtitles = null;
+		}
+		for(i=0; i<(count); i++){
+			this.subtitles[i] = new Subtitle(
+				Integer.parseInt(pids[i]), 
+				langs[i], Subtitle.TYPE_DVB_SUBTITLE, 
+				Integer.parseInt(cids[i]), 
+				Integer.parseInt(aids[i]));
+		}
+
+		int ittx = 0, isubttx = 0;
+		for(i=0; i<(ttx_sub_count + ttx_count); i++){
+			int ttype = Integer.parseInt(ttx_types[i]);
+			if (ttype == 0x2 || ttype == 0x5){
+				this.subtitles[isubttx+count] = new Subtitle(
+					Integer.parseInt(ttx_pids[i]), 
+					ttx_langs[i], Subtitle.TYPE_DTV_TELETEXT, 
+					Integer.parseInt(mag_nos[i]), 
+					Integer.parseInt(page_nos[i]));
+				isubttx++;
+			}else{
+				this.teletexts[ittx++] = new Teletext(
+					Integer.parseInt(ttx_pids[i]), 
+					ttx_langs[i],  
+					Integer.parseInt(mag_nos[i]), 
+					Integer.parseInt(page_nos[i]));
+			}
+		}
 	}
 	
 	
@@ -445,14 +565,14 @@ public class TVProgram{
 					/*add a new atv program to database*/
 					String cmd = "insert into srv_table(db_net_id,db_ts_id,service_id,src,name,service_type,";
 					cmd += "eit_schedule_flag,eit_pf_flag,running_status,free_ca_mode,volume,aud_track,vid_pid,";
-					cmd += "vid_fmt,aud_pids,aud_fmts,aud_langs,db_sub_id,skip,lock,chan_num,major_chan_num,";
+					cmd += "vid_fmt,aud_pids,aud_fmts,aud_langs,skip,lock,chan_num,major_chan_num,";
 					cmd += "minor_chan_num,access_controlled,hidden,hide_guide,source_id,favor,current_aud,";
 					cmd += "db_sat_para_id,scrambled_flag,lcn,hd_lcn,sd_lcn,default_chan_num,chan_order) ";
 					cmd += "values(-1,"+ channelID + ",65535,"+ params.getMode() + ",'',"+type+",";
 					cmd += "0,0,0,0,0,0,8191,";
 					int chanNum = num.isATSCMode() ? (num.getMajor()<<16)|num.getMinor() : num.getNumber();
 					int majorNum = num.isATSCMode() ? num.getMajor() : 0;
-					cmd += "-1,'','','',-1," + skipFlag + ",0,"+ chanNum +","+ majorNum + ",";
+					cmd += "-1,'','',''," + skipFlag + ",0,"+ chanNum +","+ majorNum + ",";
 					cmd += "" + num.getMinor() + ",0,0,0,-1,0,-1,";
 					cmd += "-1,0,-1,-1,-1,-1,0)";
 					context.getContentResolver().query(TVDataProvider.WR_URL,
@@ -478,6 +598,168 @@ public class TVProgram{
 	
 	public TVProgram(){
 	
+	}
+
+	/**
+	 *This method is mainly designed for adding a Playback program.
+	 */
+	public TVProgram(Context context, String name, int type, Video vid, Audio[] auds, Subtitle[] subs, Teletext[] ttxs){
+		int vpid = (vid != null) ? vid.getPID() : 0x1fff;
+		int vfmt = (vid != null) ? vid.getFormat() : -1;
+		
+		/*add a new program to database*/
+		String apids="", afmts="", alangs="";
+		if (auds != null && auds.length > 0) {
+			apids  += auds[0].getPID();
+			afmts  += auds[0].getFormat();
+			alangs += auds[0].getLang();
+			for (int i=1; i<auds.length; i++){
+				apids  += " "+auds[i].getPID();
+				afmts  += " "+auds[i].getFormat();
+				alangs += " "+auds[i].getLang();
+			}
+		}
+
+		ArrayList dvbSubsList = new ArrayList();
+		ArrayList ttxSubsList = new ArrayList();
+		Subtitle[] dvbSubs = null;
+		Subtitle[] ttxSubs = null;
+		
+		
+		for (int i=0; subs != null && i<subs.length; i++){
+			if (subs[i].getType() == Subtitle.TYPE_DTV_TELETEXT){
+				ttxSubsList.add(subs[i]);
+			}else{
+				dvbSubsList.add(subs[i]);
+			}
+		}
+
+		dvbSubs = (Subtitle[])dvbSubsList.toArray(new Subtitle[0]);
+		ttxSubs = (Subtitle[])ttxSubsList.toArray(new Subtitle[0]);
+		String spids="", stypes="", scpgids="", sapgids="", slangs="";
+		if (dvbSubsList.size() > 0) {
+			spids   += dvbSubs[0].getPID();
+			stypes  += dvbSubs[0].getType();
+			scpgids += dvbSubs[0].getCompositionPageID();
+			sapgids += dvbSubs[0].getAncillaryPageID();
+			slangs  += dvbSubs[0].getLang();
+			for (int i=1; i<dvbSubs.length; i++){
+				spids   += " "+dvbSubs[i].getPID();
+				stypes  += " "+dvbSubs[i].getType();
+				scpgids += " "+dvbSubs[i].getCompositionPageID();
+				sapgids += " "+dvbSubs[i].getAncillaryPageID();
+				slangs  += " "+dvbSubs[i].getLang();
+			}
+		}
+		
+		String tpids="", ttypes="", tmagnums="", tpgnums="", tlangs="";
+		if (ttxs != null && ttxs.length > 0) {
+			tpids    += ttxs[0].getPID();
+			tmagnums += ttxs[0].getMagazineNumber();
+			tpgnums  += ttxs[0].getPageNumber();
+			tlangs   += ttxs[0].getLang();
+			ttypes   += 0x1/*not used*/;
+			for (int i=1; i<ttxs.length; i++){
+				tpids    += " "+ttxs[i].getPID();
+				tmagnums += " "+ttxs[i].getMagazineNumber();
+				tpgnums  += " "+ttxs[i].getPageNumber();
+				tlangs   += " "+ttxs[i].getLang();
+				ttypes   += " "+0x1/*not used*/;
+			}
+			/*add subtitle ttx*/
+			for (int i=0; i<ttxSubsList.size(); i++){
+				tpids    += " "+ttxSubs[i].getPID();
+				tmagnums += " "+ttxSubs[i].getCompositionPageID();
+				tpgnums  += " "+ttxSubs[i].getAncillaryPageID();
+				tlangs   += " "+ttxSubs[i].getLang();
+				ttypes   += " "+0x2;
+			}
+		}else if (ttxSubsList.size() > 0) {
+			tpids    += ttxSubs[0].getPID();
+			tmagnums += ttxSubs[0].getCompositionPageID();
+			tpgnums  += ttxSubs[0].getAncillaryPageID();
+			tlangs   += ttxSubs[0].getLang();
+			ttypes   += 0x2; //maybe 0x5
+			for (int i=1; i<ttxSubsList.size(); i++){
+				tpids    += " "+ttxSubs[i].getPID();
+				tmagnums += " "+ttxSubs[i].getCompositionPageID();
+				tpgnums  += " "+ttxSubs[i].getAncillaryPageID();
+				tlangs   += " "+ttxSubs[i].getLang();
+				ttypes   += " "+0x2;
+			}
+		}
+
+		boolean newInsert = true;
+		String cmd;
+		if (type == TYPE_PLAYBACK){
+			cmd = "select * from srv_table where service_type = "+type;
+			Cursor cr = context.getContentResolver().query(TVDataProvider.RD_URL,
+					null,
+					cmd,
+					null, null);
+			if(cr != null){
+				if(cr.moveToFirst()){
+					/*Just update*/
+					int col = cr.getColumnIndex("db_id");
+					int db_id = cr.getInt(col);
+					cmd = "update srv_table set ";
+					cmd += "vid_pid="+vpid+",vid_fmt="+vfmt+",";
+					cmd += "current_aud=-1,aud_pids='"+apids+"',aud_fmts='"+afmts+"',aud_langs='"+alangs+"',";
+					cmd += "current_sub=-1,sub_pids='"+spids+"',sub_types='"+stypes+"',sub_composition_page_ids='"+scpgids+
+						"',sub_ancillary_page_ids='"+sapgids+"',sub_langs='"+slangs+"',";
+					cmd += "current_ttx=-1,ttx_pids='"+tpids+"',ttx_types='"+ttypes+"',ttx_magazine_nos='"+tmagnums+
+						"',ttx_page_nos='"+tpgnums+"',ttx_langs='"+tlangs+"' ";
+					cmd += "where db_id=" + db_id;
+
+					context.getContentResolver().query(TVDataProvider.WR_URL,
+						null,
+						cmd,
+						null, null);
+
+					newInsert = false;
+				}
+				cr.close();
+			}
+		}
+
+		if (newInsert){
+			cmd = "insert into srv_table(db_net_id,db_ts_id,service_id,src,name,service_type,";
+			cmd += "eit_schedule_flag,eit_pf_flag,running_status,free_ca_mode,volume,aud_track,vid_pid,";
+			cmd += "vid_fmt,aud_pids,aud_fmts,aud_langs,skip,lock,chan_num,major_chan_num,";
+			cmd += "minor_chan_num,access_controlled,hidden,hide_guide,source_id,favor,current_aud,";
+			cmd += "current_sub,sub_pids,sub_types,sub_composition_page_ids,sub_ancillary_page_ids,sub_langs,";
+		 	cmd += "current_ttx,ttx_pids,ttx_types,ttx_magazine_nos,ttx_page_nos,ttx_langs,";
+			cmd += "db_sat_para_id,scrambled_flag,lcn,hd_lcn,sd_lcn,default_chan_num,chan_order) ";
+			cmd += "values(-1,-1,65535,-1,'',"+type+",";
+			cmd += "0,0,0,0,0,0," + vpid + ",";
+			cmd += ""+vfmt+",'"+apids+"','"+afmts+"','"+alangs+"',0,0,0,0,";
+			cmd += "0,0,0,0,-1,0,-1,";
+			cmd += "-1,'"+spids+"','"+stypes+"','"+scpgids+"','"+sapgids+"','"+slangs+"',";
+			cmd += "-1,'"+tpids+"','"+ttypes+"','"+tmagnums+"','"+tpgnums+"','"+tlangs+"',";
+			cmd += "-1,0,-1,-1,-1,-1,0)";
+			context.getContentResolver().query(TVDataProvider.WR_URL,
+					null, cmd, null, null);
+		}
+		
+
+		/**FIXME: here we have a bug, for non-playback programs,
+		 * the program we selected may be not the one we inserted.*/
+		cmd = "select * from srv_table where vid_pid="+vpid+" and vid_fmt="+vfmt+" and service_type = "+type;
+		Cursor cr = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(cr != null){
+			if(cr.moveToFirst()){
+				/*Construct*/
+				constructFromCursor(context, cr);
+			}else{
+				/*A critical error*/
+				Log.d(TAG, "Cannot add new program, sqlite error");
+				this.id = -1;
+			}
+			cr.close();
+		}
 	}
 	
 
@@ -943,8 +1225,37 @@ public class TVProgram{
 	public static TVProgram[] selectBySatID(Context context, int sat_id){
 		TVProgram p[] = null;
 		String cmd;
+		cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and (service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") ";
 
-		cmd = "select * from srv_table where db_sat_para_id = " + sat_id;
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *根据记录ID查找指定TVProgram
+	 *@param context 当前Context
+	 *@param sat_id 卫星ID
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+	public static TVProgram[] selectBySatIDAndType(Context context, int sat_id,int type){
+		TVProgram p[] = null;
+		String cmd;
+
+		cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and service_type = "+type;
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -976,6 +1287,37 @@ public class TVProgram{
 		String cmd;
 
 		cmd = "select * from srv_table where name like '%" + key + "%'";
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
+
+	/**
+	 *根据节目名称中的关键字查找指定TVProgram
+	 *@param context 当前Context
+	 *@param key 名称关键字
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+
+	public static TVProgram[] selectByNameAndType(Context context, String key,int type){
+		TVProgram p[] = null;
+		String cmd;
+
+		cmd = "select * from srv_table where name like '%" + key + "%'" + " and service_type = "+type;
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -1103,6 +1445,29 @@ public class TVProgram{
 	}
 
 	/**
+	 *取得Program的audio track
+	 *@return 返回audio track值
+	 */
+	public int getAudTrack(){
+		return this.audioTrack;	
+	}
+
+	/**
+	 *修改Program的audio track
+	 *@param aud audio track值
+	 */
+	public void setAudTrack(int aud){
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
+				null,
+				"update srv_table set aud_track = "+aud+" where srv_table.db_id = " + id,
+				null, null);
+		if(c != null){
+			c.close();
+		}
+	}
+
+	/**
 	 *取得Program的DVB service ID(DVB)
 	 *@return 返回service ID
 	 */
@@ -1205,100 +1570,68 @@ public class TVProgram{
 		return audioes;
 	}
 
-	private void selectSubtitle(){
-		if(subtitles==null){
-			String cmd1, cmd2;
-			Cursor c1, c2;
-			int count = 0;
-			int id = 0;
-			
-			cmd1 = "select * from subtitle_table where db_srv_id = "+getID();
-			c1 = context.getContentResolver().query(TVDataProvider.RD_URL,
-					null,
-					cmd1,
-					null, null);
-			cmd2 = "select * from teletext_table where db_srv_id = "+getID()+" and (type=2 or type=5)";
-			c2 = context.getContentResolver().query(TVDataProvider.RD_URL,
-					null,
-					cmd2,
-					null, null);
+	/**
+	 *记录当前的audio
+	 *@param id audio索引
+	 *@return 
+	 */
+	public void setCurrentAudio(int id){
+		if (audioes == null || id < 0 || id >= audioes.length){
+			Log.d(TAG, "Invalid audio id " + id);
+			return;
+		}
 
-			if(c1 != null)
-				count += c1.getCount();
-			if(c2 != null)
-				count += c2.getCount();
-
-			if(count != 0){
-				subtitles = new Subtitle[count];
-
-				if(c1 != null){
-					if(c1.moveToFirst()){
-						do{
-							int pid, comp, anc;
-							String slang;
-							int col;
-
-							col = c1.getColumnIndex("pid");
-							pid = c1.getInt(col);
-
-							col = c1.getColumnIndex("composition_page_id");
-							comp = c1.getInt(col);
-
-							col = c1.getColumnIndex("ancillary_page_id");
-							anc = c1.getInt(col);
-
-							col = c1.getColumnIndex("language");
-							slang = c1.getString(col);
-
-							Subtitle sub = new Subtitle(pid, slang, Subtitle.TYPE_DVB_SUBTITLE, comp, anc);
-							subtitles[id++] = sub;
-						}while(c1.moveToNext());
+		context.getContentResolver().query(TVDataProvider.WR_URL,
+			null,
+			"update srv_table set current_aud=" + id + " where db_id = " + this.id,
+			null, null);
+	}
+	
+	/**
+	 *取得当前的audio索引
+	 *@param defaultLang 用户未选择语言时，默认的全局语言
+	 *@return 当前的Audio索引
+	 */
+	public int getCurrentAudio(String defaultLang){
+		int id = -1;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select current_aud from srv_table where db_id = " + this.id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				id = c.getInt(0);
+				if (id < 0 && audioes != null){
+					if(defaultLang!=null){
+						for(int i=0; i<audioes.length; i++){
+							if(audioes[i].getLang().equals(defaultLang)){
+								id = i;
+								break;
+							}
+						}
 					}
-				}
 
-				if(c2 != null){
-					if(c2.moveToFirst()){
-						do{
-							int pid, page, mag;
-							String slang;
-							int col;
-
-							col = c2.getColumnIndex("pid");
-							pid = c2.getInt(col);
-
-							col = c2.getColumnIndex("magazine_number");
-							mag = c2.getInt(col);
-
-							col = c2.getColumnIndex("page_number");
-							page = c2.getInt(col);
-
-							col = c2.getColumnIndex("language");
-							slang = c2.getString(col);
-
-							Subtitle sub = new Subtitle(pid, slang, Subtitle.TYPE_DTV_TELETEXT, mag, page);
-							subtitles[id++] = sub;
-						}while(c2.moveToNext());
+					if (id < 0){
+						/* still not found, using the first */
+						id = 0;
 					}
 				}
 			}
-			if(c1 != null)
-				c1.close();
-			if(c2 != null)
-				c2.close();
+			c.close();
 		}
+
+		return id;
+	}
+
+	private void selectSubtitle(){
 	}
 
 	/**
 	 *删除当前节目Subtitle
 	 */
 	private void deleteSubtitle(){
-		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
-				null,
-				"delete from subtitle_table where db_srv_id = "+ this.id,
-				null, null);
-		if(c != null){
-			c.close();
-		}
+		Log.d(TAG, "deleteSubtitle NOT IMPLEMENT YET!");
 	}	
 
 	/**
@@ -1371,58 +1704,68 @@ public class TVProgram{
 		return subtitles;
 	}
 
-	private void selectTeletext(){
-		if(teletexts==null){
-			String cmd;
-			Cursor c;
-			int id = 0;
-			
-			cmd = "select * from teletext_table where db_srv_id = "+getID()+" and type != 2 and type != 5";
-			c = context.getContentResolver().query(TVDataProvider.RD_URL,
-					null,
-					cmd,
-					null, null);
-
-			if(c != null){
-				if(c.moveToFirst()){
-					teletexts = new Teletext[c.getCount()];
-					do{
-						int pid, page, mag;
-						String tlang;
-						int col;
-
-						col = c.getColumnIndex("pid");
-						pid = c.getInt(col);
-
-						col = c.getColumnIndex("magazine_number");
-						mag = c.getInt(col);
-
-						col = c.getColumnIndex("page_number");
-						page = c.getInt(col);
-
-						col = c.getColumnIndex("language");
-						tlang = c.getString(col);
-
-						Teletext tt = new Teletext(pid, tlang, mag, page);
-						teletexts[id++] = tt;
-					}while(c.moveToNext());
-				}
-				c.close();
-			}
+	/**
+	 *记录当前的subtitle
+	 *@param id subtitle索引
+	 *@return 
+	 */
+	public void setCurrentSubtitle(int id){
+		if (subtitles == null || id < 0 || id >= subtitles.length){
+			Log.d(TAG, "Invalid subtitle id " + id);
+			return;
 		}
+
+		context.getContentResolver().query(TVDataProvider.WR_URL,
+			null,
+			"update srv_table set current_sub=" + id + " where db_id = " + this.id,
+			null, null);
+	}
+	
+	/**
+	 *取得当前的subtitle索引
+	 *@param defaultLang 用户未选择语言时，默认的全局语言
+	 *@return 当前的Subtitle 索引
+	 */
+	public int getCurrentSubtitle(String defaultLang){
+		int id = -1;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select current_sub from srv_table where db_id = " + this.id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				id = c.getInt(0);
+				if (id < 0 && subtitles != null){
+					if(defaultLang!=null){
+						for(int i=0; i<subtitles.length; i++){
+							if(subtitles[i].getLang().equals(defaultLang)){
+								id = i;
+								break;
+							}
+						}
+					}
+
+					if (id < 0){
+						/* still not found, using the first */
+						id = 0;
+					}
+				}
+			}
+			c.close();
+		}
+
+		return id;
+	}
+
+	private void selectTeletext(){
 	}
 
 	/**
 	 *删除当前节目Teletext
 	 */
 	private void deleteTeletext(){
-		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
-				null,
-				"delete from teletext_table where db_srv_id = "+ this.id,
-				null, null);
-		if(c != null){
-			c.close();
-		}
+		Log.d(TAG, "deleteTeletext NOT IMPLEMENT YET!");
 	}
 
 	/**
@@ -1493,6 +1836,60 @@ public class TVProgram{
 	public Teletext[] getAllTeletext(){
 		selectTeletext();
 		return teletexts;
+	}
+
+	/**
+	 *记录当前的teletext
+	 *@param id teletext索引
+	 *@return 
+	 */
+	public void setCurrentTeletext(int id){
+		if (teletexts == null || id < 0 || id >= teletexts.length){
+			Log.d(TAG, "Invalid teletext id " + id);
+			return;
+		}
+
+		context.getContentResolver().query(TVDataProvider.WR_URL,
+			null,
+			"update srv_table set current_ttx=" + id + " where db_id = " + this.id,
+			null, null);
+	}
+	
+	/**
+	 *取得当前的teletext索引
+	 *@param defaultLang 用户未选择语言时，默认的全局语言
+	 *@return 当前的Teletext索引
+	 */
+	public int getCurrentTeletext(String defaultLang){
+		int id = -1;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				"select current_ttx from srv_table where db_id = " + this.id,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				id = c.getInt(0);
+				if (id < 0 && teletexts != null){
+					if(defaultLang!=null){
+						for(int i=0; i<teletexts.length; i++){
+							if(teletexts[i].getLang().equals(defaultLang)){
+								id = i;
+								break;
+							}
+						}
+					}
+
+					if (id < 0){
+						/* still not found, using the first */
+						id = 0;
+					}
+				}
+			}
+			c.close();
+		}
+
+		return id;
 	}
 
 	/**
@@ -1785,6 +2182,38 @@ public class TVProgram{
 		}
 
 		return p;
+	}
+  
+  /**
+	 *通过节目名称，service id和节目类型找到对应节目
+	 *@param context 当前Context
+	 *@param name 节目名称
+	 *@param service_id 节目service id
+	 *@param type 节目类型
+	 *@return 返回TVProgram，null表示没有节目
+	 */
+
+	public static TVProgram selectByNameAndServiceId(Context context, String name, int service_id,int type){
+		TVProgram p = null;
+		String cmd;
+
+		cmd = "select * from srv_table where name like '%" + name + "%'" +" and service_id = " + service_id + " and service_type = "+type;
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		
+		if(c != null){
+			if(c.moveToFirst()){
+				p = new TVProgram(context, c);
+			}
+			c.close();
+		}
+
+		if(p != null) 
+			return p;
+		return null;
 	}
 
 	/**

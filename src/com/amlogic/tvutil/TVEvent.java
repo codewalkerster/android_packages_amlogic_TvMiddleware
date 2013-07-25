@@ -16,7 +16,7 @@ public class TVEvent{
 	private String description;
 	private TVProgram program;
 	private long start;
-	private int end;
+	private long end;
 	private int dvbContent;
 	private int dvbViewAge;
 	private int sub_flag;
@@ -39,10 +39,10 @@ public class TVEvent{
 		this.name = c.getString(col);
 
 		col = c.getColumnIndex("start");
-		this.start = c.getInt(col);
+		this.start = (long)c.getInt(col) * 1000;
 
 		col = c.getColumnIndex("end");
-		this.end = c.getInt(col);
+		this.end = (long)c.getInt(col) * 1000;
 
 		col = c.getColumnIndex("nibble_level");
 		this.dvbContent = c.getInt(col);
@@ -52,6 +52,11 @@ public class TVEvent{
 
 		col = c.getColumnIndex("sub_flag");
 		this.sub_flag = c.getInt(col);
+		
+		col = c.getColumnIndex("db_srv_id");
+		int programID = c.getInt(col);
+		this.program = TVProgram.selectByID(context, programID);
+
 		
 		col = c.getColumnIndex("rrt_ratings");
 		String rrtRatings = c.getString(col);

@@ -123,6 +123,20 @@ abstract public class TVClient
 							currProgramID = -1;
 							currProgramNo = null;
 							break;
+						case TVMessage.TYPE_PLAYBACK_MEDIA_INFO:
+							DTVRecordParams minfo = tvmsg.getPlaybackMediaInfo();
+							if (minfo != null){
+								TVProgram playbackProg = new TVProgram(TVClient.this.context, "Playback", 
+									TVProgram.TYPE_PLAYBACK, minfo.getVideo(), minfo.getAllAudio(), 
+									minfo.getAllSubtitle(), minfo.getAllTeletext());
+								
+								if(playbackProg != null){
+									currProgramType = playbackProg.getType();
+									currProgramNo   = playbackProg.getNumber();
+									currProgramID   = playbackProg.getID();
+								}
+							}
+							break;
 					}
 
 					onMessage((TVMessage)msg.obj);
@@ -397,15 +411,29 @@ abstract public class TVClient
 
     /**
      *开始录制当前播放的节目
+     *@param duration 录像时长，ms单位, duration <= 0 表示无时间限制，一直录像。
      */
-    public synchronized void startRecording() {
+    public synchronized void startRecording(long duration) {
         if(service != null) {
             try {
-                service.startRecording();
+                service.startRecording(duration);
             } catch(RemoteException e) {
             }
         }
     }
+
+	   /**
+     *切换声道
+     *@param aud_track 0 立体声 1 左声道 2 右声道。
+     */
+		public void switchAudioTrack(int aud_track){
+			if(service != null) {
+	            try {
+	                service.switchAudioTrack(aud_track);
+	            } catch(RemoteException e) {
+	            }
+	        }
+		}
 
     /**
      *停止录制当前节目
@@ -435,12 +463,12 @@ abstract public class TVClient
 
     /**
      *开始录制节目回放
-     *@param bookingID 录制节目的预约记录ID
+     *@param filePath 回放文件的全路径
      */
-    public void startPlayback(int bookingID) {
+    public void startPlayback(String filePath) {
         if(service != null) {
             try {
-                service.startPlayback(bookingID);
+                service.startPlayback(filePath);
             } catch(RemoteException e) {
             }
         }

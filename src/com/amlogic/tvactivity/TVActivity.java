@@ -1,5 +1,12 @@
 package com.amlogic.tvactivity;
 
+import java.io.BufferedWriter;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.FileReader;
+
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Message;
@@ -47,6 +54,8 @@ abstract public class TVActivity extends Activity
     private TVSubtitleView subtitleView;
 	private boolean connected = false;
 	private boolean externalVideoView = false;
+	private boolean externalSubtitleView = false;
+
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
     private int currTeletextPID = -1;
@@ -72,10 +81,21 @@ abstract public class TVActivity extends Activity
         }
     };
 
+	protected void onPause(){
+		Log.d(TAG, "onPause");
+		if(subtitleView != null){
+			subtitleView.setActive(false);
+		}
+		super.onStop();
+	}
+
 	protected void onResume(){
 		Log.d(TAG, "onResume");
         super.onResume();
 		updateVideoWindow();
+		if(subtitleView != null){
+			subtitleView.setActive(true);
+		}
 	}
 	
     public void onCreate(Bundle savedInstanceState) {
@@ -107,6 +127,28 @@ abstract public class TVActivity extends Activity
 	client.disconnect(this);
 	super.onDestroy();
     }
+	
+	private int getTeletextRegionID(String ttxRegionName){
+		final String[] supportedRegions= {"English", "Deutsch", "Svenska/Suomi/Magyar",
+                                          "Italiano", "Français", "Português/Español", 
+                                          "Cesky/Slovencina", "Türkçe", "Ellinika"};
+		final int[] regionIDMaps = {16, 17, 18, 19, 20, 21, 14, 22, 55};
+
+		int i;
+		for (i=0; i<supportedRegions.length; i++){
+			if (supportedRegions[i].equals(ttxRegionName))
+				break;
+		}
+
+		if (i >= supportedRegions.length){
+			Log.d(TAG, "Teletext defaut region " + ttxRegionName + 
+				" not found, using 'English' as default!");
+			i = 0;
+		}
+
+		Log.d(TAG, "Teletext default region id: " + regionIDMaps[i]);
+		return regionIDMaps[i];
+	}
 
 	private void resetProgramCC(TVProgram prog){
 		subtitleView.stop();
@@ -158,6 +200,7 @@ abstract public class TVActivity extends Activity
 
 		int prog_id = client.getCurrentProgramID();
 
+		Log.d(TAG, "reset subtitle, current program id " + prog_id);
 		if(prog_id == -1)
 			return;
 
@@ -169,16 +212,25 @@ abstract public class TVActivity extends Activity
 
 		if(mode == SUBTITLE_SUB){
 			if (! getStringConfig("tv:dtv:mode").equals("atsc")){
-	    		TVProgram.Subtitle sub;
+	    		TVProgram.Subtitle sub = null;
 	    		
 	    		if(sub_id >= 0){
 	    			sub = prog.getSubtitle(sub_id);
+					if (sub != null){
+						prog.setCurrentSubtitle(sub_id);
+					}
 				}else{
-	    			sub = prog.getSubtitle(getStringConfig("tv:subtitle:language"));
+					int sub_idx = prog.getCurrentSubtitle(getStringConfig("tv:subtitle:language"));
+					if (sub_idx >= 0){
+						sub = prog.getSubtitle(sub_idx);
+					}
 				}
 
-	    		if(sub == null)
-	    			return;
+	    		
+				if(sub == null){
+					resetSubtitle(SUBTITLE_NONE);
+					return;
+				}
 
 	       		switch(sub.getType()){
 					case TVProgram.Subtitle.TYPE_DVB_SUBTITLE:
@@ -199,12 +251,18 @@ abstract public class TVActivity extends Activity
 				return;
 			}
 		}else if(mode == SUBTITLE_TT){
-			TVProgram.Teletext tt;
+			TVProgram.Teletext tt = null;
 			
 			if(sub_id >= 0){
 				tt = prog.getTeletext(sub_id);
+				if (tt != null){
+					prog.setCurrentTeletext(sub_id);
+				}
 			}else{
-				tt = prog.getTeletext(getStringConfig("tv:teletext:language"));
+				int tt_idx = prog.getCurrentTeletext(getStringConfig("tv:teletext:language"));
+				if (tt_idx >= 0){
+					tt = prog.getTeletext(tt_idx);
+				}
 			}
 
 			if(tt == null)
@@ -228,16 +286,18 @@ abstract public class TVActivity extends Activity
 
 		TVSubtitleView.DVBSubParams subp;
 		TVSubtitleView.DTVTTParams ttp;
+		int dmx_id = (prog.getType() == TVProgram.TYPE_PLAYBACK) ? 1 : 0;
 
 		if(pm == SUBTITLE_SUB){
-			subp = new TVSubtitleView.DVBSubParams(0, pid, id1, id2);
+			subp = new TVSubtitleView.DVBSubParams(dmx_id, pid, id1, id2);
 			subtitleView.setSubParams(subp);
 		}else{
 			int pgno;
 
 			pgno = (id1==0) ? 800 : id1*100;
 			pgno += id2;
-			ttp = new TVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F);
+			ttp = new TVSubtitleView.DTVTTParams(dmx_id, pid, pgno, 0x3F7F, 
+				getTeletextRegionID(getStringConfig("tv:teletext:region")));
 
 			if(mode == SUBTITLE_SUB){
 				subtitleView.setSubParams(ttp);
@@ -268,7 +328,7 @@ abstract public class TVActivity extends Activity
     	TVProgram prog;
 
     	Log.d(TAG, "onProgramStart");
-
+		
 		/*Start subtitle*/
 		resetSubtitle(SUBTITLE_SUB);
 	}
@@ -278,7 +338,26 @@ abstract public class TVActivity extends Activity
 		Log.d(TAG, "onProgramStop");
 
     	/*Stop subtitle.*/
-    	resetSubtitle(SUBTITLE_SUB);
+    	resetSubtitle(SUBTITLE_NONE);
+    	currTeletextPID = -1;
+	}
+
+	/*On playback started*/
+    private void onPlaybackStart(){
+    	TVProgram prog;
+
+    	Log.d(TAG, "onPlaybackStart");
+		
+		/*Start subtitle*/
+		resetSubtitle(SUBTITLE_SUB);
+	}
+
+	/*On playback stopped*/
+	private void onPlaybackStop(){
+		Log.d(TAG, "onPlaybackStop");
+
+    	/*Stop subtitle.*/
+    	resetSubtitle(SUBTITLE_NONE);
     	currTeletextPID = -1;
 	}
 
@@ -343,6 +422,12 @@ abstract public class TVActivity extends Activity
 				break;
 			case TVMessage.TYPE_PROGRAM_STOP:
 				onProgramStop(msg.getProgramID());
+				break;
+			case TVMessage.TYPE_PLAYBACK_START:
+				onPlaybackStart();
+				break;
+			case TVMessage.TYPE_PLAYBACK_STOP:
+				onPlaybackStop();
 				break;
 			case TVMessage.TYPE_CONFIG_CHANGED:
 				try{
@@ -445,18 +530,20 @@ abstract public class TVActivity extends Activity
     /**
      *在Activity上创建VideoView和SubtitleView
      */
-    public void openVideo(VideoView view, boolean front) {
+    public void openVideo(VideoView view, TVSubtitleView subv) {
         Log.d(TAG, "openVideo");
-
+		
         ViewGroup root = (ViewGroup)getWindow().getDecorView().findViewById(android.R.id.content);
 
-        if(subtitleView == null) {
+		if(subv!=null){
+			subtitleView = subv;
+			externalSubtitleView = true;
+			initSubtitle();
+		}else if(subtitleView == null) {
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
-			if(front)
-				root.addView(subtitleView);
-			else
-            	root.addView(subtitleView, 0);
+            externalSubtitleView = false;
+            root.addView(subtitleView, 0);
             initSubtitle();
         }
 
@@ -476,7 +563,7 @@ abstract public class TVActivity extends Activity
     }
 
 	public void openVideo(){
-		openVideo(null, false);
+		openVideo(null, null);
 	}
 
 	/**
@@ -489,7 +576,7 @@ abstract public class TVActivity extends Activity
             updateVideoWindow();
 		}
 
-		if(subtitleView != null){
+		if(subtitleView != null && !externalSubtitleView){
 			subtitleView.layout(r.left, r.top, r.right, r.bottom);
 		}
 	}
@@ -500,6 +587,7 @@ abstract public class TVActivity extends Activity
 	public void setSubtitleView(TVSubtitleView subView) {
 		Log.d(TAG, "setSubtitleView");
 		subtitleView = subView;
+		externalSubtitleView = true;
 		initSubtitle();
 	}
 
@@ -596,10 +684,10 @@ abstract public class TVActivity extends Activity
 			return;
 
 		chan = prog.getChannel();
-		if(chan == null)
+		if(chan == null && prog.getType() != TVProgram.TYPE_PLAYBACK)
 			return;
 
-		if(chan.isAnalogMode()){
+		if(chan != null && chan.isAnalogMode()){
 			TVChannelParams params = chan.getParams();
 
 			if(params.setATVAudio(id)){
@@ -690,9 +778,10 @@ abstract public class TVActivity extends Activity
 
     /**
      *开始录制当前正在播放的节目
+     *@param duration 录像时长，ms单位, duration <= 0 表示无时间限制，一直录像。
      */
-    public void startRecording() {
-        client.startRecording();
+    public void startRecording(long duration) {
+        client.startRecording(duration);
     }
 
     /**
@@ -711,10 +800,10 @@ abstract public class TVActivity extends Activity
 	
     /**
      *开始录制节目回放
-     *@param bookingID 录制节目的预约记录ID
+     *@param filePath 回放文件全路径
      */
-    public void startPlayback(int bookingID) {
-        client.startPlayback(bookingID);
+    public void startPlayback(String filePath) {
+        client.startPlayback(filePath);
     }
     
      /**
@@ -1239,5 +1328,120 @@ abstract public class TVActivity extends Activity
 	public void exportDatabase(String outputXmlPath){
 		client.exportDatabase(outputXmlPath);
 	}
+
+	/**
+	 *切换声道
+	 *@param mode 声道 0 立体声 1 左声道 2 右声道
+	 */
+	public void switchAudioTrack(int mode){
+		client.switchAudioTrack(mode);
+		
+		int prog_id = client.getCurrentProgramID();
+
+		if(prog_id == -1)
+			return ;
+
+		TVProgram prog;
+		
+		prog = TVProgram.selectByID(this, prog_id);
+		if(prog == null)
+			return ;
+
+		prog.setAudTrack(mode);
+	}
+
+	/**
+	*获取声道状态
+	*/
+	public int getAudioTrack(){
+		int prog_id = client.getCurrentProgramID();
+
+		if(prog_id == -1)
+			return 0;
+
+		TVProgram prog;
+		
+		prog = TVProgram.selectByID(this, prog_id);
+		if(prog == null)
+			return 0;
+
+		return prog.getAudTrack();
+	}
+
+	/**
+	 *切换声道
+	 *@param mode screen type  0：normal 2：4-3 3：16-9
+	 */
+	public void switchScreenType(int mode){
+		
+		String value=null;
+		switch(mode){
+			case 0:
+				value="0";
+				break;
+			case 2:
+				value="2";
+				break;
+			case 3:
+				value="3";
+				break;
+		}
+
+		try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/screen_mode"));
+            try {
+                writer.write(value);
+                } finally {
+                    writer.close();
+                }
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }catch (Exception e) {
+                Log.e(TAG,"set screen_mode ERROR!",e);
+				return;
+        } 
+
+	}
+	
+	/**
+	*获取screen type
+	*/
+	public int getScreenType(){
+		String val=null;
+		
+		File file = new File("/sys/class/video/screen_mode");
+		if (!file.exists()) {        	
+			return 0;
+		}
+
+		//read
+		try {
+			BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/screen_mode"), 1);
+			try {
+				val=in.readLine();
+			} finally {
+				in.close();
+    			}
+		} catch (Exception e) {
+			Log.e(TAG, "IOException when read screen_mode");
+		}
+
+		if(val!=null){
+			Log.d(TAG,"---"+val);
+			//return Integer.valueOf(val);
+			if(val.equals("0:normal")){				
+				return 0;			
+			}			
+			else  if(val.equals("2:4-3")){				
+				return 2;		
+			}			
+			else  if(val.equals("3:16-9")){			
+				return 3;	
+			}
+		}
+		
+		return 0;
+	}
+	
 }
 

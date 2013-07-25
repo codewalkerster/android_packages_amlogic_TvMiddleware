@@ -17,7 +17,7 @@ public class TVDatabase extends SQLiteOpenHelper
 {
 	private static final String TAG = "TVDatabase";
 	private static final String DEFAULT_DB_PATH = "/system/etc/tv_default.xml";
-	private static final int DB_VERSION = 6;
+	private static final int DB_VERSION = 8;
 	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
 
 	/*implemented by libjnidvbdatabase.so*/
@@ -150,6 +150,15 @@ public class TVDatabase extends SQLiteOpenHelper
 			}
 		}
 
+		if (!file.exists()){
+			try{
+				Log.d(TAG, "Creating database file ...");
+				file.createNewFile();
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+		
 		native_db_setup(file.toString(), create, getWritableDatabase());
 
 		if(create){

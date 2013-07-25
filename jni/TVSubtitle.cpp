@@ -41,8 +41,8 @@ extern "C" {
 
     static JavaVM   *gJavaVM = NULL;
     static jmethodID gUpdateID;
-    static jfieldID  gHandleID;
     static jfieldID  gBitmapID;
+    static TVSubtitleData gSubtitleData;
 
     static jint sub_clear(JNIEnv *env, jobject obj);
     static void sub_update(jobject obj);
@@ -133,13 +133,7 @@ extern "C" {
 
     static TVSubtitleData* sub_get_data(JNIEnv *env, jobject obj)
     {
-        jint handle;
-        TVSubtitleData *data;
-
-        handle = env->GetIntField(obj, gHandleID);
-        data = (TVSubtitleData*)handle;
-
-        return data;
+    	return &gSubtitleData;
     }
 
     static void pes_data_cb(int dev_no, int fhandle, const uint8_t *data, int len, void *user_data)
@@ -213,9 +207,13 @@ extern "C" {
                             int c = src[0];
 
                             if(c < (int)rgn->entry) {
-                                *dst++ = rgn->clut[c].r;
-                                *dst++ = rgn->clut[c].g;
-                                *dst++ = rgn->clut[c].b;
+								if(rgn->clut[c].a){
+                                	*dst++ = rgn->clut[c].r;
+	                                *dst++ = rgn->clut[c].g;
+    	                            *dst++ = rgn->clut[c].b;
+								}else{
+									dst += 3;
+								}
                                 *dst++ = rgn->clut[c].a;
 
                             } else {
@@ -330,6 +328,9 @@ error:
         int ret;
         int attached = 0;
 
+        if(!obj)
+        	return;
+
         ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
 
         if(ret<0) {
@@ -367,15 +368,10 @@ error:
         jobject bmp;
         jint hbmp;
 
-        data = (TVSubtitleData*)malloc(sizeof(TVSubtitleData));
-        if(!data)
-            return -1;
-
+		data = &gSubtitleData;
         memset(data, 0, sizeof(TVSubtitleData));
 
         pthread_mutex_init(&data->lock, NULL);
-
-        env->SetIntField(obj, gHandleID, (jint)data);
 
         data->obj = env->NewGlobalRef(obj);
 
@@ -392,7 +388,6 @@ error:
         if(!data->buffer) {
             env->DeleteGlobalRef(data->obj);
             pthread_mutex_destroy(&data->lock);
-            free(data);
             return -1;
         }
 
@@ -410,9 +405,12 @@ error:
         if(data) {
             sub_clear(env, obj);
 
-            env->DeleteGlobalRef(data->obj);
+			if(data->obj){
+				env->DeleteGlobalRef(data->obj);
+				data->obj = NULL;
+			}
+
             pthread_mutex_destroy(&data->lock);
-            free(data);
         }
 
         return 0;
@@ -491,7 +489,7 @@ error:
         return -1;
     }
 
-    static jint sub_start_dtv_tt(JNIEnv *env, jobject obj, jint dmx_id, jint pid, jint page, jint sub_page, jboolean is_sub)
+    static jint sub_start_dtv_tt(JNIEnv *env, jobject obj, jint dmx_id, jint region_id, jint pid, jint page, jint sub_page, jboolean is_sub)
     {
         TVSubtitleData *data = sub_get_data(env, obj);
         AM_PES_Para_t pesp;
@@ -505,6 +503,7 @@ error:
             ttp.bitmap    = data->buffer;
             ttp.pitch     = data->bmp_pitch;
             ttp.user_data = data;
+            ttp.default_region = region_id;
             ret = AM_TT2_Create(&data->tt_handle, &ttp);
             if(ret != AM_SUCCESS)
                 goto error;
@@ -525,6 +524,7 @@ error:
         if(ret < 0)
             goto error;
 
+		LOGI("Teletext started at demux %d, pid %d, page %d", dmx_id, pid, page);
         return 0;
 error:
         if(data->pes_handle) {
@@ -548,7 +548,7 @@ error:
         data->bitmap->notifyPixelsChanged();
         pthread_mutex_unlock(&data->lock);
 
-        sub_update(obj);
+        sub_update(data->obj);
         
         data->sub_handle = NULL;
         data->pes_handle = NULL;
@@ -570,7 +570,7 @@ error:
         data->bitmap->notifyPixelsChanged();
         pthread_mutex_unlock(&data->lock);
 
-        sub_update(obj);
+        sub_update(data->obj);
 
         return 0;
     }
@@ -696,9 +696,30 @@ error:
 		data->bitmap->notifyPixelsChanged();
 		pthread_mutex_unlock(&data->lock);
 
-		sub_update(obj);
+		sub_update(data->obj);
 
 		data->cc_handle= NULL;
+
+		return 0;
+	}
+
+	static jint sub_set_active(JNIEnv *env, jobject obj, jboolean active)
+	{
+		TVSubtitleData *data = sub_get_data(env, obj);
+
+		if(active){
+			if(data->obj){
+				env->DeleteGlobalRef(data->obj);
+				data->obj = NULL;
+			}
+
+			data->obj = env->NewGlobalRef(obj);
+		}else{
+			if(env->IsSameObject(data->obj, obj)){
+				env->DeleteGlobalRef(data->obj);
+				data->obj = NULL;
+			}
+		}
 
 		return 0;
 	}
@@ -711,7 +732,7 @@ error:
         {"native_sub_unlock", "()I", (void*)sub_unlock},
         {"native_sub_clear", "()I", (void*)sub_clear},
         {"native_sub_start_dvb_sub", "(IIII)I", (void*)sub_start_dvb_sub},
-        {"native_sub_start_dtv_tt", "(IIIIZ)I", (void*)sub_start_dtv_tt},
+        {"native_sub_start_dtv_tt", "(IIIIIZ)I", (void*)sub_start_dtv_tt},
         {"native_sub_stop_dvb_sub", "()I", (void*)sub_stop_dvb_sub},
         {"native_sub_stop_dtv_tt", "()I", (void*)sub_stop_dtv_tt},
         {"native_sub_tt_goto", "(I)I", (void*)sub_tt_goto},
@@ -724,6 +745,7 @@ error:
         {"native_get_subtitle_picture_height", "()I", (void*)get_subtitle_piture_height},
         {"native_sub_start_atsc_cc", "(IIIIIII)I", (void*)sub_start_atsc_cc},
         {"native_sub_stop_atsc_cc", "()I", (void*)sub_stop_atsc_cc},
+		{"native_sub_set_active", "(Z)I", (void*)sub_set_active}
     };
 
     JNIEXPORT jint
@@ -752,7 +774,7 @@ error:
         }
 
         gUpdateID = env->GetMethodID(clazz, "update", "()V");
-        gHandleID = env->GetFieldID(clazz, "native_handle", "I");
+
         gBitmapID = env->GetStaticFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");
 
         LOGI("load jnitvsubtitle ok");

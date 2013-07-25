@@ -705,8 +705,20 @@ public class TVDBTransformer{
 		cv.put("aud_pids", apids);
 		cv.put("aud_fmts", afmts);
 		cv.put("aud_langs", alangs);
+
+	 	cv.put("current_sub", -1);
+		cv.put("sub_pids", "");
+		cv.put("sub_types", "");
+		cv.put("sub_composition_page_ids", "");
+		cv.put("sub_ancillary_page_ids", "");
+		cv.put("sub_langs", "");
+		cv.put("current_ttx", -1);
+		cv.put("ttx_pids", "");
+		cv.put("ttx_types", "");
+		cv.put("ttx_magazine_nos", "");
+		cv.put("ttx_page_nos", "");
+		cv.put("ttx_langs", "");
 		
-		cv.put("db_sub_id", -1);
 		cv.put("chan_num", getIntAttr(elemProg.getAttribute("channel_number"), 0));
 		cv.put("skip", getStringAttr(elemProg.getAttribute("skip"), "false").equals("true") ? 1 : 0);
 		cv.put("lock", getStringAttr(elemProg.getAttribute("parental_lock"), "false").equals("true") ? 1 : 0);
@@ -765,8 +777,6 @@ public class TVDBTransformer{
 		db.execSQL("delete from booking_table");
 		db.execSQL("delete from grp_table");
 		db.execSQL("delete from grp_map_table");
-		db.execSQL("delete from subtitle_table");
-		db.execSQL("delete from teletext_table");
 		db.execSQL("delete from dimension_table");
 		db.execSQL("delete from sat_para_table");
 		db.execSQL("delete from region_table");

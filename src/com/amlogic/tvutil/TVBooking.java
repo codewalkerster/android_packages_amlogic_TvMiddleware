@@ -47,6 +47,7 @@ public class TVBooking{
 	private long duration;
 	private Context context;
 	private TVProgram program;
+	private TVEvent event;
 	private String recFilePath;
 	private String recStoragePath;
 	private String programName;
@@ -70,7 +71,7 @@ public class TVBooking{
 		col = c.getColumnIndex("db_srv_id");
 		this.program = TVProgram.selectByID(context, c.getInt(col));
 		col = c.getColumnIndex("db_evt_id");
-		TVEvent event = TVEvent.selectByID(context, c.getInt(col));
+		event = TVEvent.selectByID(context, c.getInt(col));
 		col = c.getColumnIndex("status");
 		this.status = c.getInt(col);
 		col = c.getColumnIndex("flag");
@@ -395,7 +396,7 @@ public class TVBooking{
 		String cmd = "insert into booking_table(db_srv_id, db_evt_id, srv_name, evt_name,";
 		cmd += "start,duration,flag,status,file_name,vid_pid,vid_fmt,aud_pids,aud_fmts,aud_languages,";
 		cmd += "sub_pids,sub_types,sub_composition_page_ids,sub_ancillary_page_ids,sub_languages,";
-		cmd += "ttx_pids,ttx_types,ttx_magazine_numbers,ttx_page_numbers,ttx_languages, other_pids,from_storage)";
+		cmd += "ttx_pids,ttx_types,ttx_magazine_numbers,ttx_page_numbers,ttx_languages, other_pids,from_storage,repeat)";
 		cmd += "values("+program.getID()+",-1,'"+sqliteEscape(program.getName());
 		cmd += "','',"+start/1000+","+duration/1000+","+flag;
 		cmd += ","+status+",'',"+program.getVideo().getPID()+","+program.getVideo().getFormat();
@@ -447,7 +448,7 @@ public class TVBooking{
 			}
 		}
 		cmd += ",'"+tpids+"','"+ttypes+"','"+tmagnums+"','"+tpgnums+"','"+tlangs+"'";
-		cmd += ",'','')";
+		cmd += ",'',''," + repeat + ")";
                 
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
@@ -593,7 +594,7 @@ public class TVBooking{
 	
 	/**
 	 *获取预约的Program
-	 *@return Program,当为从存储器读取的录像记录时，该值为null
+	 *@return Program对象
 	 */
 	public TVProgram getProgram(){
 		return this.program;
@@ -607,6 +608,14 @@ public class TVBooking{
 		return this.programName;
 	}
 	
+	/**
+	 *获取预约的Event
+	 *@return Event对象
+	 */
+	public TVEvent getEvent(){
+		return this.event;
+	}
+
 	/**
 	 *获取预约Event名称
 	 *@return 预约Event名称
@@ -663,6 +672,28 @@ public class TVBooking{
 	}
 	
 	/**
+	 *更新预约标志
+	 *@param flag 预约标志
+	 */
+	public void updateFlag(int flag){
+		this.flag = flag;
+		Log.d(TAG, "Booking "+id+"' flag updated to "+flag);
+		String cmd = "update booking_table set flag="+flag+" where db_id="+this.id;
+		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+	}
+
+	/**
+	 *更新预约重复性
+	 *@param repeat 预约重复性
+	 */
+	public void updateRepeat(int repeat){
+		this.repeat = repeat;
+		Log.d(TAG, "Booking "+id+"' repeat updated to "+repeat);
+		String cmd = "update booking_table set repeat="+repeat+" where db_id="+this.id;
+		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+	}
+
+	/**
 	 *更新预约持续时间，例如录像总时间
 	 *@param duration 持续时间
 	 */
@@ -670,6 +701,17 @@ public class TVBooking{
 		this.duration = duration;
 		Log.d(TAG, "Booking "+id+"' duration updated to "+duration/1000);
 		String cmd = "update booking_table set duration="+duration/1000+" where db_id="+this.id;
+		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
+	}
+	
+	/**
+	 *更新预约开始时间
+	 *@param start 开始时间
+	 */
+	public void updateStartTime(long start){
+		this.start = start;
+		Log.d(TAG, "Booking "+id+"' start updated to "+start/1000);
+		String cmd = "update booking_table set start="+start/1000+" where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
 	

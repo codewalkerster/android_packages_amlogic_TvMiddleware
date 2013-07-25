@@ -23,7 +23,9 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public static final int EVENT_RECORD_END              = 7;
 		public static final int EVENT_VGA_ADJUST_STATUS       = 8;
 		public static final int EVENT_SIG_CHANGE              = 9;
-		
+		public static final int EVENT_PLAYBACK_MEDIA_INFO     = 10;
+		public static final int EVENT_PLAYBACK_START          = 11;
+		public static final int EVENT_PLAYBACK_END            = 12;
 		
 		public int                                type;
 		public TVChannelParams                    feParams;

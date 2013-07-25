@@ -12,14 +12,17 @@ public class DTVRecordParams implements Parcelable {
 	
 	private String recFilePath;
 	private String storagePath;
+	private String prefixFileName;
+	private String suffixFileName;
 	private int programID;
-	private int vidPid;
-	private int audPids[];
-	private int otherPids[];
 	private long currRecordSize;
 	private long currRecordTime;
 	private long recTotalTime;
 	private boolean isTimeshift;
+	private TVProgram.Video video;
+	private TVProgram.Audio[] audios;
+	private TVProgram.Subtitle[] subtitles;
+	private TVProgram.Teletext[] teletexts;
 
 	public static final Parcelable.Creator<DTVRecordParams> CREATOR = new Parcelable.Creator<DTVRecordParams>(){
 		public DTVRecordParams createFromParcel(Parcel in) {
@@ -35,6 +38,60 @@ public class DTVRecordParams implements Parcelable {
 		currRecordTime = in.readLong();
 		recTotalTime = in.readLong();
 		programID = in.readInt();
+
+		
+		int pid, fmt;
+		String lang;
+		TVProgram p = new TVProgram();
+		/* read video */
+		video = null;
+		int cnt = in.readInt();
+		if (cnt > 0){
+			pid = in.readInt();
+			fmt = in.readInt();
+			video = p.new Video(pid, fmt); 
+		}
+		/* read audios */
+		audios = null;
+		cnt = in.readInt();
+		if (cnt > 0){
+			audios = new TVProgram.Audio[cnt];
+			for (int i=0; i<cnt; i++){
+				pid  = in.readInt();
+				fmt  = in.readInt();
+				lang = in.readString();
+				audios[i] = p.new Audio(pid, lang, fmt);
+			}
+		}
+		/* read subtitles */
+		subtitles = null;
+		cnt = in.readInt();
+		if (cnt > 0){
+			subtitles = new TVProgram.Subtitle[cnt];
+			int type, num1, num2;
+			for (int i=0; i<cnt; i++){
+				pid  = in.readInt();
+				type = in.readInt();
+				num1 = in.readInt();
+				num2 = in.readInt();
+				lang = in.readString();
+				subtitles[i] = p.new Subtitle(pid, lang, type, num1, num2);
+			}
+		}
+		/* read teletexts */
+		teletexts = null;
+		cnt = in.readInt();
+		if (cnt > 0){
+			teletexts = new TVProgram.Teletext[cnt];
+			int mag, page;
+			for (int i=0; i<cnt; i++){
+				pid  = in.readInt();
+				mag = in.readInt();
+				page = in.readInt();
+				lang = in.readString();
+				teletexts[i] = p.new Teletext(pid, lang, mag, page);
+			}
+		}
 	}
 
 	public void writeToParcel(Parcel dest, int flags){
@@ -42,6 +99,60 @@ public class DTVRecordParams implements Parcelable {
 		dest.writeLong(currRecordTime);
 		dest.writeLong(recTotalTime);
 		dest.writeInt(programID);
+
+		/* write video */
+		if (video != null){
+			dest.writeInt(1);
+			dest.writeInt(video.getPID());
+			dest.writeInt(video.getFormat());
+		}else{
+			dest.writeInt(0);
+		}
+		/* write audios */
+		if (audios != null){
+			dest.writeInt(audios.length);
+			for (int i=0; i<audios.length; i++){
+				dest.writeInt(audios[i].getPID());
+				dest.writeInt(audios[i].getFormat());
+				dest.writeString(audios[i].getLang());
+			}
+		}else{
+			dest.writeInt(0);
+		}
+		/* write subtitles */
+		if (subtitles != null){
+			dest.writeInt(subtitles.length);
+			for (int i=0; i<subtitles.length; i++){
+				dest.writeInt(subtitles[i].getPID());
+				dest.writeInt(subtitles[i].getType());
+				if (subtitles[i].getType() == TVProgram.Subtitle.TYPE_DVB_SUBTITLE){
+					dest.writeInt(subtitles[i].getCompositionPageID());
+					dest.writeInt(subtitles[i].getAncillaryPageID());
+				}else if (subtitles[i].getType() == TVProgram.Subtitle.TYPE_DTV_TELETEXT){
+					dest.writeInt(subtitles[i].getMagazineNumber());
+					dest.writeInt(subtitles[i].getPageNumber());
+				}else{
+					/* Impossible */
+					dest.writeInt(0);
+					dest.writeInt(0);
+				}
+				dest.writeString(subtitles[i].getLang());
+			}
+		}else{
+			dest.writeInt(0);
+		}
+		/* write teletexts */
+		if (teletexts != null){
+			dest.writeInt(teletexts.length);
+			for (int i=0; i<teletexts.length; i++){
+				dest.writeInt(teletexts[i].getPID());
+				dest.writeInt(teletexts[i].getMagazineNumber());
+				dest.writeInt(teletexts[i].getPageNumber());
+				dest.writeString(teletexts[i].getLang());
+			}
+		}else{
+			dest.writeInt(0);
+		}
 	}
 
 	public DTVRecordParams(Parcel in){
@@ -55,47 +166,34 @@ public class DTVRecordParams implements Parcelable {
 	 *从一个booking中创建录像启动参数
 	 *@param book 需要录制的预约录像
 	 *@param storagePath 用户选择的存储器路径
+	 *@param prefixName 录像文件前缀名
+	 *@param suffixName 录像文件后缀名
 	 *@param isTimeshift 是否为时移录像
 	 */
-	public DTVRecordParams(TVBooking book, String storagePath, boolean isTimeshift){
+	public DTVRecordParams(TVBooking book, String storagePath, String prefixName, String suffixName, boolean isTimeshift){
 		this.storagePath = storagePath;
-		TVProgram.Audio audios[] = book.getAllAudio();
-		TVProgram.Subtitle subtitles[] = book.getAllSubtitle();
-		TVProgram.Teletext teletexts[] = book.getAllTeletext();
-		vidPid = (book.getVideo() != null) ? book.getVideo().getPID() : 0x1fff;
-		Log.d(TAG, "Video pid: "+vidPid);
 
-		int pidCount = (audios != null) ? audios.length : 0;
-		audPids = new int[pidCount];
-		for (int i=0; i<pidCount; i++){
-			Log.d(TAG, "Audio pid: "+audios[i].getPID());
-			audPids[i] = audios[i].getPID();
+		TVProgram prog = book.getProgram();
+		if (prog == null){
+			video     = null;
+			audios    = null;
+			subtitles = null;
+			teletexts = null;
+			programID = -1;
+		}else{
+			video     = prog.getVideo();
+			audios    = prog.getAllAudio();
+			subtitles = prog.getAllSubtitle();
+			teletexts = prog.getAllTeletext();
+			programID = prog.getID();
 		}
 
-		pidCount = (subtitles != null) ? subtitles.length : 0;
-		pidCount += (teletexts != null) ? teletexts.length : 0;
-		otherPids = new int[pidCount];
-		
-		pidCount = 0;
-		for (int i=0; subtitles!=null && i<subtitles.length; i++){
-			Log.d(TAG, "Subtitle pid: "+subtitles[i].getPID());
-			otherPids[pidCount++] = subtitles[i].getPID();
-		}
-		for (int i=0; teletexts!=null && i<teletexts.length; i++){
-			Log.d(TAG, "Teletext pid: "+teletexts[i].getPID());
-			otherPids[pidCount++] = teletexts[i].getPID();
-		}
 		recTotalTime = book.getDuration();
 		this.isTimeshift = isTimeshift;
-		
-		if (book.getProgram() != null){
-			programID = book.getProgram().getID();
-		}else{
-			programID = -1;
-		}
-		
 		currRecordSize = 0;
 		currRecordTime = 0;
+		prefixFileName = prefixName;
+		suffixFileName = suffixName;
 	}
 
 	public int describeContents(){
@@ -144,6 +242,38 @@ public class DTVRecordParams implements Parcelable {
 	 */
 	public int getProgramID(){
 		return programID;
+	}
+
+	/**
+	 *获取当前录像的视频
+	 *@return 返回Video对象
+	 */
+	public TVProgram.Video getVideo(){
+		return video;
+	}
+
+	/**
+	 *获取当前录像的所有音频
+	 *@return 返回当前录像的所有Audio对象数组
+	 */
+	public TVProgram.Audio[] getAllAudio(){
+		return audios;
+	}
+
+	/**
+	 *获取当前录像的所有Subtitle
+	 *@return 返回当前录像的所有Subtitle对象数组
+	 */
+	public TVProgram.Subtitle[] getAllSubtitle(){
+		return subtitles;
+	}
+
+	/**
+	 *获取当前录像的所有Teletext
+	 *@return 返回当前录像的所有Teletext对象数组
+	 */
+	public TVProgram.Teletext[] getAllTeletext(){
+		return teletexts;
 	}
 	
 	public void setProgramID(int id){

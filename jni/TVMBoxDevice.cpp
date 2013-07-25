@@ -6,6 +6,7 @@
 #include <jni.h>
 #include <android/log.h>
 #include <stdio.h>
+#include <fcntl.h>
 
 extern "C" {
 
@@ -24,6 +25,7 @@ typedef struct {
 	int       rec_handle;
 	jobject   dev_obj;
 	AM_DMX_Source_t ts_src;
+	AM_AV_TimeshiftPara_t timeshift_para;
 } TVDevice;
 
 #define FEND_DEV_NO    0
@@ -42,6 +44,10 @@ typedef struct {
 #define EVENT_DTV_NO_DATA             5
 #define EVENT_DTV_CANNOT_DESCRAMLE    6
 #define EVENT_RECORD_END              7
+#define EVENT_PLAYBACK_MEDIA_INFO     10
+#define EVENT_PLAYBACK_START          11
+#define EVENT_PLAYBACK_END            12
+
 
 #define SOURCE_DTV	10
 
@@ -50,11 +56,21 @@ static jclass    gEventClass;
 static jclass    gChanParamsClass;
 static jclass    gRecParamsClass;
 static jclass    gPlaybackParamsClass; 
+static jclass    gVideoClass;
+static jclass    gAudioClass;
+static jclass    gSubtitleClass;
+static jclass    gTeletextClass;
+static jclass    gProgramClass;
 static jmethodID gEventInitID;
 static jmethodID gChanParamsInitID;
 static jmethodID gOnEventID;
 static jmethodID gRecParamsInitID;
 static jmethodID gPlaybackParamsInitID;
+static jmethodID gVideoInitID;
+static jmethodID gAudioInitID;
+static jmethodID gSubtitleInitID;
+static jmethodID gTeletextInitID;
+static jmethodID gProgramInitID;
 static jfieldID  gHandleID;
 static jfieldID  gChanParamsModeID;
 static jfieldID  gChanParamsFreqID;
@@ -70,22 +86,38 @@ static jfieldID  gEventRecParamsID;
 static jfieldID  gEventRecEndCodeID;
 static jfieldID  gRecParamsFileID;
 static jfieldID  gRecParamsStorageID;
-static jfieldID  gRecParamsVPidID;
-static jfieldID  gRecParamsAPidID;
-static jfieldID  gRecParamsOtherPidID;
+static jfieldID  gRecParamsVideoID;
+static jfieldID  gRecParamsAudioID;
+static jfieldID  gRecParamsSubtitleID;
+static jfieldID  gRecParamsTeletextID;
 static jfieldID  gRecParamsRecSizeID;
 static jfieldID  gRecParamsRecTimeID;
 static jfieldID  gRecParamsTotalTimeID;
 static jfieldID  gRecParamsTimeshiftID;
+static jfieldID  gRecParamsPrefixNameID;
+static jfieldID  gRecParamsSuffixNameID;
 static jfieldID  gPlaybackParamsFileID;
-static jfieldID  gPlaybackParamsVPidID;
-static jfieldID  gPlaybackParamsAPidID;
-static jfieldID  gPlaybackParamsVFmtID;
-static jfieldID  gPlaybackParamsAFmtID;
 static jfieldID  gPlaybackParamsStatusID;
 static jfieldID  gPlaybackParamsCurrtimeID;
 static jfieldID  gPlaybackParamsTotaltimeID;
+static jfieldID  gVideoPidID;
+static jfieldID  gVideoFmtID;
+static jfieldID  gAudioPidID;
+static jfieldID  gAudioFmtID;
+static jfieldID  gAudioLangID;
+static jfieldID  gSubtitlePidID;
+static jfieldID  gSubtitleTypeID;
+static jfieldID  gSubtitleCompPageID;
+static jfieldID  gSubtitleAnciPageID;
+static jfieldID  gSubtitleMagNoID;
+static jfieldID  gSubtitlePageNoID;
+static jfieldID  gSubtitleLangID;
+static jfieldID  gTeletextPidID;
+static jfieldID  gTeletextMagNoID;
+static jfieldID  gTeletextPageNoID;
+static jfieldID  gTeletextLangID;
 
+	
 static TVDevice* get_dev(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev;
@@ -264,51 +296,137 @@ static void rec_to_createpara(JNIEnv *env, jobject rec, AM_REC_CreatePara_t *par
 	para->async_fifo_id = ASYNC_FIFO_NO;
 }
 
+static void rec_to_media_info(JNIEnv *env, jobject rec, AM_REC_MediaInfo_t *para)
+{
+	int i;
+	jstring strlang;
+	const char *lang;
+	
+	memset(para, 0, sizeof(AM_REC_MediaInfo_t));
+	
+	jobject video = env->GetObjectField(rec, gRecParamsVideoID);
+	if (video != NULL){
+		para->vid_pid = env->GetIntField(video, gVideoPidID);
+		para->vid_fmt= env->GetIntField(video, gVideoFmtID);
+	}else{
+		para->vid_pid = 0x1fff;
+		para->vid_fmt = -1;
+	}
+
+	jobject audio;
+	jobjectArray audios = (jobjectArray)env->GetObjectField(rec, gRecParamsAudioID);
+	if (audios != NULL){
+		para->aud_cnt = env->GetArrayLength(audios);
+		if (para->aud_cnt > (int)AM_ARRAY_SIZE(para->audios)){
+			para->aud_cnt = AM_ARRAY_SIZE(para->audios);
+		}
+
+		for (i=0; i<para->aud_cnt; i++){
+			audio = env->GetObjectArrayElement(audios, i);
+			if (audio != NULL){
+				para->audios[i].pid = env->GetIntField(audio, gAudioPidID);
+				para->audios[i].fmt = env->GetIntField(audio, gAudioFmtID);
+				strlang = (jstring)env->GetObjectField(audio, gAudioLangID);
+				const char *lang = env->GetStringUTFChars(strlang, 0);
+				if (lang != NULL){
+					strncpy(para->audios[i].lang, lang, 3);
+					env->ReleaseStringUTFChars(strlang, lang);
+				}
+			}else{
+				para->audios[i].pid = 0x1fff;
+				para->audios[i].fmt = -1;
+			}
+		}
+	}
+
+	jobject subtitle;
+	jobjectArray subtitles = (jobjectArray)env->GetObjectField(rec, gRecParamsSubtitleID);
+	if (subtitles != NULL){
+		para->sub_cnt= env->GetArrayLength(subtitles);
+		if (para->sub_cnt > (int)AM_ARRAY_SIZE(para->subtitles)){
+			para->sub_cnt = AM_ARRAY_SIZE(para->subtitles);
+		}
+
+		for (i=0; i<para->sub_cnt; i++){
+			subtitle = env->GetObjectArrayElement(subtitles, i);
+			if (subtitle != NULL){
+				para->subtitles[i].pid  = env->GetIntField(subtitle, gSubtitlePidID);
+				para->subtitles[i].type = env->GetIntField(subtitle, gSubtitleTypeID);
+				para->subtitles[i].composition_page = env->GetIntField(subtitle, gSubtitleCompPageID);
+				para->subtitles[i].ancillary_page   = env->GetIntField(subtitle, gSubtitleAnciPageID);
+				para->subtitles[i].magzine_no = env->GetIntField(subtitle, gSubtitleMagNoID);
+				para->subtitles[i].page_no = env->GetIntField(subtitle, gSubtitlePageNoID);
+				strlang = (jstring)env->GetObjectField(subtitle, gSubtitleLangID);
+				const char *lang = env->GetStringUTFChars(strlang, 0);
+				if (lang != NULL){
+					strncpy(para->subtitles[i].lang, lang, 3);
+					env->ReleaseStringUTFChars(strlang, lang);
+				}
+			}else{
+				para->subtitles[i].pid = 0x1fff;
+			}
+		}
+	}
+
+	jobject teletext;
+	jobjectArray teletexts = (jobjectArray)env->GetObjectField(rec, gRecParamsTeletextID);
+	if (teletexts != NULL){
+		para->ttx_cnt= env->GetArrayLength(teletexts);
+		if (para->ttx_cnt > (int)AM_ARRAY_SIZE(para->teletexts)){
+			para->ttx_cnt = AM_ARRAY_SIZE(para->teletexts);
+		}
+
+		for (i=0; i<para->ttx_cnt; i++){
+			teletext = env->GetObjectArrayElement(teletexts, i);
+			if (teletext != NULL){
+				para->teletexts[i].pid  = env->GetIntField(teletext, gTeletextPidID);
+				para->teletexts[i].magzine_no = env->GetIntField(teletext, gTeletextMagNoID);
+				para->teletexts[i].page_no = env->GetIntField(teletext, gTeletextPageNoID);
+				strlang = (jstring)env->GetObjectField(teletext, gTeletextLangID);
+				const char *lang = env->GetStringUTFChars(strlang, 0);
+				if (lang != NULL){
+					strncpy(para->teletexts[i].lang, lang, 3);
+					env->ReleaseStringUTFChars(strlang, lang);
+				}
+			}else{
+				para->teletexts[i].pid = 0x1fff;
+			}
+		}
+	}
+}
+
 static void rec_to_recordpara(JNIEnv *env, jobject rec, AM_REC_RecPara_t *para)
 {
 	int vpid, len;
 	int *apids, *opids;
 	jintArray apid_array;
 	jintArray otherpid_array;
+	jstring strpath;
+	const char *path;
 	
 	memset(para, 0, sizeof(AM_REC_RecPara_t));
 	para->is_timeshift = env->GetBooleanField(rec, gRecParamsTimeshiftID);
-	para->pid_count = 0;
+	para->pmt_pid = 0x1ff0; //reserved;
 	
-	vpid = env->GetIntField(rec, gRecParamsVPidID);
-	if (vpid >= 0 && vpid < 0x1fff){
-		para->pids[para->pid_count++] = vpid;
-		para->has_video = AM_TRUE;
+	rec_to_media_info(env, rec, &para->media_info);
+
+	strpath = (jstring)env->GetObjectField(rec, gRecParamsPrefixNameID);
+	path = env->GetStringUTFChars(strpath, 0);
+	if (path != NULL){
+		strncpy(para->prefix_name, path, AM_REC_NAME_MAX);
+		para->prefix_name[AM_REC_NAME_MAX - 1] = 0;
+		env->ReleaseStringUTFChars(strpath, path);
 	}
-	apid_array = (jintArray)env->GetObjectField(rec, gRecParamsAPidID);
-	apids = env->GetIntArrayElements(apid_array, NULL);
-	if (apids != NULL){
-		len = env->GetArrayLength(apid_array);
-		LOGE("auds %d", len);
-		if (len > 0){
-			memcpy(para->pids+para->pid_count, apids, len*sizeof(int));
-			para->pid_count += len;
-			para->has_audio = AM_TRUE;
-		}
-		env->ReleaseIntArrayElements(apid_array, apids, 0);
-	}
-	otherpid_array = (jintArray)env->GetObjectField(rec, gRecParamsOtherPidID);
-	opids = env->GetIntArrayElements(otherpid_array, NULL);
-	if (opids != NULL){
-		len = env->GetArrayLength(otherpid_array);
-		LOGE("others %d", len);
-		if (len > 0){
-			memcpy(para->pids+para->pid_count, opids, len*sizeof(int));
-			para->pid_count += len;
-		}
-		env->ReleaseIntArrayElements(otherpid_array, opids, 0);
+
+	strpath = (jstring)env->GetObjectField(rec, gRecParamsSuffixNameID);
+	path = env->GetStringUTFChars(strpath, 0);
+	if (path != NULL){
+		strncpy(para->suffix_name, path, AM_REC_SUFFIX_MAX);
+		para->suffix_name[AM_REC_SUFFIX_MAX - 1] = 0;
+		env->ReleaseStringUTFChars(strpath, path);
 	}
 	
-	for (int i=0; i<para->pid_count; i++){
-		LOGE("%d ", para->pids[i]);
-	}
-	
-	para->total_time = env->GetLongField(rec, gRecParamsTotalTimeID);
+	para->total_time = (int)(env->GetLongField(rec, gRecParamsTotalTimeID)/1000);
 }
 
 static jobject recinfo_to_para(JNIEnv *env, jobject object, AM_REC_RecInfo_t *info)
@@ -331,11 +449,8 @@ static void playback_to_tspara(JNIEnv *env, jobject playback, AM_AV_TimeshiftPar
 	if (strpath != NULL){
 		strncpy(para->file_path, strpath, sizeof(para->file_path));
 		para->dmx_id = PLAYBACK_DMX_DEV_NO;
-		para->aud_fmt = (AM_AV_AFormat_t)env->GetIntField(playback, gPlaybackParamsAFmtID);
-		para->vid_fmt = (AM_AV_VFormat_t)env->GetIntField(playback, gPlaybackParamsVFmtID);
-		para->aud_id = env->GetIntField(playback, gPlaybackParamsAPidID);
-		para->vid_id = env->GetIntField(playback, gPlaybackParamsVPidID);
-		para->duration = env->GetLongField(playback, gPlaybackParamsTotaltimeID)/1000;
+		para->media_info.duration = (int)(env->GetLongField(playback, gPlaybackParamsTotaltimeID)/1000);
+		LOGI("timeshifting duration %d", para->media_info.duration);
 		env->ReleaseStringUTFChars(filePath, strpath);
 	}
 }
@@ -347,6 +462,61 @@ static jobject tsinfo_to_playback(JNIEnv *env, jobject object, AM_AV_TimeshiftIn
 	env->SetIntField(obj, gPlaybackParamsStatusID, info->status);
 	env->SetLongField(obj, gPlaybackParamsCurrtimeID, (jlong)info->current_time*1000);
 	env->SetLongField(obj, gPlaybackParamsTotaltimeID, (jlong)info->full_time*1000);
+
+	return obj;
+}
+
+static jobject mediainfo_to_object(JNIEnv *env, jobject object, AM_AV_TimeshiftMediaInfo_t *info)
+{
+	int i;
+	
+	jobject obj = env->NewObject(gRecParamsClass, gRecParamsInitID);
+
+	jobject prgram = env->NewObject(gProgramClass, gProgramInitID);
+	jobject video = env->NewObject(gVideoClass, gVideoInitID, prgram, info->vid_pid, info->vid_fmt);
+	
+	jobjectArray audios = NULL;
+	if (info->aud_cnt > 0){
+		jobject audio;
+		audios = env->NewObjectArray(info->aud_cnt, gAudioClass, NULL);
+		for (i=0; i<info->aud_cnt; i++){
+			audio = env->NewObject(gAudioClass, gAudioInitID, prgram, info->audios[i].pid, 
+				env->NewStringUTF(info->audios[i].lang), info->audios[i].fmt);
+			env->SetObjectArrayElement(audios, i, audio);
+		} 
+	}
+
+	jobjectArray subtitles = NULL;
+	if (info->sub_cnt > 0){
+		jobject subtitle;
+		subtitles = env->NewObjectArray(info->sub_cnt, gSubtitleClass, NULL);
+		for (i=0; i<info->sub_cnt; i++){
+			subtitle = env->NewObject(gSubtitleClass, gSubtitleInitID, prgram, info->subtitles[i].pid, 
+				env->NewStringUTF(info->subtitles[i].lang), info->subtitles[i].type, 0, 0);
+			env->SetIntField(subtitle, gSubtitleCompPageID, info->subtitles[i].composition_page);
+			env->SetIntField(subtitle, gSubtitleAnciPageID, info->subtitles[i].ancillary_page);
+			env->SetIntField(subtitle, gSubtitleMagNoID,    info->subtitles[i].magzine_no);
+			env->SetIntField(subtitle, gSubtitlePageNoID,   info->subtitles[i].page_no);
+			env->SetObjectArrayElement(subtitles, i, subtitle);
+		} 
+	}
+
+	jobjectArray teletexts = NULL;
+	if (info->ttx_cnt > 0){
+		jobject teletext;
+		teletexts = env->NewObjectArray(info->ttx_cnt, gTeletextClass, NULL);
+		for (i=0; i<info->ttx_cnt; i++){
+			teletext = env->NewObject(gTeletextClass, gTeletextInitID, prgram, 
+				info->teletexts[i].pid, env->NewStringUTF(info->teletexts[i].lang), 
+				info->teletexts[i].magzine_no, info->teletexts[i].page_no);
+			env->SetObjectArrayElement(teletexts, i, teletext);
+		} 
+	}
+	
+	env->SetObjectField(obj, gRecParamsVideoID, video);
+	env->SetObjectField(obj, gRecParamsAudioID, audios);
+	env->SetObjectField(obj, gRecParamsSubtitleID, subtitles);
+	env->SetObjectField(obj, gRecParamsTeletextID, teletexts);
 
 	return obj;
 }
@@ -379,6 +549,78 @@ static int getRecordError(int error)
 	}
 	
 	return ret;
+}
+
+static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMediaInfo_t *info)
+{
+	uint8_t buf[sizeof(AM_REC_MediaInfo_t) + 4];
+	int pos = 0, info_len, i, fd, name_len;
+	
+#define READ_INT(_i)\
+	AM_MACRO_BEGIN\
+		if ((info_len-pos) >= 4){\
+			(_i) = ((int)buf[pos]<<24) | ((int)buf[pos+1]<<16) | ((int)buf[pos+2]<<8) | (int)buf[pos+3];\
+			pos += 4;\
+		}else{\
+			goto read_error;\
+		}\
+	AM_MACRO_END
+
+	fd = open(file_path, O_RDONLY, 0666);
+	if (fd < 0){
+		LOGE("Cannot open file '%s'", file_path);
+		return -1;
+	}
+	
+	info_len = read(fd, buf, sizeof(buf));
+
+	pos += 4; /*skip the packet header*/
+	READ_INT(info->duration);
+		
+	name_len = sizeof(info->program_name);
+	if ((info_len-pos) >= name_len){
+		memcpy(info->program_name, buf, name_len);
+		info->program_name[name_len - 1] = 0;
+		pos += name_len;
+	}else{
+		goto read_error;
+	}
+	READ_INT(info->vid_pid);
+	READ_INT(info->vid_fmt);
+	READ_INT(info->aud_cnt);
+	for (i=0; i<info->aud_cnt; i++){
+		READ_INT(info->audios[i].pid);
+		READ_INT(info->audios[i].fmt);
+		memcpy(info->audios[i].lang, buf+pos, 4);
+		pos += 4;
+	}
+	READ_INT(info->sub_cnt);
+	for (i=0; i<info->sub_cnt; i++){
+		READ_INT(info->subtitles[i].pid);
+		READ_INT(info->subtitles[i].type);
+		READ_INT(info->subtitles[i].composition_page);
+		READ_INT(info->subtitles[i].ancillary_page);
+		READ_INT(info->subtitles[i].magzine_no);
+		READ_INT(info->subtitles[i].page_no);
+		memcpy(info->subtitles[i].lang, buf+pos, 4);
+		pos += 4;
+	}
+	READ_INT(info->ttx_cnt);
+	for (i=0; i<info->ttx_cnt; i++){
+		READ_INT(info->teletexts[i].pid);
+		READ_INT(info->teletexts[i].magzine_no);
+		READ_INT(info->teletexts[i].page_no);
+		memcpy(info->teletexts[i].lang, buf+pos, 4);
+		pos += 4;
+	}
+
+	return 0;
+
+read_error:
+	LOGE("Read media info from file error, len %d, pos %d", info_len, pos);
+	close(fd);
+
+	return -1;
 }
 
 static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
@@ -454,6 +696,53 @@ static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 	}
 }
 
+static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
+{
+	TVDevice *dev = (TVDevice*)data;
+
+	if (! dev)
+		return;
+	
+	if (event_type == AM_AV_EVT_PLAYER_UPDATE_INFO){
+		AM_AV_TimeshiftInfo_t *info = (AM_AV_TimeshiftInfo_t*)param;
+		jobject event;
+		jobject recpara;
+		JNIEnv *env;
+		int ret, evttype = -1;
+		int attached = 0;
+		
+		if (info == NULL)
+			return;
+
+		if (info->status == 5){
+			evttype	= EVENT_PLAYBACK_START;
+		}else if (info->status == 4){
+			evttype = EVENT_PLAYBACK_END;
+		}
+
+		if (evttype < 0)
+			return;
+		
+		ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
+		if(ret<0){
+			ret = gJavaVM->AttachCurrentThread(&env, NULL);
+			if(ret<0){
+				LOGE("Can't attach thread");
+				return;
+			}
+			attached = 1;
+		}
+		
+		event = create_event(env, dev->dev_obj, evttype);
+	
+		env->CallVoidMethod(dev->dev_obj, gOnEventID, event);
+
+		if(attached){
+			gJavaVM->DetachCurrentThread();
+		}
+	}
+}
+
 static void dev_init(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev;
@@ -471,6 +760,8 @@ static void dev_init(JNIEnv *env, jobject obj)
 	dev->dev_obj = env->NewWeakGlobalRef(obj);
 
 	dev->ts_src = (AM_DMX_Source_t)-1;
+
+	AM_EVT_Subscribe(0, AM_AV_EVT_PLAYER_UPDATE_INFO, dev_av_evt_cb, (void*)dev);
 }
 
 static void dev_destroy(JNIEnv *env, jobject obj)
@@ -488,6 +779,8 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 
 	env->DeleteWeakGlobalRef(dev->dev_obj);
 
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_PLAYER_UPDATE_INFO, dev_av_evt_cb, (void*)dev);
+	
 	free(dev);
 }
 
@@ -750,6 +1043,26 @@ static void dev_start_recording(JNIEnv *env, jobject obj, jobject params)
 	AM_REC_SetUserData(hrec, (void*)dev);
 	
 	rec_to_recordpara(env, params, &rpara);
+
+	/* start playback first */
+	if (dev->in_timeshifting && rpara.is_timeshift){
+		int duration = dev->timeshift_para.media_info.duration;
+		dev->timeshift_para.media_info = rpara.media_info;
+		dev->timeshift_para.media_info.duration = duration;
+		dev->timeshift_para.mode = AM_AV_TIMESHIFT_MODE_TIMESHIFTING;
+		
+		if (AM_AV_StartTimeshift(AV_DEV_NO, &dev->timeshift_para) != AM_SUCCESS){
+			LOGE("Device start timeshifting failed");
+		}else{
+			jobject evt = create_event(env, obj, EVENT_PLAYBACK_MEDIA_INFO);
+			jobject info = mediainfo_to_object(env, obj, &rpara.media_info);
+			
+			env->SetObjectField(evt, gEventRecParamsID, info);
+
+			on_event(obj, evt);
+		}
+	}
+		
 	if (AM_REC_StartRecord(hrec, &rpara) != AM_SUCCESS){
 		LOGE("Start record failed");
 		AM_REC_Destroy(hrec);
@@ -767,7 +1080,7 @@ static void dev_stop_recording(JNIEnv *env, jobject obj)
 	if (dev->rec_handle != 0){
 		AM_REC_Destroy(dev->rec_handle);
 		AM_EVT_Unsubscribe(dev->rec_handle, AM_REC_EVT_RECORD_END, dev_rec_evt_cb, NULL);
-		dev->rec_handle = NULL;
+		dev->rec_handle = 0;
 	}
 }
 
@@ -788,16 +1101,12 @@ static jobject dev_get_recording_params(JNIEnv *env, jobject obj)
 
 static void dev_start_timeshifting(JNIEnv *env, jobject obj, jobject params)
 {
-	AM_AV_TimeshiftPara_t para;
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
-		
-	playback_to_tspara(env, params, &para);
-	para.playback_only = AM_FALSE;
-	if (AM_AV_StartTimeshift(AV_DEV_NO, &para) != AM_SUCCESS){
-		LOGE("Device start plaback failed");
-	}
+
+	playback_to_tspara(env, params, &dev->timeshift_para);
+
 	dev->in_timeshifting = AM_TRUE;
 }
 
@@ -819,9 +1128,21 @@ static void dev_start_playback(JNIEnv *env, jobject obj, jobject params)
 		return;
 		
 	playback_to_tspara(env, params, &para);
-	para.playback_only = AM_TRUE;
+
+	if (read_media_info_from_file(para.file_path, &para.media_info) < 0)
+		return;
+	para.mode = AM_AV_TIMESHIFT_MODE_PLAYBACK;
 	if (AM_AV_StartTimeshift(AV_DEV_NO, &para) != AM_SUCCESS){
 		LOGE("Device start plaback failed");
+	}else{
+		dev->in_timeshifting = AM_TRUE;
+		
+		jobject evt = create_event(env, obj, EVENT_PLAYBACK_MEDIA_INFO);
+		jobject info = mediainfo_to_object(env, obj, &para.media_info);
+		
+		env->SetObjectField(evt, gEventRecParamsID, info);
+
+		on_event(obj, evt);
 	}
 }
 
@@ -831,6 +1152,7 @@ static void dev_stop_playback(JNIEnv *env, jobject obj)
 	if(!dev->dev_open)
 		return;
 	AM_AV_StopTimeshift(AV_DEV_NO);
+	dev->in_timeshifting = AM_FALSE;
 }
 
 static jobject dev_get_playback_params(JNIEnv *env, jobject obj)
@@ -1030,27 +1352,57 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gChanParamsInitID = env->GetMethodID(gChanParamsClass, "<init>", "(I)V");
 	gRecParamsClass   = env->FindClass("com/amlogic/tvutil/DTVRecordParams");
 	gRecParamsClass   = (jclass)env->NewGlobalRef((jobject)gRecParamsClass);
+	gVideoClass       = env->FindClass("com/amlogic/tvutil/TVProgram$Video");
+	gVideoClass       = (jclass)env->NewGlobalRef((jobject)gVideoClass);
+	gVideoInitID      = env->GetMethodID(gVideoClass, "<init>", "(Lcom/amlogic/tvutil/TVProgram;II)V");
+	gVideoPidID       = env->GetFieldID(gVideoClass, "pid", "I");
+	gVideoFmtID       = env->GetFieldID(gVideoClass, "format", "I");
+	gAudioClass       = env->FindClass("com/amlogic/tvutil/TVProgram$Audio");
+	gAudioClass       = (jclass)env->NewGlobalRef((jobject)gAudioClass);
+	gAudioInitID      = env->GetMethodID(gAudioClass, "<init>", "(Lcom/amlogic/tvutil/TVProgram;ILjava/lang/String;I)V");
+	gAudioPidID       = env->GetFieldID(gAudioClass, "pid", "I");
+	gAudioFmtID       = env->GetFieldID(gAudioClass, "format", "I");
+	gAudioLangID      = env->GetFieldID(gAudioClass, "lang", "Ljava/lang/String;");
+	gSubtitleClass    = env->FindClass("com/amlogic/tvutil/TVProgram$Subtitle");
+	gSubtitleClass    = (jclass)env->NewGlobalRef((jobject)gSubtitleClass);
+	gSubtitleInitID      = env->GetMethodID(gSubtitleClass, "<init>", "(Lcom/amlogic/tvutil/TVProgram;ILjava/lang/String;III)V");
+	gSubtitlePidID    = env->GetFieldID(gSubtitleClass, "pid", "I");
+	gSubtitleTypeID   = env->GetFieldID(gSubtitleClass, "type", "I");
+	gSubtitleCompPageID   = env->GetFieldID(gSubtitleClass, "compositionPage", "I");
+	gSubtitleAnciPageID   = env->GetFieldID(gSubtitleClass, "ancillaryPage", "I");
+	gSubtitleMagNoID   = env->GetFieldID(gSubtitleClass, "magazineNo", "I");
+	gSubtitlePageNoID   = env->GetFieldID(gSubtitleClass, "pageNo", "I");
+	gSubtitleLangID   = env->GetFieldID(gSubtitleClass, "lang", "Ljava/lang/String;");
+	gTeletextClass    = env->FindClass("com/amlogic/tvutil/TVProgram$Teletext");
+	gTeletextClass    = (jclass)env->NewGlobalRef((jobject)gTeletextClass);
+	gTeletextInitID   = env->GetMethodID(gTeletextClass, "<init>", "(Lcom/amlogic/tvutil/TVProgram;ILjava/lang/String;II)V");
+	gTeletextPidID    = env->GetFieldID(gTeletextClass, "pid", "I");
+	gTeletextMagNoID   = env->GetFieldID(gTeletextClass, "magazineNo", "I");
+	gTeletextPageNoID   = env->GetFieldID(gTeletextClass, "pageNo", "I");
+	gTeletextLangID   = env->GetFieldID(gTeletextClass, "lang", "Ljava/lang/String;");
 	gRecParamsFileID  = env->GetFieldID(gRecParamsClass, "recFilePath", "Ljava/lang/String;");
 	gRecParamsStorageID  = env->GetFieldID(gRecParamsClass, "storagePath", "Ljava/lang/String;");
-	gRecParamsVPidID  = env->GetFieldID(gRecParamsClass, "vidPid", "I");
-	gRecParamsAPidID  = env->GetFieldID(gRecParamsClass, "audPids", "[I");
-	gRecParamsOtherPidID  = env->GetFieldID(gRecParamsClass, "otherPids", "[I");
+	gRecParamsVideoID  = env->GetFieldID(gRecParamsClass, "video", "Lcom/amlogic/tvutil/TVProgram$Video;");
+	gRecParamsAudioID  = env->GetFieldID(gRecParamsClass, "audios", "[Lcom/amlogic/tvutil/TVProgram$Audio;");
+	gRecParamsSubtitleID  = env->GetFieldID(gRecParamsClass, "subtitles", "[Lcom/amlogic/tvutil/TVProgram$Subtitle;");
+	gRecParamsTeletextID  = env->GetFieldID(gRecParamsClass, "teletexts", "[Lcom/amlogic/tvutil/TVProgram$Teletext;");
 	gRecParamsRecSizeID   = env->GetFieldID(gRecParamsClass, "currRecordSize", "J");
 	gRecParamsRecTimeID   = env->GetFieldID(gRecParamsClass, "currRecordTime", "J");
 	gRecParamsTotalTimeID   = env->GetFieldID(gRecParamsClass, "recTotalTime", "J");
 	gRecParamsTimeshiftID   = env->GetFieldID(gRecParamsClass, "isTimeshift", "Z");
+	gRecParamsPrefixNameID  = env->GetFieldID(gRecParamsClass, "prefixFileName", "Ljava/lang/String;");
+	gRecParamsSuffixNameID  = env->GetFieldID(gRecParamsClass, "suffixFileName", "Ljava/lang/String;");
 	gRecParamsInitID  = env->GetMethodID(gRecParamsClass, "<init>", "()V");
 	gPlaybackParamsClass   = env->FindClass("com/amlogic/tvutil/DTVPlaybackParams");
 	gPlaybackParamsClass   = (jclass)env->NewGlobalRef((jobject)gPlaybackParamsClass);
 	gPlaybackParamsFileID  = env->GetFieldID(gPlaybackParamsClass, "filePath", "Ljava/lang/String;");
-	gPlaybackParamsVPidID  = env->GetFieldID(gPlaybackParamsClass, "vPid", "I");
-	gPlaybackParamsAPidID  = env->GetFieldID(gPlaybackParamsClass, "aPid", "I");
-	gPlaybackParamsVFmtID  = env->GetFieldID(gPlaybackParamsClass, "vFmt", "I");
-	gPlaybackParamsAFmtID  = env->GetFieldID(gPlaybackParamsClass, "aFmt", "I");
 	gPlaybackParamsStatusID     = env->GetFieldID(gPlaybackParamsClass, "status", "I");
 	gPlaybackParamsCurrtimeID    = env->GetFieldID(gPlaybackParamsClass, "currentTime", "J");
 	gPlaybackParamsTotaltimeID  = env->GetFieldID(gPlaybackParamsClass, "totalTime", "J");
 	gPlaybackParamsInitID       = env->GetMethodID(gPlaybackParamsClass, "<init>", "()V");
+	gProgramClass       = env->FindClass("com/amlogic/tvutil/TVProgram");
+	gProgramClass       = (jclass)env->NewGlobalRef((jobject)gProgramClass);
+	gProgramInitID      = env->GetMethodID(gProgramClass, "<init>", "()V");
 	
 	LOGI("load jnitvmboxdevice ok");
 	return JNI_VERSION_1_4;

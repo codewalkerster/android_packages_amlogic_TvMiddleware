@@ -64,8 +64,6 @@ public class TVDataProvider extends ContentProvider{
 		db.getWritableDatabase().execSQL("delete from booking_table");
 		db.getWritableDatabase().execSQL("delete from grp_table");
 		db.getWritableDatabase().execSQL("delete from grp_map_table");
-		db.getWritableDatabase().execSQL("delete from subtitle_table");
-		db.getWritableDatabase().execSQL("delete from teletext_table");
 		db.getWritableDatabase().execSQL("delete from dimension_table");
 		db.getWritableDatabase().execSQL("delete from sat_para_table");
 		db.getWritableDatabase().execSQL("delete from region_table");

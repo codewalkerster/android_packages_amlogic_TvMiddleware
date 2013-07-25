@@ -37,13 +37,15 @@ public class TVSubtitleView extends View {
 	public static final int COLOR_YELLOW=2;
 	public static final int COLOR_BLUE=3;
 
+	private static int init_count=0;
+
 	private native int native_sub_init();
 	private native int native_sub_destroy();
 	private native int native_sub_lock();
 	private native int native_sub_unlock();
 	private native int native_sub_clear();
 	private native int native_sub_start_dvb_sub(int dmx_id, int pid, int page_id, int anc_page_id);
-	private native int native_sub_start_dtv_tt(int dmx_id, int pid, int page, int sub_page, boolean is_sub);
+	private native int native_sub_start_dtv_tt(int dmx_id, int region_id, int pid, int page, int sub_page, boolean is_sub);
 	private native int native_sub_stop_dvb_sub();
 	private native int native_sub_stop_dtv_tt();
 	private native int native_sub_tt_goto(int page);
@@ -56,6 +58,7 @@ public class TVSubtitleView extends View {
 	protected native int native_get_subtitle_picture_height();
 	private native int native_sub_start_atsc_cc(int caption, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
 	private native int native_sub_stop_atsc_cc();
+	private native int native_sub_set_active(boolean active);
 
 	static{
 		System.loadLibrary("am_adp");
@@ -96,6 +99,7 @@ public class TVSubtitleView extends View {
 		private int pid;
 		private int page_no;
 		private int sub_page_no;
+		private int region_id;
 
 		/**
 		 * 创建数字电视teletext图文参数
@@ -104,11 +108,12 @@ public class TVSubtitleView extends View {
 		 * @param page_no 要显示页号
 		 * @param sub_page_no 要显示的子页号
 		 */
-		public DTVTTParams(int dmx_id, int pid, int page_no, int sub_page_no){
+		public DTVTTParams(int dmx_id, int pid, int page_no, int sub_page_no, int region_id){
 			this.dmx_id      = dmx_id;
 			this.pid         = pid;
 			this.page_no     = page_no;
 			this.sub_page_no = sub_page_no;
+			this.region_id   = region_id;
 		}
 	}
 
@@ -166,20 +171,20 @@ public class TVSubtitleView extends View {
 	private int disp_right=0;
 	private int disp_top=0;
 	private int disp_bottom=0;
+	private boolean active=true;
 
-	private SubParams sub_params;
-	private TTParams  tt_params;
-	private int       play_mode;
-	private boolean   visible;
-	private boolean   destroy;
-	private int       native_handle;
+	private static SubParams sub_params;
+	private static TTParams  tt_params;
+	private static int       play_mode;
+	private static boolean   visible;
+	private static boolean   destroy;
 	private static Bitmap bitmap = null;
 
 	private void update() {
 		postInvalidate();
 	}
 
-	private void stopDecoder(){
+	private synchronized void stopDecoder(){
 		switch(play_mode){
 			case PLAY_NONE:
 				break;
@@ -212,19 +217,23 @@ public class TVSubtitleView extends View {
 		play_mode = PLAY_NONE;
 	}
 
-	private void init(){
-		play_mode  = PLAY_NONE;
-		visible    = true;
-		destroy    = false;
-		tt_params  = new TTParams();
-		sub_params = new SubParams();
-		
-		if(bitmap==null){
-			bitmap = Bitmap.createBitmap(BUFFER_W, BUFFER_H, Bitmap.Config.ARGB_8888);
+	private synchronized void init(){
+		if(init_count == 0){
+			play_mode  = PLAY_NONE;
+			visible    = true;
+			destroy    = false;
+			tt_params  = new TTParams();
+			sub_params = new SubParams();
+			
+			if(bitmap==null){
+				bitmap = Bitmap.createBitmap(BUFFER_W, BUFFER_H, Bitmap.Config.ARGB_8888);
+			}
+			
+			if(native_sub_init()<0){
+			}
 		}
-		
-		if(native_sub_init()<0){
-		}
+
+		init_count++;
 	}
 
 	/**
@@ -266,10 +275,20 @@ public class TVSubtitleView extends View {
 	}
 
 	/**
+	 * 设定控件活跃状态
+	 * @param active 活跃/不活跃
+	 */
+	public synchronized void setActive(boolean active){
+		native_sub_set_active(active);
+		this.active = active;
+		postInvalidate();
+	}
+
+	/**
 	 * 设定字幕参数
 	 * @param params 字幕参数
 	 */
-	public void setSubParams(DVBSubParams params){
+	public synchronized void setSubParams(DVBSubParams params){
 		sub_params.mode = MODE_DVB_SUB;
 		sub_params.dvb_sub = params;
 
@@ -281,7 +300,7 @@ public class TVSubtitleView extends View {
 	 * 设定字幕参数
 	 * @param params 字幕参数
 	 */
-	public void setSubParams(DTVTTParams params){
+	public synchronized void setSubParams(DTVTTParams params){
 		sub_params.mode = MODE_DTV_TT;
 		sub_params.dtv_tt = params;
 
@@ -289,7 +308,11 @@ public class TVSubtitleView extends View {
 			startSub();
 	}
 
-	public void setSubParams(DTVCCParams params){
+	/**
+	 * 设定close caption字幕参数
+	 * @param params 字幕参数
+	 */
+	public synchronized void setSubParams(DTVCCParams params){
 		sub_params.mode = MODE_DTV_CC;
 		sub_params.dtv_cc= params;
 
@@ -301,7 +324,7 @@ public class TVSubtitleView extends View {
 	 * 设定图文参数
 	 * @param params 字幕参数
 	 */
-	public void setTTParams(DTVTTParams params){
+	public synchronized void setTTParams(DTVTTParams params){
 		tt_params.mode = MODE_DTV_TT;
 		tt_params.dtv_tt = params;
 
@@ -338,7 +361,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 开始图文信息解析
 	 */
-	public void startTT(){
+	public synchronized void startTT(){
 		stopDecoder();
 
 		if(tt_params.mode==MODE_NONE)
@@ -348,6 +371,7 @@ public class TVSubtitleView extends View {
 		switch(tt_params.mode){
 			case MODE_DTV_TT:
 				ret = native_sub_start_dtv_tt(tt_params.dtv_tt.dmx_id,
+						tt_params.dtv_tt.region_id,
 						tt_params.dtv_tt.pid,
 						tt_params.dtv_tt.page_no,
 						tt_params.dtv_tt.sub_page_no,
@@ -364,7 +388,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 开始字幕信息解析
 	 */
-	public void startSub(){
+	public synchronized void startSub(){
 		stopDecoder();
 
 		if(sub_params.mode==MODE_NONE)
@@ -380,6 +404,7 @@ public class TVSubtitleView extends View {
 				break;
 			case MODE_DTV_TT:
 				ret = native_sub_start_dtv_tt(sub_params.dtv_tt.dmx_id,
+						sub_params.dtv_tt.region_id,
 						sub_params.dtv_tt.pid,
 						sub_params.dtv_tt.page_no,
 						sub_params.dtv_tt.sub_page_no,
@@ -406,14 +431,14 @@ public class TVSubtitleView extends View {
 	/**
 	 * 停止图文/字幕信息解析
 	 */
-	public void stop(){
+	public synchronized void stop(){
 		stopDecoder();
 	}
 
 	/**
 	 * 停止图文/字幕信息解析并清除缓存数据
 	 */
-	public void clear(){
+	public synchronized void clear(){
 		stopDecoder();
 		native_sub_clear();
 		tt_params.mode  = MODE_NONE;
@@ -423,7 +448,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 在图文模式下进入下一页
 	 */
-	public void nextPage(){
+	public synchronized void nextPage(){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -433,7 +458,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 在图文模式下进入上一页
 	 */
-	public void previousPage(){
+	public synchronized void previousPage(){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -444,7 +469,7 @@ public class TVSubtitleView extends View {
 	 * 在图文模式下跳转到指定页
 	 * @param page 要跳转到的页号
 	 */
-	public void gotoPage(int page){
+	public synchronized void gotoPage(int page){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -454,7 +479,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 在图文模式下跳转到home页
 	 */
-	public void goHome(){
+	public synchronized void goHome(){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -465,7 +490,7 @@ public class TVSubtitleView extends View {
 	 * 在图文模式下根据颜色跳转到指定链接
 	 * @param color 颜色，COLOR_RED/COLOR_GREEN/COLOR_YELLOW/COLOR_BLUE
 	 */
-	public void colorLink(int color){
+	public synchronized void colorLink(int color){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -477,7 +502,7 @@ public class TVSubtitleView extends View {
 	 * @param pattern 搜索匹配字符串
 	 * @param casefold 是否区分大小写
 	 */
-	public void setSearchPattern(String pattern, boolean casefold){
+	public synchronized void setSearchPattern(String pattern, boolean casefold){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -487,7 +512,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 搜索下一页
 	 */
-	public void searchNext(){
+	public synchronized void searchNext(){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -497,7 +522,7 @@ public class TVSubtitleView extends View {
 	/**
 	 * 搜索上一页
 	 */
-	public void searchPrevious(){
+	public synchronized void searchPrevious(){
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -505,11 +530,11 @@ public class TVSubtitleView extends View {
 	}
 
 	@Override
-	public void onDraw(Canvas canvas){
+	public synchronized void onDraw(Canvas canvas){
 		Rect sr;
 		Rect dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight()- disp_bottom);
 
-		if(!visible || (play_mode==PLAY_NONE)){
+		if(!active || !visible || (play_mode==PLAY_NONE)){
 			return;
 		}
 
@@ -528,11 +553,14 @@ public class TVSubtitleView extends View {
 		native_sub_unlock();
 	}
 
-	public void dispose(){
+	public synchronized void dispose(){
 		if(!destroy){
-			clear();
+			init_count--;
 			destroy = true;
-			native_sub_destroy();
+			if(init_count == 0){
+				clear();
+				native_sub_destroy();
+			}
 		}
 	}
 

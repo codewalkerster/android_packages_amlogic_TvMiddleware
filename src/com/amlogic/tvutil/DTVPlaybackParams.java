@@ -14,10 +14,6 @@ public class DTVPlaybackParams implements Parcelable {
 	public static final int PLAYBACK_ST_EXIT     = 4;
 
 	private String filePath;
-	private int vPid;
-	private int aPid;
-	private int vFmt;
-	private int aFmt;
 	private int status;
 	private long currentTime;
 	private long totalTime;
@@ -51,14 +47,10 @@ public class DTVPlaybackParams implements Parcelable {
 
 	}
 
-	public DTVPlaybackParams(String filePath, long totalTime, TVProgram.Video video, TVProgram.Audio audio){
+	public DTVPlaybackParams(String filePath, long totalTime){
 		status = PLAYBACK_ST_STOPPED;
 		currentTime = 0;
 		this.totalTime = totalTime;
-		vPid = (video!=null) ? video.getPID() : 0x1fff;
-		aPid = (audio!=null) ? audio.getPID() : 0x1fff;
-		vFmt = (video!=null) ? video.getFormat() : -1;
-		aFmt = (audio!=null) ? audio.getFormat() : -1;
 		this.filePath = filePath;
 	}
 

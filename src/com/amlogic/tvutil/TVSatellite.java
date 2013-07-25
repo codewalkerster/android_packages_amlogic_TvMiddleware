@@ -314,7 +314,9 @@ public class TVSatellite{
 		
 		this.context.getContentResolver().query(TVDataProvider.WR_URL,
 			null,
-			"update sat_para_table set sat_name = " + sqliteEscape(sat_name) + " where db_id = " + sat_id,
+
+			"update sat_para_table set sat_name = '" + sqliteEscape(sat_name) + "' where db_id = " + sat_id,
+
 			null, null);
 	} 
 	

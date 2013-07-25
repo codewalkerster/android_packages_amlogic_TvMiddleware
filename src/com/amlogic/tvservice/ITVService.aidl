@@ -40,7 +40,10 @@ interface ITVService{
 
 	//取得当前TV时间(单位为毫秒)
 	long getTime();
-
+	
+	//切换声道
+	void switchAudioTrack(int aud_track);
+			
 	//设定输入源
 	void setInputSource(int source);
 	
@@ -72,7 +75,7 @@ interface ITVService{
 	void stopTimeshifting();
 
 	//开始录像
-	void startRecording();
+	void startRecording(long duration);
 
 	//停止录像
 	void stopRecording();
@@ -81,7 +84,7 @@ interface ITVService{
 	DTVRecordParams getRecordingParams();
 
 	//开始回放
-	void startPlayback(int bookingID);
+	void startPlayback(String filePath);
 	
 	//停止回放
 	void stopPlayback();
