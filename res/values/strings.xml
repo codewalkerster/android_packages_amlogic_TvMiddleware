@@ -23,4 +23,6 @@
     <string name="view">View</string>
     <string name="ok">Ok</string>
     <string name="cancel">Cancel</string>
+    <string name="auto_start">Auto start after: </string>
+    <string name="auto_discard">Auto discard after: </string>
 </resources>

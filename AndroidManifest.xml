@@ -11,8 +11,10 @@
              <intent-filter>
                  <action android:name="android.intent.action.BOOT_COMPLETED"/>
              </intent-filter>
+             <intent-filter>
+                 <action android:name="com.amlogic.tvservice.booking_wakeup"/>
+             </intent-filter>
          </receiver>
-    
 		<service android:name=".TVService" android:process="com.amlogic.tvservice">
 			<intent-filter>
 				<action android:name="com.amlogic.tvservice.TVService"/>

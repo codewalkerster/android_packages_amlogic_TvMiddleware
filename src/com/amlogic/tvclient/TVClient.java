@@ -123,12 +123,17 @@ abstract public class TVClient
 							currProgramID = -1;
 							currProgramNo = null;
 							break;
-						case TVMessage.TYPE_PLAYBACK_MEDIA_INFO:
+						case TVMessage.TYPE_PLAYBACK_START:
 							DTVRecordParams minfo = tvmsg.getPlaybackMediaInfo();
-							if (minfo != null){
-								TVProgram playbackProg = new TVProgram(TVClient.this.context, "Playback", 
-									TVProgram.TYPE_PLAYBACK, minfo.getVideo(), minfo.getAllAudio(), 
-									minfo.getAllSubtitle(), minfo.getAllTeletext());
+							if (minfo != null && currProgramType != TVProgram.TYPE_PLAYBACK){
+								TVProgram playbackProg = new TVProgram(
+									TVClient.this.context, 
+									minfo.getProgramName(), 
+									TVProgram.TYPE_PLAYBACK, 
+									minfo.getVideo(), 
+									minfo.getAllAudio(), 
+									minfo.getAllSubtitle(),
+									minfo.getAllTeletext());
 								
 								if(playbackProg != null){
 									currProgramType = playbackProg.getType();
@@ -136,6 +141,11 @@ abstract public class TVClient
 									currProgramID   = playbackProg.getID();
 								}
 							}
+							break;
+						case TVMessage.TYPE_PLAYBACK_STOP:
+							currProgramID = -1;
+							currProgramNo = null;
+							currProgramType = TVProgram.TYPE_UNKNOWN;
 							break;
 					}
 
@@ -521,6 +531,19 @@ abstract public class TVClient
         if(service != null) {
             try {
                 service.stopScan(store);
+            } catch(RemoteException e) {
+            }
+        }
+    }
+
+    /**
+     *开始一个预约处理
+     *@param bookingID 预约ID
+     */
+    public void startBooking(int bookingID) {
+        if(service != null) {
+            try {
+                service.startBooking(bookingID);
             } catch(RemoteException e) {
             }
         }

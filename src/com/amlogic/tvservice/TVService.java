@@ -337,6 +337,13 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 
+		public void startBooking(int bookingID){
+			TVBookManager.Event evt = bookManager.new Event(TVBookManager.Event.EVENT_NEW_BOOKING_START);
+			evt.bookingID = bookingID;
+			Message msg = handler.obtainMessage(MSG_BOOK_EVENT, evt);
+			handler.sendMessage(msg);
+		}
+
 		public void pause(){
 			Message msg = handler.obtainMessage(MSG_PAUSE);
 			handler.sendMessage(msg);
@@ -553,7 +560,13 @@ public class TVService extends Service implements TVConfig.Update{
 		public void onEvent(TVEpgScanner.Event event){
 			switch(event.type){
 				case TVEpgScanner.Event.EVENT_TDT_END:
+					Log.d(TAG, "TDT time update to " + (event.time*1000));
 					time.setTime(event.time*1000);
+					try{
+						config.set("tv:time:diff_value", new TVConfigValue(String.valueOf(time.getDiffTime())));
+					}catch(Exception e){
+						e.printStackTrace();
+					}
 					return;
 			}
 
@@ -575,7 +588,7 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 	};
 	
-	private TVBookManager bookManager = new TVBookManager(this, time){
+	private TVBookManager bookManager = new TVBookManager(this){
 		/*book manager event handler*/
 		public void onEvent(TVBookManager.Event event){
 			Message msg = handler.obtainMessage(MSG_BOOK_EVENT, event);
@@ -823,7 +836,6 @@ public class TVService extends Service implements TVConfig.Update{
 		if(status == TVRunningStatus.STATUS_SCAN ||
 		   status == TVRunningStatus.STATUS_ANALYZE_CHANNEL){
 			scanner.stop(store);
-			status = TVRunningStatus.STATUS_STOPPED;
 
 			if(store){
 				atvPlayParams = null;
@@ -838,16 +850,13 @@ public class TVService extends Service implements TVConfig.Update{
 				if (status == TVRunningStatus.STATUS_SCAN)
 					channelParams = null;
 			}
+
+			status = TVRunningStatus.STATUS_STOPPED;
 		}
 	}
 
 	
 	public void switchAudTrack(int aud_track){
-		//AM_AOUT_OUTPUT_STEREO,     /**< 立体声输�?/
-		//AM_AOUT_OUTPUT_DUAL_LEFT,  /**< 两声道同时输出左声道*/
-		//AM_AOUT_OUTPUT_DUAL_RIGHT, /**< 两声道同时输出右声道*/
-		//AM_AOUT_OUTPUT_SWAP        /**< 交换左右声道*/
-		
 		String value=null;
 		switch(aud_track){
 			case 0:
@@ -948,8 +957,7 @@ public class TVService extends Service implements TVConfig.Update{
 		
 		if (needPlay){
 			TVPlayParams tp = TVPlayParams.playProgramByID(requestProgram.getID());
-			setDTVPlayParams(tp);
-			playCurrentProgram();
+			resolvePlayProgram(tp);
 		}
 	}
 	
@@ -1129,9 +1137,9 @@ public class TVService extends Service implements TVConfig.Update{
 							Log.d(TAG,"DVB parental control parental_rating_age="+parental_rating_age+"---pr="+pr);
 							
                             if(parental_rating_age!=0 && pr>0 && pr<0x10){
-                                pr += 4;
+                                pr += 3;
                                 int set = parental_rating_age;
-                                if(set >= pr){
+                                if(set <= pr){
                                    ret = true;
 								   blockMsg = TVMessage.programBlock(programID);
 								}  
@@ -1292,7 +1300,7 @@ public class TVService extends Service implements TVConfig.Update{
 			}		
 		}
 		
-		if((channelParams == null) || !channelParams.equals(fe_params)){
+		if((channelParams != null) && !channelParams.equals(fe_params)){
 			if (recorder.isRecording()){
 				/*Channel will change, but currently is recording,
 				 *let the client to make the choice*/
@@ -1691,12 +1699,26 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "Cannot read dtv sx unicable !!!");
 			}		
 		}		
+
+		/* configure the SI text languages */
+		String defLang, orderedLangs;
+		try{
+			defLang      = config.getString("tv:scan:dtv:default_text_language");
+			orderedLangs = config.getString("tv:scan:dtv:ordered_text_languages");
+		}catch(Exception e){
+			e.printStackTrace();
+			Log.d(TAG, "Cannot read SI text languages config !");
+			defLang      = "eng";
+			orderedLangs = "eng zho chi";
+		}
 		
-		tsp.setDtvParams(0, channelList);
+		tsp.setDtvParams(0, channelList, defLang, orderedLangs);
 
 		/** No exceptions, start scan */
 		stopPlaying();
 		stopRecording();
+		/*Stop the epg scanner.*/
+		epgScanner.leaveChannel();
 		stopScan(false);
 
 		channelParams = null;
@@ -1906,20 +1928,29 @@ public class TVService extends Service implements TVConfig.Update{
 				}else if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_SUCCESS){
 					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_OK));
 				}else if(event.vga_adjust_status == TVConst.VGA_ADJUST_STATUS.CC_TV_VGA_ADJUST_DOING){
-                    sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_DOING));
-                }
+					sendMessage(new TVMessage(TVMessage.TYPE_VGA_ADJUST_DOING));
+				}
 				break;
 			 case TVDevice.Event.EVENT_SIG_CHANGE:
 			     sendMessage(TVMessage.sigChange( event.tvin_info));
 			     break;
-			case TVDevice.Event.EVENT_PLAYBACK_MEDIA_INFO:
-				sendMessage(TVMessage.playbackMediaInfo(event.recParams));
-			    break;
 			case TVDevice.Event.EVENT_PLAYBACK_START:
-				sendMessage(TVMessage.playbackStart());
+				sendMessage(TVMessage.playbackStart(event.recParams));
 				break;
 			case TVDevice.Event.EVENT_PLAYBACK_END:
 				sendMessage(TVMessage.playbackStop());
+				break;
+			case TVDevice.Event.EVENT_DTV_NO_DATA:
+				Log.d(TAG, "DTV av data lost.");
+				sendMessage(TVMessage.dataLost(programID));
+				break;
+			case TVDevice.Event.EVENT_DTV_CANNOT_DESCRAMLE:
+				Log.d(TAG, "DTV av data scrambled.");
+				sendMessage(TVMessage.programScrambled(programID));
+				break;
+			case TVDevice.Event.EVENT_DTV_DATA_RESUME:
+				Log.d(TAG, "DTV av data resumed.");
+				sendMessage(TVMessage.dataResume(programID));
 				break;
 		}
 	}
@@ -2193,6 +2224,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolvePlayValid(){
 		TVProgram p = getCurrentProgram();
 
+		Log.d(TAG, "Try to play a valid program...");
 		if (p == null){
 			int id = -1;
 			Log.d(TAG, "Cannot play last played program, try first valid program.");
@@ -2348,13 +2380,20 @@ public class TVService extends Service implements TVConfig.Update{
 	
 		config = new TVConfig(this);
 
+		bookManager.open(time, config);
+
 		try{
+			/* Set the diff time stored in config, to be more accurate when TDT/STT not received */
+			time.setDiffTime(Long.parseLong(config.getString("tv:time:diff_value")));
+			/* Set the last selected PVR storage path */
 			recorder.setStorage(config.getString("tv:dtv:record_storage_path"));
+			/* Start EPG scanner */
 			String modeStr = config.getString("tv:dtv:mode");
 			dtvMode = TVChannelParams.getModeFromString(modeStr);
 			if(dtvMode == -1)
 				throw new Exception();
-			epgScanner.setSource(0, 0, dtvMode);
+			String orderedTextLangs = config.getString("tv:scan:dtv:ordered_text_languages");
+			epgScanner.setSource(0, 0, dtvMode, orderedTextLangs);
 			
 			epgScanner.setDvbTextCoding(config.getString("tv:dtv:dvb_text_coding"));
 			
@@ -2386,10 +2425,12 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	public void onDestroy(){
+		this.unregisterReceiver(myServiceReceiver);
 		dataSyncHandler.removeCallbacks(dataSync);
 		checkBlockHandler.removeCallbacks(programBlockCheck);
 		callbacks.kill();
 		epgScanner.destroy();
+		bookManager.close();
 		recorder.close();
 		TVDataProvider.closeDatabase(this);
 		super.onDestroy();

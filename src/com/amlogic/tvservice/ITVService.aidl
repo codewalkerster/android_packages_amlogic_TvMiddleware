@@ -98,6 +98,9 @@ interface ITVService{
 	//停止搜索
 	void stopScan(boolean store);
 
+	//开始一个预约
+	void startBooking(int bookingID);
+
 	//暂停播放(回放和时移)
 	void pause();
 

@@ -119,7 +119,7 @@ static void epg_evt_callback(int dev_no, int event_type, void *param, void *user
 	}
 }
 
-static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint src)
+static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint src, jstring ordered_text_langs)
 {
 	AM_EPG_CreatePara_t para;
 	EPGData *data;
@@ -141,6 +141,11 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
 	para.dmx_dev  = dmx_id;
 	para.source   = src;
 	para.hdb      = NULL;
+	const char *strlang = (*env)->GetStringUTFChars(env, ordered_text_langs, 0);
+	if (strlang != NULL){
+		snprintf(para.text_langs, sizeof(para.text_langs), "%s", strlang);
+		(*env)->ReleaseStringUTFChars(env, ordered_text_langs, strlang);
+	}
 
 	ret = AM_EPG_Create(&para, &data->handle);
 	if(ret != AM_SUCCESS){
@@ -228,7 +233,7 @@ static void epg_set_dvb_text_coding(JNIEnv* env, jobject obj, jstring coding)
 static JNINativeMethod epg_methods[] = 
 {
 	/* name, signature, funcPtr */
-	{"native_epg_create", "(III)V", (void*)epg_create},
+	{"native_epg_create", "(IIILjava/lang/String;)V", (void*)epg_create},
 	{"native_epg_destroy", "()V", (void*)epg_destroy},
 	{"native_epg_change_mode", "(II)V", (void*)epg_change_mode},
 	{"native_epg_monitor_service", "(I)V", (void*)epg_monitor_service},

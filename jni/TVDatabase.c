@@ -7,6 +7,10 @@
 #define log_info(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define log_error(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+/** To avoid compile error when it's not defined */
+#ifndef sqlite3_set_sync_flag
+#define sqlite3_set_sync_flag(_f) log_error("sqlite3_set_sync_flag is NOT IMPLEMENTED !!")
+#endif
 
 static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jobject db)
 {
@@ -33,6 +37,8 @@ static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jo
 			AM_DB_GetHandle(&handle);
 			AM_DB_CreateTables(handle);
 		}
+
+		sqlite3_set_sync_flag(0);
 
 		(*env)->ReleaseStringUTFChars(env, name, str);
 	}

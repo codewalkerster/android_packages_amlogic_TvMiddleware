@@ -34,5 +34,20 @@ public class TVTime{
 
 		return sys.getTime() + diff;
 	}
+
+	/**
+	 *取得TDT/STT与系统时间的差值
+	 *@return 返回差值时间
+	 */
+	synchronized long getDiffTime(){
+		return diff;
+	}
+
+	/**
+	 *设置TDT/STT与系统时间的差值
+	 */
+	synchronized void setDiffTime(long diff){
+		this.diff = diff;
+	}
 }
 

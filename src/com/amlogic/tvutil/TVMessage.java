@@ -97,12 +97,12 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_TRANSFORM_DB_START  = 43;
 	/**数据库导入/导出转换操作完成*/
 	public static final int TYPE_TRANSFORM_DB_END  = 44;
-	/**pvr/timeshifting回放时获取的媒体信息*/
-	public static final int TYPE_PLAYBACK_MEDIA_INFO = 45;
 	/**pvr/timeshifting回放开始*/
-	public static final int TYPE_PLAYBACK_START      = 46;
+	public static final int TYPE_PLAYBACK_START      = 45;
 	/**pvr/timeshifting回放结束*/
-	public static final int TYPE_PLAYBACK_STOP       = 47;
+	public static final int TYPE_PLAYBACK_STOP       = 46;
+	/**节目音视频因被加扰而无法正常播放*/
+	public static final int TYPE_PROGRAM_SCRAMBLED   = 47;
 	
 	private static final String TAG="TVMessage";
 	private int type;
@@ -822,6 +822,20 @@ public class TVMessage implements Parcelable{
 	}
 
 	/**
+	 *创建一个ProgramScrambled消息
+	 *@return 返回创建的新消息
+	 */
+	public static TVMessage programScrambled(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_PROGRAM_SCRAMBLED;
+		msg.programID = programID;
+
+		return msg;
+	}
+
+	/**
 	 *创建一个BookingRemind消息
 	 *@return 返回创建的新消息
 	 */
@@ -1085,28 +1099,15 @@ public class TVMessage implements Parcelable{
 	}
 
 	/**
-	 *创建一个PVR回放时的媒体信息通知消息
-	 *@param info 媒体回放信息,包括video audio subtitle teletext等
-	 *@return 返回创建的新消息
-	 */
-	public static TVMessage playbackMediaInfo(DTVRecordParams info){
-		TVMessage msg = new TVMessage();
-
-		msg.flags = FLAG_RECORD_PARAM;
-		msg.type = TYPE_PLAYBACK_MEDIA_INFO;
-		msg.recordParams = info;
-
-		return msg;
-	}
-
-	/**
 	 *创建一个playbackStart消息
 	 *@return 返回创建的新消息
 	 */
-	public static TVMessage playbackStart(){
+	public static TVMessage playbackStart(DTVRecordParams info){
 		TVMessage msg = new TVMessage();
 
+		msg.flags = FLAG_RECORD_PARAM;
 		msg.type = TYPE_PLAYBACK_START;
+		msg.recordParams = info;
 
 		return msg;
 	}

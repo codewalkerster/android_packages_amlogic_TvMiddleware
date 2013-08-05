@@ -837,6 +837,14 @@ abstract public class TVActivity extends Activity
     }
 
     /**
+     *开始一个预约处理
+     *@param bookingID 预约ID
+     */
+    public void startBooking(int bookingID) {
+        client.startBooking(bookingID);
+    }
+
+    /**
      *播放下一频道节目
      */
     public void channelUp() {

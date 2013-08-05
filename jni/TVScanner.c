@@ -526,7 +526,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 {
 	jfieldID amode, min_freq, max_freq, start_freq, direction, std, doptions;
 	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id, chan_id,sat_id,sat_para;
-	jfieldID ub, ub_freq;
+	jfieldID ub, ub_freq, langid;
 	int java_mode;
 	
 	jclass objclass =(*env)->FindClass(env,"com/amlogic/tvservice/TVScanner$TVScannerParams"); 
@@ -550,6 +550,20 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	sat_para = (*env)->GetFieldID(env,objclass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;"); 
 	ub = (*env)->GetFieldID(env,objclass, "user_band", "I");
 	ub_freq = (*env)->GetFieldID(env,objclass, "ub_freq", "I");	
+	langid = (*env)->GetFieldID(env,objclass, "defaultTextLang", "Ljava/lang/String;");
+	jstring lang = (jstring)(*env)->GetObjectField(env, para, langid); 
+	const char *strlang = (*env)->GetStringUTFChars(env, lang, 0);
+	if (strlang != NULL){
+		snprintf(start_para->default_text_lang, sizeof(start_para->default_text_lang), "%s", strlang);
+		(*env)->ReleaseStringUTFChars(env, lang, strlang);
+	}
+	langid = (*env)->GetFieldID(env,objclass, "orderedTextLangs", "Ljava/lang/String;");
+	lang = (jstring)(*env)->GetObjectField(env, para, langid); 
+	strlang = (*env)->GetStringUTFChars(env, lang, 0);
+	if (strlang != NULL){
+		snprintf(start_para->text_langs, sizeof(start_para->text_langs), "%s", strlang);
+		(*env)->ReleaseStringUTFChars(env, lang, strlang);
+	}
 	
 	start_para->fend_dev_id = (*env)->GetIntField(env, para, fend_id); 
 	java_mode = (*env)->GetIntField(env, para, mode); 

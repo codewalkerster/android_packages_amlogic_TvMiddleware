@@ -40,10 +40,12 @@ public class TVProgram{
 	private boolean lock;
 	private boolean scrambled;
 	private boolean favorite;
-    private int volume;
-    private int src;
-    private int sourceID;
+	private int volume;
+	private int src;
+	private int sourceID;
 	private int audioTrack;
+	private int pmtPID;
+	
 	/**
 	 *Service中的基础元素信息
 	 */
@@ -344,6 +346,9 @@ public class TVProgram{
 
 		col = c.getColumnIndex("service_type");
 		type = c.getInt(col);
+
+		col = c.getColumnIndex("pmt_pid");
+		pmtPID = c.getInt(col);
 
 		if(type == 1)
 			this.type = TYPE_TV;
@@ -703,6 +708,7 @@ public class TVProgram{
 					int col = cr.getColumnIndex("db_id");
 					int db_id = cr.getInt(col);
 					cmd = "update srv_table set ";
+					cmd += "name='" + sqliteEscape(name) + "',";
 					cmd += "vid_pid="+vpid+",vid_fmt="+vfmt+",";
 					cmd += "current_aud=-1,aud_pids='"+apids+"',aud_fmts='"+afmts+"',aud_langs='"+alangs+"',";
 					cmd += "current_sub=-1,sub_pids='"+spids+"',sub_types='"+stypes+"',sub_composition_page_ids='"+scpgids+
@@ -730,7 +736,7 @@ public class TVProgram{
 			cmd += "current_sub,sub_pids,sub_types,sub_composition_page_ids,sub_ancillary_page_ids,sub_langs,";
 		 	cmd += "current_ttx,ttx_pids,ttx_types,ttx_magazine_nos,ttx_page_nos,ttx_langs,";
 			cmd += "db_sat_para_id,scrambled_flag,lcn,hd_lcn,sd_lcn,default_chan_num,chan_order) ";
-			cmd += "values(-1,-1,65535,-1,'',"+type+",";
+			cmd += "values(-1,-1,65535,-1,'"+sqliteEscape(name)+"',"+type+",";
 			cmd += "0,0,0,0,0,0," + vpid + ",";
 			cmd += ""+vfmt+",'"+apids+"','"+afmts+"','"+alangs+"',0,0,0,0,";
 			cmd += "0,0,0,0,-1,0,-1,";
@@ -1951,7 +1957,10 @@ public class TVProgram{
     public int getVolume(){
         return volume;
     }
-    
+
+	public int getPmtPID(){
+		return pmtPID;
+	}
 
 	/**
 	 *修改节目加锁标志
@@ -2184,7 +2193,12 @@ public class TVProgram{
 		return p;
 	}
   
-  /**
+	public static String sqliteEscape(String keyWord){
+		keyWord = keyWord.replace("'", "''");
+		return keyWord;
+	}	
+  
+	/**
 	 *通过节目名称，service id和节目类型找到对应节目
 	 *@param context 当前Context
 	 *@param name 节目名称
@@ -2197,7 +2211,7 @@ public class TVProgram{
 		TVProgram p = null;
 		String cmd;
 
-		cmd = "select * from srv_table where name like '%" + name + "%'" +" and service_id = " + service_id + " and service_type = "+type;
+		cmd = "select * from srv_table where name = "+ "\'"+sqliteEscape(name)+"\'" + " and service_type = "+type;
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,

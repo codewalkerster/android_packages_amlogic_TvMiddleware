@@ -17,13 +17,18 @@ import android.view.IWindowManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.os.PowerManager;
+import android.os.Bundle;
 import android.util.Log;
 import android.content.ComponentName;
 import android.content.Intent;
-import java.util.List;
 import java.util.ArrayList;
 import android.database.Cursor;
 import android.content.Context;
+import android.content.IntentFilter;
+import android.content.BroadcastReceiver;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import com.amlogic.tvutil.TVBooking;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
@@ -44,16 +49,23 @@ abstract public class TVBookManager{
 	private static final String TAG = "TVBookManager";
 	private static final int CHECK_PERIOD_MS = 2000;
 	private static final int PRENOTIFY_SECONDS = 60;
+	private static final int PREWAKEUP_SECONDS = 40;
+	/* when (currenttime-starttime) > AUTOCANCEL_SECONDS, automatically cancel this booking. */
+	private static final int AUTOCANCEL_SECONDS = 10; 
 	private TVTime tvTime = null;
+	private TVConfig tvConfig = null;
 	private Handler handler = new Handler();
 	private Context context;
 	private ReminderDialog reminderDialog = null;
 	private boolean startupChecked = false;
+	private static ArrayList<BookingWakeUpAlarm> wakeupAlarms = new ArrayList<BookingWakeUpAlarm>();
 	
 	private Runnable bookManagerTask = new Runnable() {
 		public void run() {
 			int delayTime = CHECK_PERIOD_MS;
 			boolean expired = false;
+
+			checkWakeupAlarms();
 			
 			autoAdjustStatus();
 			
@@ -64,11 +76,12 @@ abstract public class TVBookManager{
 			}
 			
 			if (reminderDialog == null || reminderDialog.getVisibility() != View.VISIBLE){
-				long dialogTimeout;
+				long dialogTimeout = 0;
+				int dialogTimeoutType = ReminderDialog.TIMEOUT_TO_START;
 
 				/* Try to get the next active booking */
 				TVBooking activeBooking = getNextActiveBooking();
-				if (activeBooking != null){
+				if (activeBooking != null){					
 					Log.d(TAG, "Booking " + activeBooking.getID() +
 						" is now active, flag=" + activeBooking.getFlag() + 
 						", wait the user's choice...");
@@ -77,21 +90,37 @@ abstract public class TVBookManager{
 					long timeToEnd   =  activeBooking.getStart() +  activeBooking.getDuration() - tvTime.getTime();
 					if (startedBooking != null){
 						dialogTimeout = timeToEnd;
+						dialogTimeoutType = ReminderDialog.TIMEOUT_TO_END;
 					}else if (timeToStart <= 0 ){
-						dialogTimeout = timeToEnd;
+						if ((timeToStart + (AUTOCANCEL_SECONDS*1000)) < 0){
+							/* Auto cancel */
+							activeBooking.updateStatus(TVBooking.ST_CANCELLED);
+							Log.d(TAG, "Auto cancel this booking: past start_time " + 
+								timeToStart/1000 + " seconds.");
+						}else{
+							/* Give a short reminding */
+							dialogTimeout = 5000;
+						}
 					}else{
 						dialogTimeout = timeToStart;
 					}
-					
-					/* Show dialog for user's choice */
-					reminderDialog = new ReminderDialog(context, activeBooking.getID(), dialogTimeout);
-					reminderDialog.show();
+
+					if (activeBooking.getStatus() == TVBooking.ST_WAIT_START){
+						/* Show dialog for user's choice */
+						reminderDialog = new ReminderDialog(context, 
+											activeBooking.getID(), 
+											dialogTimeout, 
+											dialogTimeoutType);
+						reminderDialog.show();
+					}
 					
 					delayTime = 100;
 				}
 			}else{
 				/* check the dialog's timeout */
-				if (reminderDialog.checkTime()){
+				int checkRet = reminderDialog.checkTime();
+				
+				if (checkRet == 1){
 					if (startedBooking == null || expired){
 						/* no booking running now or the running booking expired, just jump to this active one */
 						reminderDialog.timeout(true);
@@ -100,6 +129,10 @@ abstract public class TVBookManager{
 						reminderDialog.timeout(false);
 					}
 					reminderDialog = null;
+				}else if (checkRet == 2){
+					/* this case can only be true after booking wakeup */
+					Log.d(TAG, "Auto cancel the reminded booking: past the start time.");
+					reminderDialog.timeout(false);
 				}
 				
 				delayTime = 1000;
@@ -148,9 +181,10 @@ abstract public class TVBookManager{
 		}
 
 		long currentTime = tvTime.getTime();
-		
+		int preNotifyTime = (getStartedBooking() == null) ? PRENOTIFY_SECONDS : 0;
+
 		for (int i=0; i<bookings.length; i++){
-			if (bookings[i].isTimeStart(currentTime+PRENOTIFY_SECONDS*1000) && 
+			if (bookings[i].isTimeStart(currentTime+preNotifyTime*1000) && 
 				!bookings[i].isTimeEnd(currentTime)){
 				return bookings[i];
 			}
@@ -159,13 +193,27 @@ abstract public class TVBookManager{
 		return null;
 	}
 	
-	private void startDtvActivity(){
-		Log.d(TAG, "Starting DTVPlayer ...");
-		Intent dtvPlayerIntent = new Intent();
-		ComponentName dtvPlayerComponent = new ComponentName("com.amlogic.DTVPlayer","com.amlogic.DTVPlayer.DTVPlayer");
-		dtvPlayerIntent.setComponent(dtvPlayerComponent);
-		dtvPlayerIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		context.startActivity(dtvPlayerIntent);
+	private void startDtvActivity(int bookingID){
+		try{
+			String strClass = tvConfig.getString("tv:dtv:player_class");
+			Log.d(TAG, "Starting dtv player("+strClass+") ...");
+
+			int lastDotPos = strClass.lastIndexOf('.');
+			String strPkg = strClass.substring(0, lastDotPos);
+
+			Bundle bookingBundle = new Bundle();
+			bookingBundle.putInt("booking_id", bookingID);
+
+			Log.d(TAG, "package: " + strPkg);
+			Intent dtvPlayerIntent = new Intent();
+			ComponentName dtvPlayerComponent = new ComponentName(strPkg, strClass);
+			dtvPlayerIntent.setComponent(dtvPlayerComponent);
+			dtvPlayerIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			dtvPlayerIntent.putExtras(bookingBundle);
+			context.startActivity(dtvPlayerIntent);
+		}catch (Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	private void autoAdjustStatus(){
@@ -186,7 +234,7 @@ abstract public class TVBookManager{
 		if (cancelledBookings != null){
 			long now = tvTime.getTime();
 			for (int i=0; i<cancelledBookings.length; i++){
-				if (!cancelledBookings[i].isTimeEnd(now))
+				if (cancelledBookings[i].getDuration() > 0 && !cancelledBookings[i].isTimeEnd(now))
 					continue;
 				
 				if (cancelledBookings[i].getRepeat() != TVBooking.RP_NONE){
@@ -199,36 +247,107 @@ abstract public class TVBookManager{
 			}
 		}
 	}
+
+	private void checkWakeupAlarms(){
+		TVBooking waitingBookings[] = TVBooking.selectByStatus(context, TVBooking.ST_WAIT_START);
+		if (waitingBookings == null)
+			return;	
+
+		int i, j;
+
+		/*Calculate the new added bookings*/
+		ArrayList<TVBooking> newBookings = new ArrayList<TVBooking>();
+		for (i=0; i<waitingBookings.length; i++){
+			for (j=0; j<wakeupAlarms.size(); j++){
+				if (waitingBookings[i].getID() == wakeupAlarms.get(j).bookingID){
+					break;
+				}
+			}
+			
+			if (j >= wakeupAlarms.size()){
+				newBookings.add(waitingBookings[i]);
+			}
+		}
+
+		/*Calculate the deleted bookings*/
+		ArrayList<BookingWakeUpAlarm> deletedAlarms = new ArrayList<BookingWakeUpAlarm>();
+		for (i=0; i<wakeupAlarms.size(); i++){
+			for (j=0; j<waitingBookings.length; j++){
+				if (waitingBookings[j].getID() == wakeupAlarms.get(i).bookingID){
+					break;
+				}
+			
+				if (j >= waitingBookings.length){
+					wakeupAlarms.get(i).release();
+				}
+			}
+		}
+
+		/*Remove the deleted bookings' alarm*/
+		for (i=0; i<deletedAlarms.size(); i++){
+			for (j=0; j<wakeupAlarms.size(); j++){
+				if (deletedAlarms.get(i) == wakeupAlarms.get(j)){
+					wakeupAlarms.remove(j);
+					break;
+				}
+			}
+		}
+
+		/*Add the new bookings' alarm*/
+		for (i=0; i<newBookings.size(); i++){
+			wakeupAlarms.add(new BookingWakeUpAlarm(newBookings.get(i)));
+		}
+	}
 	
-	public TVBookManager(Context context, TVTime time){
-		this.context = context;
-		tvTime = time;
-		
-		handler.postDelayed(bookManagerTask, 1000);
+	public TVBookManager(Context context){
+		this.context  = context;
 	}
 	
 	public void onEvent(TVBookManager.Event evt){
 	
 	}
 
+	public void open(TVTime time, TVConfig config){
+		this.tvTime   = time;
+		this.tvConfig = config;
+
+		handler.postDelayed(bookManagerTask, 1000);
+	}
+
+	public void close(){
+		handler.removeCallbacks(bookManagerTask);
+		this.tvTime   = null;
+		this.tvConfig = null;
+	}
+
 	public class ReminderDialog extends View{
+		public static final int TIMEOUT_TO_START = 0;
+		public static final int TIMEOUT_TO_END   = 1;
+		
 		private TVBooking booking;
 		private int w;
 		private int h;
 		private long timeout;
 		private long baseTime;
-		private List<ReminderView> subViews;
+		private ArrayList<ReminderView> subViews;
 		private Context ctx;
 		private ReminderView viewTimeout;
+		private String strTimeout;
 
-		public ReminderDialog(Context ctx, int bookingID, long timeout){
+		public ReminderDialog(Context ctx, int bookingID, long timeout, int timeoutType){
 			super(ctx);
 
 			this.ctx       = ctx;
 			this.booking   = TVBooking.selectByID(ctx, bookingID);
 			this.timeout   = timeout;
 			subViews       = new ArrayList<ReminderView>();
-			baseTime       = SystemClock.uptimeMillis();
+			baseTime       = SystemClock.elapsedRealtime();
+			if (timeoutType == TIMEOUT_TO_END){
+				strTimeout = context.getString(R.string.auto_discard);
+			}else{
+				strTimeout = context.getString(R.string.auto_start);
+			}
+			
 		}
 
 		private ReminderView findPrevFocus(){
@@ -286,28 +405,35 @@ abstract public class TVBookManager{
 			return null;
 		}
 		
-		public boolean checkTime(){
+		public int checkTime(){
 			if (viewTimeout == null)
-				return false;
+				return 0;
 			
 			if (timeout <= 0){
 				/* There will be no timeout */
 			}else{
-				long currTime = SystemClock.uptimeMillis();
+				long currTime = SystemClock.elapsedRealtime();
 				long remainTime = timeout - (currTime - baseTime);
+
+				Log.d(TAG, "Dialog remaining time check: " + remainTime);
 				
 				remainTime /= 1000; //To seconds
 				
 				if (remainTime > 0){
-					viewTimeout.setText("" + remainTime/3600 + ":" + (remainTime%3600)/60 + ":" + remainTime%60);
+					String strText = strTimeout + "    " + remainTime/3600 + 
+						":" + (remainTime%3600)/60 + ":" + remainTime%60;
+					
+					viewTimeout.setText(strText);
 					invalidate();
+				}else if ((remainTime + AUTOCANCEL_SECONDS) < 0){
+					return 2;
 				}else{
-					return true;
+					return 1;
 				}
 				
 			}
 			
-			return false;
+			return 0;
 		}
 		
 		public void show(){
@@ -450,10 +576,14 @@ abstract public class TVBookManager{
 			
 			if (booking != null){
 				/*start the dtv player*/
-				startDtvActivity();
-				/*notify TVService to start this booking*/
-				booking.updateStatus(TVBooking.ST_STARTED);
-				onBookingEvent(TVBookManager.Event.EVENT_NEW_BOOKING_START, booking.getID());
+				startDtvActivity(booking.getID());
+
+				/*update status*/
+				if (booking.getFlag() == booking.FL_PLAY){
+					booking.updateStatus(TVBooking.ST_END);
+				}else{
+					booking.updateStatus(TVBooking.ST_STARTED);
+				}
 			}
 			ReminderDialog.this.setVisibility(View.GONE);
 		}
@@ -662,4 +792,42 @@ abstract public class TVBookManager{
 			}
 		}
 	}
+	
+	class BookingWakeUpAlarm {
+		public int bookingID = -1;
+		private PendingIntent operation = null;
+
+		public BookingWakeUpAlarm(TVBooking booking){
+			if (booking == null)
+				return;
+			this.bookingID = booking.getID();
+			
+			Intent intent = new Intent(context, TVServiceReceiver.class);
+			intent.setAction("com.amlogic.tvservice.booking_wakeup");
+			this.operation = PendingIntent.getBroadcast(context, 0, intent, 0);
+
+			long curSysTime = System.currentTimeMillis();
+			long curTvTime = tvTime.getTime();
+			long alarmTime = curSysTime + (booking.getStart()-curTvTime) - PREWAKEUP_SECONDS*1000;
+			
+			Log.d(TAG, "Add wakeup alarm for booking " + this.bookingID +
+				": system_time " + curSysTime + ", tv_time " + curTvTime +
+				", booking_start " + booking.getStart() + ", alarmTime " + alarmTime);
+
+			AlarmManager am = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+			am.set(AlarmManager.RTC_WAKEUP, alarmTime, this.operation);
+		}
+
+		public void release(){
+			if (operation != null){
+				Log.d(TAG, "Release wakeup alarm for booking " + this.bookingID);
+				AlarmManager am = (AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+				am.cancel(operation);
+
+				operation = null;
+			}
+			
+			bookingID = -1;
+		}
+	};
 }

@@ -104,6 +104,12 @@ abstract public class TVRecorder{
 		switch(event.type){
 			case TVDevice.Event.EVENT_RECORD_END:
 				Log.d(TAG, "Recorder get record end from device");
+
+				if (recordParams != null && 
+					recordParams.booking != null &&
+					recordParams.booking.getID() >= 0){
+					recordParams.booking.updateStatus(TVBooking.ST_END);
+				}
 				
 				status = ST_IDLE;
 				recordParams = null;
@@ -167,9 +173,6 @@ abstract public class TVRecorder{
 		}
 		
 		tvDevice.stopRecording();
-		
-		status = ST_IDLE;
-		recordParams = null;
 	}
 	
 	public DTVRecordParams getRecordingParams(){
@@ -196,7 +199,7 @@ abstract public class TVRecorder{
 	public int getStatus(){
 		return status;
 	}
-	
+
 	public boolean isRecording(){
 		return (status != ST_IDLE);
 	}

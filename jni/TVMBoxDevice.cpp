@@ -32,7 +32,7 @@ typedef struct {
 #define FEND_DEF_MODE  -1
 #define AV_DEV_NO      0
 #define DMX_DEV_NO     0
-#define DVR_DEV_NO     0
+#define DVR_DEV_NO     2
 #define ASYNC_FIFO_NO  0
 #define PLAYBACK_DMX_DEV_NO 1
 
@@ -44,9 +44,9 @@ typedef struct {
 #define EVENT_DTV_NO_DATA             5
 #define EVENT_DTV_CANNOT_DESCRAMLE    6
 #define EVENT_RECORD_END              7
-#define EVENT_PLAYBACK_MEDIA_INFO     10
-#define EVENT_PLAYBACK_START          11
-#define EVENT_PLAYBACK_END            12
+#define EVENT_PLAYBACK_START          10
+#define EVENT_PLAYBACK_END            11
+#define EVENT_DTV_DATA_RESUME         12
 
 
 #define SOURCE_DTV	10
@@ -96,6 +96,9 @@ static jfieldID  gRecParamsTotalTimeID;
 static jfieldID  gRecParamsTimeshiftID;
 static jfieldID  gRecParamsPrefixNameID;
 static jfieldID  gRecParamsSuffixNameID;
+static jfieldID  gRecParamsPmtPidID;
+static jfieldID  gRecParamsPmtProgramNumberID;
+static jfieldID  gRecParamsProgramNameID;
 static jfieldID  gPlaybackParamsFileID;
 static jfieldID  gPlaybackParamsStatusID;
 static jfieldID  gPlaybackParamsCurrtimeID;
@@ -310,6 +313,13 @@ static void rec_to_media_info(JNIEnv *env, jobject rec, AM_REC_MediaInfo_t *para
 	const char *lang;
 	
 	memset(para, 0, sizeof(AM_REC_MediaInfo_t));
+
+	strlang = (jstring)env->GetObjectField(rec, gRecParamsProgramNameID);
+	lang = env->GetStringUTFChars(strlang, 0);
+	if (lang != NULL){
+		snprintf(para->program_name, sizeof(para->program_name), "%s", lang);
+		env->ReleaseStringUTFChars(strlang, lang);
+	}
 	
 	jobject video = env->GetObjectField(rec, gRecParamsVideoID);
 	if (video != NULL){
@@ -412,10 +422,13 @@ static void rec_to_recordpara(JNIEnv *env, jobject rec, AM_REC_RecPara_t *para)
 	const char *path;
 	
 	memset(para, 0, sizeof(AM_REC_RecPara_t));
-	para->is_timeshift = env->GetBooleanField(rec, gRecParamsTimeshiftID);
-	para->pmt_pid = 0x1ff0; //reserved;
+	para->is_timeshift  = env->GetBooleanField(rec, gRecParamsTimeshiftID);
+	para->program.i_pid = env->GetIntField(rec, gRecParamsPmtPidID);
+	para->program.i_number = env->GetIntField(rec, gRecParamsPmtProgramNumberID);
 	
 	rec_to_media_info(env, rec, &para->media_info);
+
+	LOGI("Program '%s': PMT pid 0x%x, number 0x%x", para->media_info.program_name, para->program.i_pid, para->program.i_number);
 
 	strpath = (jstring)env->GetObjectField(rec, gRecParamsPrefixNameID);
 	path = env->GetStringUTFChars(strpath, 0);
@@ -519,7 +532,8 @@ static jobject mediainfo_to_object(JNIEnv *env, jobject object, AM_AV_TimeshiftM
 			env->SetObjectArrayElement(teletexts, i, teletext);
 		} 
 	}
-	
+
+	env->SetObjectField(obj, gRecParamsProgramNameID, env->NewStringUTF(info->program_name));
 	env->SetObjectField(obj, gRecParamsVideoID, video);
 	env->SetObjectField(obj, gRecParamsAudioID, audios);
 	env->SetObjectField(obj, gRecParamsSubtitleID, subtitles);
@@ -586,7 +600,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 		
 	name_len = sizeof(info->program_name);
 	if ((info_len-pos) >= name_len){
-		memcpy(info->program_name, buf, name_len);
+		memcpy(info->program_name, buf+pos, name_len);
 		info->program_name[name_len - 1] = 0;
 		pos += name_len;
 	}else{
@@ -620,7 +634,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 		memcpy(info->teletexts[i].lang, buf+pos, 4);
 		pos += 4;
 	}
-
+	close(fd);
 	return 0;
 
 read_error:
@@ -706,18 +720,17 @@ static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 {
 	TVDevice *dev = (TVDevice*)data;
-
+	jobject event;
+	JNIEnv *env;
+	int ret, evttype = -1;
+	int attached = 0;
+		
 	if (! dev)
 		return;
 	
 	if (event_type == AM_AV_EVT_PLAYER_UPDATE_INFO){
 		AM_AV_TimeshiftInfo_t *info = (AM_AV_TimeshiftInfo_t*)param;
-		jobject event;
-		jobject recpara;
-		JNIEnv *env;
-		int ret, evttype = -1;
-		int attached = 0;
-		
+
 		if (info == NULL)
 			return;
 
@@ -726,27 +739,38 @@ static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 		}else if (info->status == 4){
 			evttype = EVENT_PLAYBACK_END;
 		}
+	}else if (event_type == AM_AV_EVT_AUDIO_SCAMBLED || event_type == AM_AV_EVT_VIDEO_SCAMBLED){
+		evttype = EVENT_DTV_CANNOT_DESCRAMLE;
+	}else if (event_type == AM_AV_EVT_AV_NO_DATA){
+		evttype = EVENT_DTV_NO_DATA;
+	}else if (event_type == AM_AV_EVT_AV_DATA_RESUME){
+		evttype = EVENT_DTV_DATA_RESUME;
+	}
 
-		if (evttype < 0)
-			return;
-		
-		ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
-		if(ret<0){
-			ret = gJavaVM->AttachCurrentThread(&env, NULL);
-			if(ret<0){
-				LOGE("Can't attach thread");
-				return;
-			}
-			attached = 1;
-		}
-		
-		event = create_event(env, dev->dev_obj, evttype);
+	if (evttype < 0)
+		return;
 	
-		env->CallVoidMethod(dev->dev_obj, gOnEventID, event);
-
-		if(attached){
-			gJavaVM->DetachCurrentThread();
+	ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
+	if(ret<0){
+		ret = gJavaVM->AttachCurrentThread(&env, NULL);
+		if(ret<0){
+			LOGE("Can't attach thread");
+			return;
 		}
+		attached = 1;
+	}
+	
+	event = create_event(env, dev->dev_obj, evttype);
+
+	if (evttype == EVENT_PLAYBACK_START){
+		jobject info = mediainfo_to_object(env, dev->dev_obj, &dev->timeshift_para.media_info);
+		env->SetObjectField(event, gEventRecParamsID, info);
+	}
+
+	env->CallVoidMethod(dev->dev_obj, gOnEventID, event);
+
+	if(attached){
+		gJavaVM->DetachCurrentThread();
 	}
 }
 
@@ -769,6 +793,10 @@ static void dev_init(JNIEnv *env, jobject obj)
 	dev->ts_src = (AM_DMX_Source_t)-1;
 
 	AM_EVT_Subscribe(0, AM_AV_EVT_PLAYER_UPDATE_INFO, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Subscribe(0, AM_AV_EVT_AV_NO_DATA, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Subscribe(0, AM_AV_EVT_AUDIO_SCAMBLED, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Subscribe(0, AM_AV_EVT_VIDEO_SCAMBLED, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Subscribe(0, AM_AV_EVT_AV_DATA_RESUME, dev_av_evt_cb, (void*)dev);
 }
 
 static void dev_destroy(JNIEnv *env, jobject obj)
@@ -776,6 +804,7 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 
 	AM_DMX_Close(DMX_DEV_NO);
+	AM_DMX_Close(DVR_DEV_NO);
 	AM_AV_Close(AV_DEV_NO);
 
 	if(dev->dev_open){
@@ -787,6 +816,10 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	env->DeleteWeakGlobalRef(dev->dev_obj);
 
 	AM_EVT_Unsubscribe(0, AM_AV_EVT_PLAYER_UPDATE_INFO, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_AV_NO_DATA, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_AUDIO_SCAMBLED, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_VIDEO_SCAMBLED, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_AV_DATA_RESUME, dev_av_evt_cb, (void*)dev);
 	
 	free(dev);
 }
@@ -816,6 +849,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 
 		memset(&dmx_para, 0, sizeof(dmx_para));
 		AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+		/*open demux for corresponding dvr*/
+		AM_DMX_Open(DVR_DEV_NO, &dmx_para);
 
 		memset(&av_para, 0, sizeof(av_para));
 		AM_AV_Open(AV_DEV_NO, &av_para);
@@ -848,12 +883,20 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 	
 }
 
+static jint vidoview_x=0;
+static jint vidoview_y=0;
+static jint vidoview_w=0;
+static jint vidoview_h=0;
 static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
 {
 	char buf[64];
 
 	snprintf(buf, sizeof(buf), "%d %d %d %d", x, y, x+w, y+h);
-
+	vidoview_x=x;
+	vidoview_y=y;
+	vidoview_w=w;
+	vidoview_h=h;	
+	
 	AM_FileEcho("/sys/class/video/axis", buf);
 }
 
@@ -878,6 +921,8 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 
 		memset(&dmx_para, 0, sizeof(dmx_para));
 		AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+		/*open demux for corresponding dvr*/
+		AM_DMX_Open(DVR_DEV_NO, &dmx_para);
 
 		memset(&av_para, 0, sizeof(av_para));
 		AM_AV_Open(AV_DEV_NO, &av_para);
@@ -904,6 +949,7 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 	if(src != dev->ts_src){
 		AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)src);
 		AM_DMX_SetSource(DMX_DEV_NO, src);
+		AM_DMX_SetSource(DVR_DEV_NO, src);
 
 		dev->ts_src = src;
 	}
@@ -1007,6 +1053,7 @@ static void dev_play_dtv(JNIEnv *env, jobject obj, jint vpid, jint vfmt, jint ap
 		return;
 
 	AM_AV_StartTS(AV_DEV_NO, vpid, apid, (AM_AV_VFormat_t)vfmt, (AM_AV_AFormat_t)afmt);
+	dev_set_video_window(env,obj,vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 }
 
 static void dev_switch_dtv_audio(JNIEnv *env, jobject obj, jint apid, jint afmt)
@@ -1060,13 +1107,8 @@ static void dev_start_recording(JNIEnv *env, jobject obj, jobject params)
 		
 		if (AM_AV_StartTimeshift(AV_DEV_NO, &dev->timeshift_para) != AM_SUCCESS){
 			LOGE("Device start timeshifting failed");
-		}else{
-			jobject evt = create_event(env, obj, EVENT_PLAYBACK_MEDIA_INFO);
-			jobject info = mediainfo_to_object(env, obj, &rpara.media_info);
-			
-			env->SetObjectField(evt, gEventRecParamsID, info);
-
-			on_event(obj, evt);
+			AM_REC_Destroy(hrec);
+			return;
 		}
 	}
 		
@@ -1143,13 +1185,8 @@ static void dev_start_playback(JNIEnv *env, jobject obj, jobject params)
 		LOGE("Device start plaback failed");
 	}else{
 		dev->in_timeshifting = AM_TRUE;
-		
-		jobject evt = create_event(env, obj, EVENT_PLAYBACK_MEDIA_INFO);
-		jobject info = mediainfo_to_object(env, obj, &para.media_info);
-		
-		env->SetObjectField(evt, gEventRecParamsID, info);
 
-		on_event(obj, evt);
+		dev->timeshift_para.media_info = para.media_info;
 	}
 }
 
@@ -1222,6 +1259,8 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 
 		memset(&dmx_para, 0, sizeof(dmx_para));
 		AM_DMX_Open(DMX_DEV_NO, &dmx_para);
+		/*open demux for corresponding dvr*/
+		AM_DMX_Open(DVR_DEV_NO, &dmx_para);
 
 		memset(&av_para, 0, sizeof(av_para));
 		AM_AV_Open(AV_DEV_NO, &av_para);
@@ -1271,6 +1310,7 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 	if(src != dev->ts_src){
 		AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)src);
 		AM_DMX_SetSource(DMX_DEV_NO, src);
+		AM_DMX_SetSource(DVR_DEV_NO, src);
 
 		dev->ts_src = src;
 	}
@@ -1399,6 +1439,9 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gRecParamsTimeshiftID   = env->GetFieldID(gRecParamsClass, "isTimeshift", "Z");
 	gRecParamsPrefixNameID  = env->GetFieldID(gRecParamsClass, "prefixFileName", "Ljava/lang/String;");
 	gRecParamsSuffixNameID  = env->GetFieldID(gRecParamsClass, "suffixFileName", "Ljava/lang/String;");
+	gRecParamsPmtPidID      = env->GetFieldID(gRecParamsClass, "pmtPID", "I");
+	gRecParamsPmtProgramNumberID = env->GetFieldID(gRecParamsClass, "pmtProgramNumber", "I");
+	gRecParamsProgramNameID = env->GetFieldID(gRecParamsClass, "programName", "Ljava/lang/String;");
 	gRecParamsInitID  = env->GetMethodID(gRecParamsClass, "<init>", "()V");
 	gPlaybackParamsClass   = env->FindClass("com/amlogic/tvutil/DTVPlaybackParams");
 	gPlaybackParamsClass   = (jclass)env->NewGlobalRef((jobject)gPlaybackParamsClass);

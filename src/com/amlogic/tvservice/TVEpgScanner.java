@@ -56,7 +56,7 @@ abstract public class TVEpgScanner{
     }
 
 	private int native_handle;
-	private native void native_epg_create(int fend_id, int dmx_id, int src);
+	private native void native_epg_create(int fend_id, int dmx_id, int src, String textLangs);
 	private native void native_epg_destroy();
 	private native void native_epg_change_mode(int op, int mode);
 	private native void native_epg_monitor_service(int src_id);
@@ -93,7 +93,7 @@ abstract public class TVEpgScanner{
 	public TVEpgScanner(){
 	}
 
-	public void setSource(int fend, int dmx, int src){
+	public void setSource(int fend, int dmx, int src, String textLanguages){
 		if(created)
 			destroy();
 		
@@ -101,7 +101,7 @@ abstract public class TVEpgScanner{
 		dmx_dev_id  = dmx;
 		fend_type   = src;
 
-		native_epg_create(fend, dmx, src);
+		native_epg_create(fend, dmx, src, textLanguages);
 		created = true;
 	}
 

@@ -14,7 +14,10 @@ public class DTVRecordParams implements Parcelable {
 	private String storagePath;
 	private String prefixFileName;
 	private String suffixFileName;
+	private String programName;
 	private int programID;
+	private int pmtPID;
+	private int pmtProgramNumber;
 	private long currRecordSize;
 	private long currRecordTime;
 	private long recTotalTime;
@@ -36,9 +39,9 @@ public class DTVRecordParams implements Parcelable {
 	public void readFromParcel(Parcel in){
 		currRecordSize = in.readLong();
 		currRecordTime = in.readLong();
-		recTotalTime = in.readLong();
-		programID = in.readInt();
-
+		recTotalTime   = in.readLong();
+		programID      = in.readInt();
+		programName    = in.readString();
 		
 		int pid, fmt;
 		String lang;
@@ -99,6 +102,7 @@ public class DTVRecordParams implements Parcelable {
 		dest.writeLong(currRecordTime);
 		dest.writeLong(recTotalTime);
 		dest.writeInt(programID);
+		dest.writeString(programName);
 
 		/* write video */
 		if (video != null){
@@ -180,12 +184,18 @@ public class DTVRecordParams implements Parcelable {
 			subtitles = null;
 			teletexts = null;
 			programID = -1;
+			pmtPID    = 0x1fff;
+			pmtProgramNumber = 0xffff;
+			programName      = null;
 		}else{
 			video     = prog.getVideo();
 			audios    = prog.getAllAudio();
 			subtitles = prog.getAllSubtitle();
 			teletexts = prog.getAllTeletext();
 			programID = prog.getID();
+			pmtPID    = prog.getPmtPID();
+			pmtProgramNumber = prog.getDVBServiceID();
+			programName      = prog.getName();
 		}
 
 		recTotalTime = book.getDuration();
@@ -244,6 +254,14 @@ public class DTVRecordParams implements Parcelable {
 		return programID;
 	}
 
+	/**
+	 *获取当前录像的Program名称 
+	 *@return 返回当前录像的Program名称
+	 */
+	public String getProgramName(){
+		return programName;
+	}
+	
 	/**
 	 *获取当前录像的视频
 	 *@return 返回Video对象
