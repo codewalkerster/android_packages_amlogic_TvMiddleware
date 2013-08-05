@@ -843,7 +843,7 @@ public class TVService extends Service implements TVConfig.Update{
 
 	
 	public void switchAudTrack(int aud_track){
-		//AM_AOUT_OUTPUT_STEREO,     /**< 立体声输出*/
+		//AM_AOUT_OUTPUT_STEREO,     /**< 立体声输�?/
 		//AM_AOUT_OUTPUT_DUAL_LEFT,  /**< 两声道同时输出左声道*/
 		//AM_AOUT_OUTPUT_DUAL_RIGHT, /**< 两声道同时输出右声道*/
 		//AM_AOUT_OUTPUT_SWAP        /**< 交换左右声道*/
@@ -1408,7 +1408,7 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolveSetInputSource(TVConst.SourceInput src){
 		Log.d(TAG, "try to set input source to "+src.name());
 
-		if(src == reqInputSource)
+		if((src == reqInputSource) && (src == device.getCurInputSource()))
 			return;
 
 		reqInputSource = src;
@@ -1620,8 +1620,8 @@ public class TVService extends Service implements TVConfig.Update{
 		            vidstd > CC_ATV_VIDEO_STANDARD.CC_ATV_VIDEO_STD_SECAM.ordinal()){
 		        Log.e(TAG,"vidstd is error");
 		    }
-		    if(vidstd < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal() || 
-                    vidstd > CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO.ordinal()){
+		    if(audstd < CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_DK.ordinal() || 
+                    audstd > CC_ATV_AUDIO_STANDARD.CC_ATV_AUDIO_STD_AUTO.ordinal()){
                 Log.e(TAG,"audstd is error");
             }
 		        
@@ -1667,11 +1667,9 @@ public class TVService extends Service implements TVConfig.Update{
 
 			
 			TVRegion rg = getCurrentRegion();
-			
-			if(sp.getTsSourceID() == TVChannelParams.MODE_QPSK){
-				channelList= sp.getCnannelChooseList();
-			}
-			else if (rg != null){
+
+			channelList= sp.getCnannelChooseList();
+			if (channelList == null && sp.getTsSourceID() != TVChannelParams.MODE_QPSK){
 				channelList = rg.getChannelParams();
 			}
 		} 
@@ -1818,8 +1816,9 @@ public class TVService extends Service implements TVConfig.Update{
                                    firstPlayAtv  = false;
                             }
 						}
-					}else
-	                    device.freeFrontend();
+					}
+					//else
+	              //      device.freeFrontend();
 				}else{
 				    Log.v(TAG, "source: " + source + " TVConst.SourceInput.SOURCE_MPEG: " + TVConst.SourceInput.SOURCE_MPEG);
 				    reqInputSource = source;
@@ -2064,6 +2063,12 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "tv:dtv:record_storage_path -> "+path);
 
 				recorder.setStorage(path);
+			}else if (name.equals("tv:dtv:mode")){
+				String strMode = config.getString("tv:dtv:mode");
+
+				Log.d(TAG, "tv:dtv:mode changed -> "+strMode+", clearing database...");
+				dtvMode = TVChannelParams.getModeFromString(strMode);
+				resolveRestoreFactorySetting(RESTORE_FL_DATABASE);
 			}
 		}catch(Exception e){
 		}
@@ -2351,10 +2356,13 @@ public class TVService extends Service implements TVConfig.Update{
 				throw new Exception();
 			epgScanner.setSource(0, 0, dtvMode);
 			
+			epgScanner.setDvbTextCoding(config.getString("tv:dtv:dvb_text_coding"));
+			
 			isAtvEnabled = config.getBoolean("tv:atv:enable");
 			
 			config.registerUpdate("tv:audio:language", this);
-			config.registerUpdate("tv:dtv:record_storage_path", this);
+			config.registerUpdate("tv:dtv:record_storage_path", this);            
+            config.registerUpdate("tv:dtv:mode", this);
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
 		}catch(Exception e){
@@ -2393,6 +2401,11 @@ public class TVService extends Service implements TVConfig.Update{
         myServiceReceiver = new ServiceReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ServiceReceiver.StartPlayer);
+		filter.addAction(ServiceReceiver.playProgramUp);
+		filter.addAction(ServiceReceiver.playProgramDown);
+		filter.addAction(ServiceReceiver.SCREEN_OFF);
+		filter.addAction(ServiceReceiver.SCREEN_ON);
+		filter.addAction(ServiceReceiver.StartPlayDTV);
         this.registerReceiver(myServiceReceiver, filter);
     }
     
@@ -2400,7 +2413,11 @@ public class TVService extends Service implements TVConfig.Update{
     public class ServiceReceiver extends BroadcastReceiver {
 	static final String TAG = "TvServiceReceiver";
 	public static final String  StartPlayer = "com.amlogic.tvservice.startplayer";
-
+    public static final String  playProgramUp = "com.amlogic.tvservice.playProgramUp";
+	public static final String  playProgramDown = "com.amlogic.tvservice.playProgramDown";
+	public static final String SCREEN_OFF = "android.intent.action.SCREEN_OFF";
+	public static final String SCREEN_ON = "android.intent.action.SCREEN_ON";
+	public static final String StartPlayDTV = "com.launcher.play.dtv";
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (StartPlayer.equals(intent.getAction())) {
@@ -2408,9 +2425,35 @@ public class TVService extends Service implements TVConfig.Update{
                 int val = 0;
                 TVConst.SourceInput type = TVConst.SourceInput.values()[val];
                 resolveSetInputSource(type);
-                firstPlayAtv = true;
-               
+                firstPlayAtv = true;	
+		}else
+		if (playProgramUp.equals(intent.getAction())) {
+  				Log.d(TAG,"playProgramUp******************************************");		
+		        resolvePlayProgram(TVPlayParams.playProgramUp());
+		}
+		else
+		if (playProgramDown.equals(intent.getAction())) {
+		  	    Log.d(TAG,"playProgramDown*******************************************");
+		        resolvePlayProgram(TVPlayParams.playProgramDown());
+		}
+		else
+		if (StartPlayDTV.equals(intent.getAction())) {
+				Log.d(TAG,"StartPlayDTV******************************************");
+				
+				playCurrentProgram();
+		}
+		
+		if(intent.getAction().equals(SCREEN_OFF)) {
+				Log.d(TAG,"SCREEN_OFF+++++++++++++");
+				channelParams = null;
+				return;
 			}
+			if(intent.getAction().equals(SCREEN_ON)) {
+				Log.d(TAG,"SCREEN_ON++++++++++++++++++");
+				
+				return;
+			}
+			
 		}					
 	}
 	

@@ -60,6 +60,7 @@ abstract public class TVEpgScanner{
 	private native void native_epg_destroy();
 	private native void native_epg_change_mode(int op, int mode);
 	private native void native_epg_monitor_service(int src_id);
+	private native void native_epg_set_dvb_text_coding(String coding);
 
 	/** Load native library*/
 	static{
@@ -172,6 +173,11 @@ abstract public class TVEpgScanner{
 		stopScan(SCAN_PAT|SCAN_PMT);
 		native_epg_monitor_service(-1);
 		program_id = -1;
+	}
+
+	/*Set the default dvb text coding, 'standard' indicates using DVB text coding standard*/
+	public void setDvbTextCoding(String coding){
+		native_epg_set_dvb_text_coding(coding);
 	}
 
     abstract void onEvent(Event event);

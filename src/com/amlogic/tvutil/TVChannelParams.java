@@ -37,6 +37,8 @@ public class TVChannelParams  implements Parcelable {
 	public static final int MODE_ATSC = 3;
 	/**模拟模式*/
 	public static final int MODE_ANALOG = 4;
+	/**DTMB模式*/
+	public static final int MODE_DTMB = 5;
 
 	/**
 	 *由字符串获得调制模式
@@ -54,6 +56,8 @@ public class TVChannelParams  implements Parcelable {
 			return MODE_ATSC;
 		else if(str.equals("analog"))
 			return MODE_ANALOG;
+		else if(str.equals("dtmb"))
+			return MODE_DTMB;
 
 		return -1;
 	}
@@ -221,7 +225,7 @@ public class TVChannelParams  implements Parcelable {
 			symbolRate = in.readInt();
 		if(mode == MODE_QAM)
 			modulation = in.readInt();
-		if(mode == MODE_OFDM)
+		if(mode == MODE_OFDM || mode == MODE_DTMB)
 			bandwidth = in.readInt();
 		if(mode == MODE_ANALOG){
 			audio = in.readInt();
@@ -244,7 +248,7 @@ public class TVChannelParams  implements Parcelable {
 			dest.writeInt(symbolRate);
 		if(mode == MODE_QAM)
 			dest.writeInt(modulation);
-		if(mode == MODE_OFDM)
+		if(mode == MODE_OFDM || mode == MODE_DTMB)
 			dest.writeInt(bandwidth);
 		if(mode == MODE_ANALOG){
 			dest.writeInt(audio);
@@ -357,6 +361,21 @@ public class TVChannelParams  implements Parcelable {
 		tp.audio     = audio;
 		tp.standard  = std;
 		tp.afc_data  = afc_flag;
+		return tp;
+	}
+
+	/**
+	 *创建DTMB参数
+	 *@param frequency 频率Hz为单位
+	 *@param bandwidth 带宽
+	 *@return 返回新创建的参数
+	 */
+	public static TVChannelParams dtmbParams(int frequency, int bandwidth){
+		TVChannelParams tp = new TVChannelParams(MODE_DTMB);
+
+		tp.frequency = frequency;
+		tp.bandwidth = bandwidth;
+
 		return tp;
 	}
 
@@ -652,7 +671,7 @@ public class TVChannelParams  implements Parcelable {
 	 *@return true表示是DVB模式，false表示不是DVB模式
 	 */
 	public boolean isDVBMode(){
-		if((mode==MODE_QPSK) || (mode==MODE_QAM) || (mode==MODE_OFDM)){
+		if((mode==MODE_QPSK) || (mode==MODE_QAM) || (mode==MODE_OFDM) || (mode==MODE_DTMB)){
 			return true;
 		}
 
@@ -720,6 +739,18 @@ public class TVChannelParams  implements Parcelable {
 	}
 
 	/**
+	 *判断是参数否为DTMB模式
+	 *@return true表示是DTMB模式，false表示不是DTMB模式
+	 */
+	public boolean isDTMBMode(){
+		if(mode==MODE_DTMB){
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 *取得频率(单位Hz)
 	 @return 返回频率
 	 */
@@ -758,11 +789,11 @@ public class TVChannelParams  implements Parcelable {
 	}
 
 	/**
-	 *取得带宽(OFDM模式)
+	 *取得带宽(OFDM模式或者DTMB模式)
 	 *@return 返回带宽
 	 */
 	public int getBandwidth(){
-		if(mode != MODE_OFDM)
+		if(mode != MODE_OFDM && mode != MODE_DTMB)
 			throw new UnsupportedOperationException();
 
 		return bandwidth;

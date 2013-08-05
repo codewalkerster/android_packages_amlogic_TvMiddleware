@@ -136,7 +136,6 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
     log_info("Opening demux%d ...", dmx_id);
     memset(&dmx_para, 0, sizeof(dmx_para));
     AM_DMX_Open(dmx_id, &dmx_para);
-    AM_DMX_SetSource(dmx_id, AM_DMX_SRC_TS2);
     
 	para.fend_dev = fend_id;
 	para.dmx_dev  = dmx_id;
@@ -212,13 +211,28 @@ static void epg_monitor_service(JNIEnv* env, jobject obj, jint srv_id)
 		log_error("AM_EPG_MonitorService failed");
 }
 
+static void epg_set_dvb_text_coding(JNIEnv* env, jobject obj, jstring coding)
+{
+	const char *str = (*env)->GetStringUTFChars(env, coding, 0);
+
+	if (str != NULL){
+		if (!strcmp(str, "standard"))
+			str = "";
+		
+		AM_SI_SetDefaultDVBTextCoding(str);
+	
+		(*env)->ReleaseStringUTFChars(env ,coding, str);
+	}
+}
+
 static JNINativeMethod epg_methods[] = 
 {
 	/* name, signature, funcPtr */
 	{"native_epg_create", "(III)V", (void*)epg_create},
 	{"native_epg_destroy", "()V", (void*)epg_destroy},
 	{"native_epg_change_mode", "(II)V", (void*)epg_change_mode},
-	{"native_epg_monitor_service", "(I)V", (void*)epg_monitor_service}
+	{"native_epg_monitor_service", "(I)V", (void*)epg_monitor_service},
+	{"native_epg_set_dvb_text_coding", "(Ljava/lang/String;)V", (void*)epg_set_dvb_text_coding}
 };
 
 //JNIHelp.h ????

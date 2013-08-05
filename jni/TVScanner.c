@@ -428,6 +428,11 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
         fparam[i].atsc.para.frequency = (*env)->GetIntField(env, para, freq);	
         fparam[i].atsc.para.u.vsb.modulation = (*env)->GetIntField(env, para, modulation);
         break;
+	case FE_DTMB:
+        fparam[i].dtmb.para.frequency = (*env)->GetIntField(env, para, freq);
+        fparam[i].dtmb.para.inversion = 0;
+        fparam[i].dtmb.para.u.ofdm.bandwidth = (*env)->GetIntField(env, para, bandwidth);
+        break;
     default:
         break;
     }
@@ -681,6 +686,18 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
     return 0;
 }
 
+static void tv_scan_reconnect_dmx_to_fend(int dmx_no, int fend_no)
+{
+    AM_DMX_Source_t src;
+    
+    if (AM_FEND_GetTSSource(fend_no, &src) == AM_SUCCESS){
+        log_info("Set demux%d source to %d", dmx_no, src);
+        AM_DMX_SetSource(dmx_no, src);
+    }else{
+        log_error("Cannot get frontend ts source!!");
+    }
+}
+
 /**\brief 开始搜索*/
 static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
 {
@@ -721,7 +738,12 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
     log_info("Opening demux%d ...", para.dtv_para.dmx_dev_id);
     memset(&dmx_para, 0, sizeof(dmx_para));
     AM_DMX_Open(para.dtv_para.dmx_dev_id, &dmx_para);
-    AM_DMX_SetSource(para.dtv_para.dmx_dev_id, AM_DMX_SRC_TS2);
+
+    if ((para.dtv_para.mode&0x07) != AM_SCAN_DTVMODE_NONE){
+        AM_FEND_SetMode(para.fend_dev_id, para.dtv_para.source);
+        tv_scan_reconnect_dmx_to_fend(para.dtv_para.dmx_dev_id, para.fend_dev_id);
+    }
+    
     prog->dmx_id = para.dtv_para.dmx_dev_id;
     prog->fend_id = para.fend_dev_id;
     prog->mode = para.dtv_para.mode;

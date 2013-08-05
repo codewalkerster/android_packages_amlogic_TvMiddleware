@@ -797,7 +797,7 @@ public class TVProgram{
 		TVProgram p = null;
 		String cmd;
 
-		cmd = "select * from srv_table where skip = 0 and ";
+		cmd = "select * from srv_table where ";
 		if(type != TYPE_UNKNOWN){
 			if(type == TYPE_DTV){
 				cmd += "(service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") and ";
@@ -2314,7 +2314,7 @@ public class TVProgram{
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
 				null,
-				"update srv_table set chan_order = "+ pos,
+				"update srv_table set chan_order = "+ pos+ " where db_id = "+this.id,
 				null, null);
 
 		if(c != null){

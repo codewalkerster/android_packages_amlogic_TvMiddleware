@@ -289,6 +289,7 @@ public class TVScanParams implements Parcelable {
 		sp.dtvMode = DTV_MODE_ALLBAND;
 		sp.fendID = fendID;
 		sp.tsSourceID  = tsSourceID;
+        sp.chooseListParams = null;
 
 		return sp;
 	}

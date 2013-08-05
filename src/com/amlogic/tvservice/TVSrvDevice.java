@@ -20,6 +20,7 @@ import java.io.FileWriter;
 
 import android.util.Log;
 import android.amlogic.Tv;
+import android.amlogic.Tv.*;
 import android.amlogic.Tv.Frontend_Para;
 import android.amlogic.Tv.SigInfoChangeListener;
 import android.amlogic.Tv.SourceSwitchListener;
@@ -157,6 +158,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             tv.SetSourceInput(Tv.SrcInput.MPEG);
         else if (source == TVConst.SourceInput.SOURCE_SVIDEO)
             tv.SetSourceInput(Tv.SrcInput.SVIDEO);
+		else if (source == TVConst.SourceInput.SOURCE_HDMI_4K2K)
+            tv.SetSourceInput(Tv.SrcInput.HDMI4K2K);
+		else if (source == TVConst.SourceInput.SOURCE_USB_4K2K)
+            tv.SetSourceInput(Tv.SrcInput.USB4K2K);
         // **********************temp************************
         // Event myEvent = new Event(Event.EVENT_SET_INPUT_SOURCE_OK);
         // this.onEvent(myEvent);
@@ -220,6 +225,14 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         {
             source = TVConst.SourceInput.SOURCE_SVIDEO;
         }
+		 else if (val == Tv.SrcInput.HDMI4K2K.toInt())
+        {
+            source = TVConst.SourceInput.SOURCE_HDMI_4K2K;
+        }
+		  else if (val == Tv.SrcInput.USB4K2K.toInt())
+        {
+            source = TVConst.SourceInput.SOURCE_USB_4K2K;
+        }
 
         return source;
     }
@@ -231,6 +244,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
     public void switchDTVAudio(int pid, int afmt)
     {
+	    Log.d(TAG, "switchDTVAudio "+pid + " " + afmt);
+	    tv.SwitchDTVAudio(pid,afmt);
     }
 
     public void setFrontend(TVChannelParams params)
@@ -249,6 +264,8 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
             tv.SetFrontEnd(params.mode, params.frequency, params.bandwidth, 0);
         else if (params.mode == TVChannelParams.MODE_ATSC)
             tv.SetFrontEnd(params.mode, params.frequency, params.modulation, 0);
+	    else if (params.mode == TVChannelParams.MODE_DTMB)
+            tv.SetFrontEnd(params.mode, params.frequency,  params.bandwidth , 0);
         
     }
 
@@ -602,6 +619,10 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 Log.v(TAG, " MODE_ATSC");
                 tvChannelPara = TVChannelParams.atscParams(freq, para1);
                 break;
+			 case TVChannelParams.MODE_DTMB:
+                Log.v(TAG, " MODE_DTMB");
+                tvChannelPara = TVChannelParams.dtmbParams(freq, para1);
+                break;
         }
 
         return tvChannelPara;
@@ -679,7 +700,17 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 	if(name.equals("SetDisplayMode"))//For DisPlay Mode 2.19
                 	{
                 		userValue = get_screen_mode(userValue);
+						if(userValue == 5 && IsFmtHighResolution())
+						{
+							TVDeviceImpl.tv.SetDisplayModeWithoutSave(Tv.Dis_Mode.DISPLAY_MODE_169,Tv.Source_Input_Type.values()[mysource],Tv.tvin_sig_fmt_e.values()[fmt]);
+							TVDeviceImpl.tv.SaveDisplay(Tv.Dis_Mode.values()[userValue],Tv.Source_Input_Type.values()[mysource],Tv.tvin_sig_fmt_e.values()[fmt]);
+						}							
+						else//add for 1920x1200 in HDMI 6.13
+						{
+							TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource, fmt);
+						}
                 	}
+					else
                     TVDeviceImpl.tv.TvITFExecute(name, userValue, mysource, fmt);
                 }
                 else if (name.equals("SetVGAPhase") || name.equals("SetVGAClock") || name.equals("SetVGAHPos") || name.equals("SetVGAVPos"))
@@ -724,6 +755,20 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 
     }
 
+	private boolean IsFmtHighResolution()
+	{
+		if(tv.GetSrcInputType() != Tv.Source_Input_Type.SOURCE_TYPE_HDMI)
+			return false;
+		tvin_info_t tv_info = tv.GetCurrentSignalInfo();
+		String[] items = null;
+		if(tv_info != null){
+			items = tv_info.fmt.toString().split("_");
+			if(items[4].equals("1920X1200") || items[4].equals("1920x1200"))
+				return true;
+		}
+		return false;
+    }
+
 	
 	private int get_screen_mode( int value )
 		{
@@ -743,7 +788,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
 				value = 2;//zoom1
 				break;
 			case 4:
-				value = 3;//zoom2
+				value = 10;//zoom2
 				break;
 			case 5:
 				value = 7;//Ptop
@@ -852,6 +897,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         else if(name.equals("GetPowerOnMusicSwitch"))
         {
             myvalue = new TVConfigValue(TVDeviceImpl.tv.TvITFExecute("SSMReadPowerOnMusicSwitch"));
+			entry.setCacheable(false);
             try
             {
                 Log.d(TAG, "*******************myvalue=" + myvalue.getInt());
@@ -884,7 +930,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
         Log.d(TAG,"SetWindowSize========================"+mode+"x="+x+"y="+y+"w="+w+"h="+h);
         //w=w+x;
         //h=h+y;
-        String hole=null;
+        /*String hole=null;
         if(mode==1)
            hole = ""+x+" "+y+" "+w+" "+h+" "+mode;
         else
@@ -902,7 +948,7 @@ public abstract class TVDeviceImpl extends TVDevice implements StatusTVChangeLis
                 Log.e(TAG,"set  /sys/class/graphics/fb0/video_hole ERROR!",e);
         } 
     //  SystemProperties.set("hw.videohole.enable", "true");
-
+        */
     }
 }
 class SingletonTv

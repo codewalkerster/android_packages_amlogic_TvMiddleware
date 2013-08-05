@@ -191,7 +191,11 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 			para->sat.para.u.qpsk.symbol_rate = sym;
 			para->sat.polarisation = (AM_FEND_Polarisation_t)polar;
 			break;
-			
+		case FE_DTMB:
+			bw = env->GetIntField(chan, gChanParamsBWID);
+			para->dtmb.para.frequency = freq;
+			para->dtmb.para.u.ofdm.bandwidth = (fe_bandwidth_t)bw;
+			break;	
 	}
 }
 
@@ -212,7 +216,10 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 			break;
 		case FE_QPSK:
 			env->SetIntField(obj, gChanParamsSymID, para->u.qpsk.symbol_rate);
-			break;			
+			break;	
+		case FE_DTMB:
+			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
+			break;
 	}
 
 	return obj;

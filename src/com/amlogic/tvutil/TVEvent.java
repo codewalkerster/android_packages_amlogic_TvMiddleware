@@ -56,7 +56,6 @@ public class TVEvent{
 		col = c.getColumnIndex("db_srv_id");
 		int programID = c.getInt(col);
 		this.program = TVProgram.selectByID(context, programID);
-
 		
 		col = c.getColumnIndex("rrt_ratings");
 		String rrtRatings = c.getString(col);

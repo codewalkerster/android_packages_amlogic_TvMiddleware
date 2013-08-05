@@ -75,6 +75,11 @@ public class TVChannel{
 			satpolar = c.getInt(col);			
 			
 			this.params = TVChannelParams.dvbsParams(context, freq, symb, satid, satpolar);
+		}else if(src == TVChannelParams.MODE_DTMB){
+			col = c.getColumnIndex("bw");
+			bw = c.getInt(col);
+
+			this.params = TVChannelParams.dtmbParams(freq, bw);
 		}
 
 		this.fendID = 0;

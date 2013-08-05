@@ -322,6 +322,8 @@ public class TVConst
         SOURCE_MPEG,
         SOURCE_DTV,
         SOURCE_SVIDEO,
+	 	SOURCE_HDMI_4K2K,
+		SOURCE_USB_4K2K,
         SOURCE_MAX,
     }
     

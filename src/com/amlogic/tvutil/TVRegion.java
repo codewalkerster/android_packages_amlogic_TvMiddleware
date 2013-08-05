@@ -75,6 +75,9 @@ public class TVRegion{
 						case TVChannelParams.MODE_ANALOG:
 							channels[channelCount++] = TVChannelParams.analogParams(frequency, 0, 0, 0);
 							break;
+						case TVChannelParams.MODE_DTMB:
+							channels[channelCount++] = TVChannelParams.dtmbParams(frequency,bandwidth);
+							break;
 						default:
 							break;
 					}
