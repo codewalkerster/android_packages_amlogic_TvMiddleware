@@ -221,11 +221,12 @@ static void epg_set_dvb_text_coding(JNIEnv* env, jobject obj, jstring coding)
 	const char *str = (*env)->GetStringUTFChars(env, coding, 0);
 
 	if (str != NULL){
-		if (!strcmp(str, "standard"))
-			str = "";
+		if (!strcmp(str, "standard")){
+			AM_SI_SetDefaultDVBTextCoding("");
+		}else{
+			AM_SI_SetDefaultDVBTextCoding(str);
+		}
 		
-		AM_SI_SetDefaultDVBTextCoding(str);
-	
 		(*env)->ReleaseStringUTFChars(env ,coding, str);
 	}
 }
