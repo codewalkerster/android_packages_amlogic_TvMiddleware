@@ -7,6 +7,7 @@
 #include <android/log.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <cutils/properties.h>
 
 extern "C" {
 
@@ -890,8 +891,49 @@ static jint vidoview_h=0;
 static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
 {
 	char buf[64];
+	char outputmode[64]= {'\0'};
+	jint x_t=x;
+	jint y_t=y;
+	jint w_t=w;
+	jint h_t=h;
+	
+	property_get("ubootenv.var.outputmode",outputmode,NULL);
 
-	snprintf(buf, sizeof(buf), "%d %d %d %d", x, y, x+w, y+h);
+	if(strstr(outputmode,"1080p")!=NULL){
+		x_t=x*1920/1280;
+		y_t=y*1080/720;
+		w_t=w*1920/1280;
+		h_t=h*1080/720;
+	}
+	else if(strstr(outputmode,"720p")!=NULL){
+		
+	}
+	else if(strstr(outputmode,"1080i")!=NULL){
+		x_t=x*1920/1280;
+		y_t=y*1080/720;
+		w_t=w*1920/1280;
+		h_t=h*1080/720;
+	}
+	else if(strstr(outputmode,"576i")!=NULL){
+		x_t=x*720/1280;
+		y_t=y*576/720;
+		w_t=w*720/1280;
+		h_t=h*576/720;
+	}
+	else if(strstr(outputmode,"576p")!=NULL){
+		x_t=x*720/1280;
+		y_t=y*576/720;
+		w_t=w*720/1280;
+		h_t=h*576/720;
+	}
+	else if(strstr(outputmode,"480i")!=NULL){
+		x_t=x*720/1280;
+		y_t=y*480/720;
+		w_t=w*720/1280;
+		h_t=h*480/720;
+	}
+	
+	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, x_t+w_t, y_t+h_t);
 	vidoview_x=x;
 	vidoview_y=y;
 	vidoview_w=w;

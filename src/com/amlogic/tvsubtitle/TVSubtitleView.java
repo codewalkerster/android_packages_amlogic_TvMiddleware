@@ -179,6 +179,7 @@ public class TVSubtitleView extends View {
 	private static boolean   visible;
 	private static boolean   destroy;
 	private static Bitmap bitmap = null;
+	private static TVSubtitleView activeView=null;
 
 	private void update() {
 		postInvalidate();
@@ -281,6 +282,11 @@ public class TVSubtitleView extends View {
 	public synchronized void setActive(boolean active){
 		native_sub_set_active(active);
 		this.active = active;
+		if(active){
+			activeView = this;
+		}else if(activeView == this){
+			activeView = null;
+		}
 		postInvalidate();
 	}
 
@@ -362,6 +368,9 @@ public class TVSubtitleView extends View {
 	 * 开始图文信息解析
 	 */
 	public synchronized void startTT(){
+		if(activeView != this)
+			return;
+		
 		stopDecoder();
 
 		if(tt_params.mode==MODE_NONE)
@@ -389,6 +398,9 @@ public class TVSubtitleView extends View {
 	 * 开始字幕信息解析
 	 */
 	public synchronized void startSub(){
+		if(activeView != this)
+			return;
+		
 		stopDecoder();
 
 		if(sub_params.mode==MODE_NONE)
@@ -432,6 +444,8 @@ public class TVSubtitleView extends View {
 	 * 停止图文/字幕信息解析
 	 */
 	public synchronized void stop(){
+		if(activeView != this)
+			return;
 		stopDecoder();
 	}
 
@@ -439,6 +453,8 @@ public class TVSubtitleView extends View {
 	 * 停止图文/字幕信息解析并清除缓存数据
 	 */
 	public synchronized void clear(){
+		if(activeView != this)
+			return;
 		stopDecoder();
 		native_sub_clear();
 		tt_params.mode  = MODE_NONE;
@@ -449,6 +465,8 @@ public class TVSubtitleView extends View {
 	 * 在图文模式下进入下一页
 	 */
 	public synchronized void nextPage(){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -459,6 +477,8 @@ public class TVSubtitleView extends View {
 	 * 在图文模式下进入上一页
 	 */
 	public synchronized void previousPage(){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -470,6 +490,8 @@ public class TVSubtitleView extends View {
 	 * @param page 要跳转到的页号
 	 */
 	public synchronized void gotoPage(int page){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -480,6 +502,8 @@ public class TVSubtitleView extends View {
 	 * 在图文模式下跳转到home页
 	 */
 	public synchronized void goHome(){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -491,6 +515,8 @@ public class TVSubtitleView extends View {
 	 * @param color 颜色，COLOR_RED/COLOR_GREEN/COLOR_YELLOW/COLOR_BLUE
 	 */
 	public synchronized void colorLink(int color){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -503,6 +529,8 @@ public class TVSubtitleView extends View {
 	 * @param casefold 是否区分大小写
 	 */
 	public synchronized void setSearchPattern(String pattern, boolean casefold){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -513,6 +541,8 @@ public class TVSubtitleView extends View {
 	 * 搜索下一页
 	 */
 	public synchronized void searchNext(){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -523,6 +553,8 @@ public class TVSubtitleView extends View {
 	 * 搜索上一页
 	 */
 	public synchronized void searchPrevious(){
+		if(activeView != this)
+			return;
 		if(play_mode!=PLAY_TT)
 			return;
 
@@ -533,7 +565,6 @@ public class TVSubtitleView extends View {
 	public synchronized void onDraw(Canvas canvas){
 		Rect sr;
 		Rect dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight()- disp_bottom);
-
 		if(!active || !visible || (play_mode==PLAY_NONE)){
 			return;
 		}

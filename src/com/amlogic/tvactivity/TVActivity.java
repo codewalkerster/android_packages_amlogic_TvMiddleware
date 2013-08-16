@@ -55,6 +55,7 @@ abstract public class TVActivity extends Activity
 	private boolean connected = false;
 	private boolean externalVideoView = false;
 	private boolean externalSubtitleView = false;
+	private boolean subtitleViewActive=false;
 
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
@@ -83,6 +84,7 @@ abstract public class TVActivity extends Activity
 
 	protected void onPause(){
 		Log.d(TAG, "onPause");
+		subtitleViewActive=false;
 		if(subtitleView != null){
 			subtitleView.setActive(false);
 		}
@@ -91,7 +93,9 @@ abstract public class TVActivity extends Activity
 
 	protected void onResume(){
 		Log.d(TAG, "onResume");
+		
         super.onResume();
+		subtitleViewActive=true;
 		updateVideoWindow();
 		if(subtitleView != null){
 			subtitleView.setActive(true);
@@ -560,6 +564,9 @@ abstract public class TVActivity extends Activity
             videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE);
             updateVideoWindow();
         }
+
+		if(subtitleViewActive&&subtitleView!=null)
+			subtitleView.setActive(true);
     }
 
 	public void openVideo(){

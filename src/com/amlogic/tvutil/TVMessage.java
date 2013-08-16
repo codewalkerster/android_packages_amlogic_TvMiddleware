@@ -51,8 +51,8 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_PROGRAM_NUMBER    = 20;
 	/**录像列表更新*/
 	public static final int TYPE_RECORDS_UPDATE    = 21;
-	/**请求停止当前录像*/
-	public static final int TYPE_STOP_RECORD_REQUEST = 22;
+	/**录像冲突*/
+	public static final int TYPE_RECORD_CONFLICT   = 22;
 	/**录像已结束*/
 	public static final int TYPE_RECORD_END        = 23;
 	/**VGA信号调整成功*/
@@ -122,7 +122,6 @@ public class TVMessage implements Parcelable{
 	private int scanProgramType;
 	private String scanMsg;
 	private int inputSource;
-	private int stopRecordRequestProgramID;
 	private TvinInfo   tvin_info;
 	private int parentalRating;
 	private String vchipDimension;
@@ -142,13 +141,13 @@ public class TVMessage implements Parcelable{
 	public static final int TRANSDB_ERR_INVALID_FILE   = 1; // Invalid file format
 	public static final int TRANSDB_ERR_SYSTEM         = 2; // For other system reasons
 	
-	private int stopRecordRequestType;
-	/**停止录像以开始录制当前播放的频道*/
-	public static final int REQ_TYPE_RECORD_CURRENT  = 1;
-	/**停止录像以开始时移播放*/
-	public static final int REQ_TYPE_START_TIMESHIFT = 2;
-	/**停止录像以切换到指定频道播放*/
-	public static final int REQ_TYPE_SWITCH_PROGRAM  = 3;
+	private int recordConflict;
+	/**开始新的录像，client在得到用户确认后调用startRecording开始新的录像*/
+	public static final int REC_CFLT_START_NEW  = 0;
+	/**开始时移播放，client在得到用户确认后调用startTimeshifting开始时移播放*/
+	public static final int REC_CFLT_START_TIMESHIFT = 2;
+	/**切换频道引起的频点切换，client在得到用户确认后调用stopRecording和playProgram开始播放新的频道*/
+	public static final int REC_CFLT_SWITCH_PROGRAM  = 3;
 	
 	private int programBlockType;
 	public static final int BLOCK_BY_LOCK             = 0;
@@ -163,7 +162,7 @@ public class TVMessage implements Parcelable{
 	private static final int FLAG_SCAN       = 16;
 	private static final int FLAG_INPUT_SOURCE   = 32;
 	private static final int FLAG_PROGRAM_NUMBER = 64;
-	private static final int FLAG_STOP_RECORD    = 128;
+	private static final int FLAG_RECORD_CONFLICT= 128;
 	private static final int FLAG_PROGRAM_BLOCK  = 256;
 	private static final int FLAG_ERROR_CODE = 512;
 	private static final int FLAG_SEC = 1024;
@@ -216,9 +215,8 @@ public class TVMessage implements Parcelable{
 		else if((flags & FLAG_SCAN) != 0 &&(type == TYPE_SCAN_DTV_CHANNEL)){
                                 scanCurChanNo = in.readInt();
                         }	
-		if((flags & FLAG_STOP_RECORD) != 0){
-			stopRecordRequestType = in.readInt();
-			stopRecordRequestProgramID = in.readInt();
+		if((flags & FLAG_RECORD_CONFLICT) != 0){
+			recordConflict = in.readInt();
 		}
 		if((flags & FLAG_ERROR_CODE) != 0){
 			errorCode = in.readInt();
@@ -287,9 +285,8 @@ public class TVMessage implements Parcelable{
 		else if((flags & FLAG_SCAN) != 0 && type == TYPE_SCAN_DTV_CHANNEL){
                                 dest.writeInt(scanCurChanNo);
                         }
-		if((flags & FLAG_STOP_RECORD) != 0){
-			dest.writeInt(stopRecordRequestType);
-			dest.writeInt(stopRecordRequestProgramID);
+		if((flags & FLAG_RECORD_CONFLICT) != 0){
+			dest.writeInt(recordConflict);
 		}
 		if((flags & FLAG_ERROR_CODE) != 0){
 			dest.writeInt(errorCode);
@@ -489,26 +486,16 @@ public class TVMessage implements Parcelable{
 	}
 	
 	/**
-	 *取得停止当前录像请求类型
+	 *取得录像冲突类型
 	 *@return 返回类型
 	 */
-	public int getStopRecordRequestType() {
-		if((flags & FLAG_STOP_RECORD) != FLAG_STOP_RECORD)
+	public int getRecordConflict() {
+		if((flags & FLAG_RECORD_CONFLICT) != FLAG_RECORD_CONFLICT)
 			throw new UnsupportedOperationException();
 
-		return stopRecordRequestType;
+		return recordConflict;
 	}
 	
-	/**
-	 *取得停止当前录像后切换到的program ID
-	 *@return 返回TVProgram ID
-	 */
-	public int getStopRecordRequestProgramID() {
-		if((flags & FLAG_STOP_RECORD) != FLAG_STOP_RECORD)
-			throw new UnsupportedOperationException();
-
-		return stopRecordRequestProgramID;
-	}
 	
 	/**
 	 *取得错误代码
@@ -979,12 +966,12 @@ public class TVMessage implements Parcelable{
 		return msg;
 	}
 	
-	public static TVMessage stopRecordRequest(int requestType, int arg){
+	public static TVMessage recordConflict(int conflict, int newRecordProgramID){
 		TVMessage msg = new TVMessage();
-		msg.type = TYPE_STOP_RECORD_REQUEST;
-		msg.flags = FLAG_STOP_RECORD;
-		msg.stopRecordRequestType = requestType;
-		msg.stopRecordRequestProgramID = arg;
+		msg.type = TYPE_RECORD_CONFLICT;
+		msg.flags = FLAG_PROGRAM_ID | FLAG_RECORD_CONFLICT;
+		msg.recordConflict = conflict;
+		msg.programID = newRecordProgramID;
 
 		return msg;
 	}

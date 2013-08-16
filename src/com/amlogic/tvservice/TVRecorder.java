@@ -107,12 +107,15 @@ abstract public class TVRecorder{
 
 				if (recordParams != null && 
 					recordParams.booking != null &&
-					recordParams.booking.getID() >= 0){
+					recordParams.booking.getID() >= 0 && 
+					recordParams.booking.getStatus() != TVBooking.ST_END){
+					
 					recordParams.booking.updateStatus(TVBooking.ST_END);
 				}
-				
+													
 				status = ST_IDLE;
 				recordParams = null;
+
 				break;
 		}
 	}
@@ -173,6 +176,15 @@ abstract public class TVRecorder{
 		}
 		
 		tvDevice.stopRecording();
+		
+		if (recordParams != null && 
+			recordParams.booking != null &&
+			recordParams.booking.getID() >= 0){
+			recordParams.booking.updateStatus(TVBooking.ST_END);	
+		}
+		
+		status = ST_IDLE;
+		recordParams = null;
 	}
 	
 	public DTVRecordParams getRecordingParams(){

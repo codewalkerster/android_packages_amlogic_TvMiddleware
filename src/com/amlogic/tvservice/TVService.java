@@ -830,6 +830,9 @@ public class TVService extends Service implements TVConfig.Update{
 				viewingBook[i].updateStatus(TVBooking.ST_END);
 			}
 		}
+
+		checkBlock=true;
+		programBlocked=false;
 	}
 
 	private void stopScan(boolean store){
@@ -935,13 +938,16 @@ public class TVService extends Service implements TVConfig.Update{
 		if ((book.getFlag() & TVBooking.FL_PLAY) != 0){
 			needPlay = true;
 		}
+
+		TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
+
  		if ((book.getFlag() & TVBooking.FL_RECORD) != 0){
  			/* stop the current recording */
  			stopRecording();
 			/* check if the channel changed */
 			int playChanID = (playingProgram!=null) ? playingProgram.getChannel().getID() : -1;
 			int recChanID = requestProgram.getChannel().getID();
-			TVRecorder.TVRecorderParams param = recorder.new TVRecorderParams();
+			
 			param.booking = book;
 			param.isTimeshift = false;
 			if(playChanID != recChanID){
@@ -951,13 +957,15 @@ public class TVService extends Service implements TVConfig.Update{
 			}else{
 				param.fendLocked = (programID != -1);
 			}
-		
-			recorder.startRecord(param);
 		}
 		
 		if (needPlay){
 			TVPlayParams tp = TVPlayParams.playProgramByID(requestProgram.getID());
 			resolvePlayProgram(tp);
+		}
+
+		if ((book.getFlag() & TVBooking.FL_RECORD) != 0){
+			recorder.startRecord(param);
 		}
 	}
 	
@@ -987,8 +995,8 @@ public class TVService extends Service implements TVConfig.Update{
 				}	
 			}
 			/**send message to clients to solve this conflict*/
-			sendMessage(TVMessage.stopRecordRequest(
-				isTimeshift ? TVMessage.REQ_TYPE_START_TIMESHIFT : TVMessage.REQ_TYPE_RECORD_CURRENT, 
+			sendMessage(TVMessage.recordConflict(
+				isTimeshift ? TVMessage.REC_CFLT_START_TIMESHIFT : TVMessage.REC_CFLT_START_NEW, 
 				playingProgram.getID()));
 			return;
 		}
@@ -1300,18 +1308,6 @@ public class TVService extends Service implements TVConfig.Update{
 			}		
 		}
 		
-		if((channelParams != null) && !channelParams.equals(fe_params)){
-			if (recorder.isRecording()){
-				/*Channel will change, but currently is recording,
-				 *let the client to make the choice*/
-				Log.d(TAG, "Switch channel while in recording.");
-				sendMessage(TVMessage.stopRecordRequest(
-					TVMessage.REQ_TYPE_SWITCH_PROGRAM,
-					p.getID()));
-				return;
-			}
-		}
-		
 		synchronized(this){
 			programNum = p.getNumber();
 			programType = p.getType();
@@ -1508,16 +1504,30 @@ public class TVService extends Service implements TVConfig.Update{
 			Log.d(TAG, "Cannot get the program to play.");
 			return;
 		}
+
+		TVChannel chan = prog.getChannel();
+		if(chan == null || chan.getParams() == null){
+			Log.d(TAG, "Cannot get the channel to play.");
+			return;
+		}
+			
+		if((channelParams != null) && !channelParams.equals(chan.getParams())){
+			if (recorder.isRecording()){
+				/*Channel will change, but currently is recording,
+				 *let the client to make the choice*/
+				Log.d(TAG, "Switch channel while in recording.");
+				sendMessage(TVMessage.recordConflict(
+					TVMessage.REC_CFLT_SWITCH_PROGRAM,
+					prog.getID()));
+				return;
+			}
+		}
 		
 		/*Stop playing*/
 		if(prog.getID() != programID){
 			stopPlaying();
 		}
 
-		TVChannel chan = prog.getChannel();
-		if(chan == null)
-			return;
-			
 		/*Send program switch message.*/
 		sendMessage(TVMessage.programSwitch(prog.getID()));
 			
@@ -2227,10 +2237,20 @@ public class TVService extends Service implements TVConfig.Update{
 		Log.d(TAG, "Try to play a valid program...");
 		if (p == null){
 			int id = -1;
+			int progType = TVProgram.TYPE_DTV;
+			
 			Log.d(TAG, "Cannot play last played program, try first valid program.");
-			TVProgram fvp = TVProgram.selectFirstValid(this, getCurProgramType());
+
+			if((inputSource == TVConst.SourceInput.SOURCE_ATV))
+				progType = TVProgram.TYPE_ATV;
+
+			TVProgram fvp = TVProgram.selectFirstValid(this, progType);
 			if (fvp != null){
 				id = fvp.getID();
+
+				/* update the current dtv program type */
+				if (fvp.getType() != dtvProgramType)
+					dtvProgramType = fvp.getType();
 			}else{
 				if(dtvMode == TVChannelParams.MODE_ATSC){
 					TVRegion curReg = getCurrentRegion();
@@ -2316,6 +2336,7 @@ public class TVService extends Service implements TVConfig.Update{
 		   (status == TVRunningStatus.STATUS_PLAY_DTV)){
 			checkBlock = false;
 			playCurrentProgramAV();
+			sendMessage(TVMessage.programUnblock(programID));
 		}
 	}
 
