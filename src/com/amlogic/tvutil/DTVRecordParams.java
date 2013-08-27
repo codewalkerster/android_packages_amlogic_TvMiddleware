@@ -42,6 +42,7 @@ public class DTVRecordParams implements Parcelable {
 		recTotalTime   = in.readLong();
 		programID      = in.readInt();
 		programName    = in.readString();
+		recFilePath    = in.readString();
 		
 		int pid, fmt;
 		String lang;
@@ -103,6 +104,7 @@ public class DTVRecordParams implements Parcelable {
 		dest.writeLong(recTotalTime);
 		dest.writeInt(programID);
 		dest.writeString(programName);
+		dest.writeString(recFilePath);
 
 		/* write video */
 		if (video != null){

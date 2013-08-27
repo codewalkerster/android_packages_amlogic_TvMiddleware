@@ -581,7 +581,6 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 #define READ_INT(_i)\
 	AM_MACRO_BEGIN\
 		if ((info_len-pos) >= 4){\
-			(_i) = ((int)buf[pos]<<24) | ((int)buf[pos+1]<<16) | ((int)buf[pos+2]<<8) | (int)buf[pos+3];\
 			pos += 4;\
 		}else{\
 			goto read_error;\
@@ -825,6 +824,21 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	free(dev);
 }
 
+unsigned long getSDKVersion(){
+    char prop_value[PROPERTY_VALUE_MAX];
+    const char *strDelimit = ".";
+	unsigned long version=0;
+   
+    memset(prop_value, '\0', PROPERTY_VALUE_MAX);
+    property_get("ro.build.version.sdk",prop_value,"SDK_VERSION_ERR");
+	LOGE("VERSION_NUM %s", prop_value);
+    if (strcmp(prop_value, "\0") != 0) {
+		version = strtol(prop_value, NULL, 10);
+		LOGE("VERSION_NUM --- %ld", version);
+    }
+	return version;
+}
+
 static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 {
 	jobject evt;
@@ -866,20 +880,29 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 		if(!di)
 		{
 			/*disable deinterlace*/
-			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
-			LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
+			if(getSDKVersion()<17){
+				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
+				LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
+			}	
 		}
 		else
 		{
 			/*enable deinterlace*/
-			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
-			LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
-		}		
+			if(getSDKVersion()<17){
+				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
+				LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
+			}	
+		}
+
+		AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
+		AM_AV_ClearVideoBuffer(AV_DEV_NO);
 	}
 	else
 	{
-		AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
-		LOGE("AM_AV_SetVPathPara exit\n");
+		if(getSDKVersion()<17){	
+			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
+			LOGE("AM_AV_SetVPathPara exit\n");
+		}
 	}
 	
 }
@@ -890,13 +913,15 @@ static jint vidoview_w=0;
 static jint vidoview_h=0;
 static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
 {
+	//LOGE("--dev_set_video_window--%d ---%d---%d---%d\n",x,y,w,h);
 	char buf[64];
 	char outputmode[64]= {'\0'};
 	jint x_t=x;
 	jint y_t=y;
 	jint w_t=w;
 	jint h_t=h;
-	
+
+	/*	
 	property_get("ubootenv.var.outputmode",outputmode,NULL);
 
 	if(strstr(outputmode,"1080p")!=NULL){
@@ -932,7 +957,13 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 		w_t=w*720/1280;
 		h_t=h*480/720;
 	}
-	
+	else if(strstr(outputmode,"480p")!=NULL){
+		x_t=x*720/1280;
+		y_t=y*480/720;
+		w_t=w*720/1280;
+		h_t=h*480/720;
+	}
+	*/
 	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, x_t+w_t, y_t+h_t);
 	vidoview_x=x;
 	vidoview_y=y;
@@ -1095,6 +1126,7 @@ static void dev_play_dtv(JNIEnv *env, jobject obj, jint vpid, jint vfmt, jint ap
 		return;
 
 	AM_AV_StartTS(AV_DEV_NO, vpid, apid, (AM_AV_VFormat_t)vfmt, (AM_AV_AFormat_t)afmt);
+	//LOGE("dev_play_dtv---%d---%d---%d---%d\n",vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 	dev_set_video_window(env,obj,vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 }
 
@@ -1116,7 +1148,6 @@ static void dev_stop_dtv(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
-
 	AM_AV_StopTS(AV_DEV_NO);
 }
 

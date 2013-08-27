@@ -83,7 +83,7 @@ abstract public class TVRecorder{
 		
 		return 0;
 	}
-	
+
 	public TVRecorder(Context context){	
 		this.context = context;
 		

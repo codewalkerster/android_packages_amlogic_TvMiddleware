@@ -589,7 +589,8 @@ public class TVSubtitleView extends View {
 			init_count--;
 			destroy = true;
 			if(init_count == 0){
-				clear();
+				stopDecoder();
+				native_sub_clear();
 				native_sub_destroy();
 			}
 		}

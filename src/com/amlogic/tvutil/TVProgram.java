@@ -1261,7 +1261,7 @@ public class TVProgram{
 		TVProgram p[] = null;
 		String cmd;
 
-		cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and service_type = "+type;
+		cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and service_type = "+type +" order by chan_num";
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -2345,7 +2345,7 @@ public class TVProgram{
 		
 		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
 				null,
-				"update srv_table set name = "+"\'"+name+"\'"+" where srv_table.db_id = " + id,
+				"update srv_table set name = "+"\'"+sqliteEscape(name)+"\'"+" where srv_table.db_id = " + id,
 				null, null);
 		if(c != null){
 			c.close();

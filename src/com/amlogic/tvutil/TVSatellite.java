@@ -160,7 +160,7 @@ public class TVSatellite{
 				String cmd_i = "insert into sat_para_table(sat_name,lnb_num,lof_hi,lof_lo,lof_threshold,signal_22khz,";
 				cmd_i += "voltage,motor_num,pos_num,lo_direction,la_direction,longitude,latitude,";
 				cmd_i += "sat_longitude,diseqc_mode,tone_burst,committed_cmd,uncommitted_cmd,repeat_count,sequence_repeat,fast_diseqc,cmd_order) ";
-				cmd_i += "values('"+ sat_name + "',0"+ ",10600000" + ",9750000" + ",11700000" + "," + TVSatelliteParams.SEC_22k_AUTO;
+				cmd_i += "values('"+ sqliteEscape(sat_name) + "',0"+ ",10600000" + ",9750000" + ",11700000" + "," + TVSatelliteParams.SEC_22k_AUTO;
 				cmd_i += "," + TVSatelliteParams.SEC_VOLTAGE_AUTO + ",0,0,0,0,0,0";
 				cmd_i += "," + sat_longitude + "," + TVSatelliteParams.DISEQC_MODE_NONE + "," + TVSatelliteParams.SEC_TONE_BURST_NONE;
 				cmd_i += "," + TVSatelliteParams.DISEQC_NONE + "," + TVSatelliteParams.DISEQC_NONE + ",0,0,0,0)";

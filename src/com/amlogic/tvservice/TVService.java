@@ -35,6 +35,7 @@ import com.amlogic.tvutil.TVEvent;
 import com.amlogic.tvutil.TVRegion;
 import com.amlogic.tvutil.TVDBTransformer;
 import com.amlogic.tvdataprovider.TVDataProvider;
+import android.os.SystemClock;
 import android.os.Looper;
 import com.amlogic.tvutil.TvinInfo;
 import android.content.BroadcastReceiver;
@@ -2381,17 +2382,84 @@ public class TVService extends Service implements TVConfig.Update{
 		device.setSecRequest(sectype, seccurparams, sec_msg.getSecPositionerMoveUnit());
 	}
 
+	public void dynamicConfigFeAndDmx(){
+		String valuefe = null;
+		String valuedmx = null;
+
+		Log.d(TAG, "dynamicConfigFeAndDmx !!!");
+
+		try{
+			valuefe = config.getString("tv:dtv:configfe");
+			Log.d(TAG, "valuefe = " + valuefe);
+			
+			valuedmx = config.getString("tv:dtv:configdmx");
+			Log.d(TAG, "valuedmx = " + valuedmx);
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot read dynamic info !!!");
+		}			
+
+		try{
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/aml_fe_dynamic_config"));
+			try {
+				writer.write(valuefe);
+			} finally {
+				writer.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot config fe !!!");
+		}
+
+		try{
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/dmx/aml_dmx_dynamic_config"));
+			try {
+				writer.write(valuedmx);
+			} finally {
+				writer.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot config dmx !!!");
+		}		
+
+		int i = 0;
+		do{
+			SystemClock.sleep(200);
+
+			i++;
+
+			if(i == 10)
+				break;
+			
+			File file = new File("/dev/dvb0.frontend0");
+
+			if(file.exists())
+				break;
+		}while(true);
+
+	}	
+
 	public IBinder onBind (Intent intent){
 		return mBinder;
 	}
 
 	public void onCreate(){
 		super.onCreate();	
+
+		config = new TVConfig(this);
+
+		dynamicConfigFeAndDmx();
+		
 		device = new TVDeviceImpl( this.getMainLooper()){
 			/*Device event handler*/
 			public void onEvent(TVDevice.Event event){
-				Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
-				handler.sendMessage(msg);
+				if (event.type == TVDevice.Event.EVENT_RECORD_END){
+					recorder.onRecordEvent(event);
+				}else{
+					Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
+					handler.sendMessage(msg);
+				}
 			}
 		};
 		
@@ -2399,8 +2467,6 @@ public class TVService extends Service implements TVConfig.Update{
 
 		TVDataProvider.openDatabase(this);
 	
-		config = new TVConfig(this);
-
 		bookManager.open(time, config);
 
 		try{
@@ -2454,6 +2520,11 @@ public class TVService extends Service implements TVConfig.Update{
 		bookManager.close();
 		recorder.close();
 		TVDataProvider.closeDatabase(this);
+		try{
+			device.dispose();
+		}catch (Throwable e){
+			Log.d(TAG, "Failed to dispose device");
+		}
 		super.onDestroy();
 	}
     

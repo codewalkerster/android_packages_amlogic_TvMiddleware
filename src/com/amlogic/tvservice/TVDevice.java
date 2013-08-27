@@ -49,6 +49,9 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	public TVDevice(){
 	}
 
+	public void dispose() throws Throwable {
+		finalize();
+	}
 	
 	abstract public void setInputSource(TVConst.SourceInput source);
 
