@@ -76,11 +76,11 @@ abstract public class TVRecorder{
 
 		DTVRecordParams recStartPara = new DTVRecordParams(book,storePath+"/"+STORE_DIR, 
 			prefixName, SUFFIX_NAME, recordParams.isTimeshift);
-		
-		tvDevice.startRecording(recStartPara);
-		
+
 		status = ST_RECORDING;
 		
+		tvDevice.startRecording(recStartPara);
+				
 		return 0;
 	}
 
@@ -100,7 +100,7 @@ abstract public class TVRecorder{
 		tvDevice = null;
 	}
 	
-	public void onRecordEvent(TVDevice.Event event){
+	public synchronized void onRecordEvent(TVDevice.Event event){
 		switch(event.type){
 			case TVDevice.Event.EVENT_RECORD_END:
 				Log.d(TAG, "Recorder get record end from device");

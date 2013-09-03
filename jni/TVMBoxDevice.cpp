@@ -764,6 +764,7 @@ static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 
 	if (evttype == EVENT_PLAYBACK_START){
 		jobject info = mediainfo_to_object(env, dev->dev_obj, &dev->timeshift_para.media_info);
+		env->SetBooleanField(info, gRecParamsTimeshiftID, dev->timeshift_para.mode == AM_AV_TIMESHIFT_MODE_TIMESHIFTING);
 		env->SetObjectField(event, gEventRecParamsID, info);
 	}
 
@@ -1260,6 +1261,7 @@ static void dev_start_playback(JNIEnv *env, jobject obj, jobject params)
 		dev->in_timeshifting = AM_TRUE;
 
 		dev->timeshift_para.media_info = para.media_info;
+		dev->timeshift_para.mode = para.mode;
 	}
 }
 

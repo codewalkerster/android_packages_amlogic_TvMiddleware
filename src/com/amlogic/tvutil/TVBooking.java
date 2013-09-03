@@ -182,6 +182,7 @@ public class TVBooking{
 	
 	public TVBooking(TVProgram program, long start, long duration){
 		this.id = -1;
+		this.flag = FL_PLAY | FL_RECORD;
 		this.program = program;
 		this.start = start;
 		this.duration = duration;

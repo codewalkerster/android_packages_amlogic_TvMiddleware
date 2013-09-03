@@ -126,17 +126,28 @@ abstract public class TVClient
 						case TVMessage.TYPE_PLAYBACK_START:
 							DTVRecordParams minfo = tvmsg.getPlaybackMediaInfo();
 							if (minfo != null && currProgramType != TVProgram.TYPE_PLAYBACK){
-								TVProgram playbackProg = new TVProgram(
-									TVClient.this.context, 
-									minfo.getProgramName(), 
-									TVProgram.TYPE_PLAYBACK, 
-									minfo.getVideo(), 
-									minfo.getAllAudio(), 
-									minfo.getAllSubtitle(),
-									minfo.getAllTeletext());
+								TVProgram playbackProg = null;
+
+								if (minfo.getTimeshiftMode()){
+									/* right the last played program */
+									playbackProg = TVProgram.selectByID(TVClient.this.context,
+														getIntConfig("tv:last_program_id"));
+								}
+
+								if (playbackProg == null){
+									/* construct a new playplack type program */
+									playbackProg = new TVProgram(
+										TVClient.this.context, 
+										minfo.getProgramName(), 
+										TVProgram.TYPE_PLAYBACK, 
+										minfo.getVideo(), 
+										minfo.getAllAudio(), 
+										minfo.getAllSubtitle(),
+										minfo.getAllTeletext());
+								}
 								
 								if(playbackProg != null){
-									currProgramType = playbackProg.getType();
+									currProgramType = TVProgram.TYPE_PLAYBACK;
 									currProgramNo   = playbackProg.getNumber();
 									currProgramID   = playbackProg.getID();
 								}
@@ -683,7 +694,7 @@ abstract public class TVClient
 		try{
 			b = value.getBoolean();
 		}catch(Exception e){
-			Log.e(TAG, "The config is not a boolean value");
+			Log.e(TAG, "The config is not a boolean value: " + name);
 		}
 
 		return b;
@@ -701,7 +712,7 @@ abstract public class TVClient
 		try{
 			i = value.getInt();
 		}catch(Exception e){
-			Log.e(TAG, "The config is not an integer value");
+			Log.e(TAG, "The config is not an integer value: " + name);
 		}
 
 		return i;
@@ -719,7 +730,7 @@ abstract public class TVClient
 		try{
 			s = value.getString();
 		}catch(Exception e){
-			Log.e(TAG, "The config is not a string value");
+			Log.e(TAG, "The config is not a string value: " + name);
 		}
 
 		return s;

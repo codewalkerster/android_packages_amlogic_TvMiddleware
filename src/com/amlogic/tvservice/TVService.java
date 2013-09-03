@@ -800,6 +800,36 @@ public class TVService extends Service implements TVConfig.Update{
 		return chanNo;
 	}
 
+	private TVProgram getValidProgram(int type){
+		int lastPlayedID = -1;
+		TVProgram p;
+		boolean typeMatch = false;
+		
+		try{
+			lastPlayedID = config.getInt("tv:last_program_id");
+		}catch(Exception e){
+		}
+
+		p = TVProgram.selectByID(this, lastPlayedID);
+		if (p != null){
+			if (p.getType() == type){
+				typeMatch = true;
+			}else if (type == TVProgram.TYPE_DTV && 
+				(p.getType() == TVProgram.TYPE_TV || 
+				 p.getType() == TVProgram.TYPE_RADIO)){
+				 typeMatch = true;
+			}
+		}
+
+		if (! typeMatch){
+			Log.d(TAG, "Get first valid program at type " + type); 
+			
+			p = TVProgram.selectFirstValid(this, type);
+		}
+
+		return p;
+	}
+
 	private void stopPlaying(){
 		if(status == TVRunningStatus.STATUS_PLAY_ATV){
 			device.stopATV();
@@ -1190,6 +1220,12 @@ public class TVService extends Service implements TVConfig.Update{
 			if(p != null){
 				synchronized(this){
 					programID = p.getID();
+					
+					try{
+						config.set("tv:last_program_id", new TVConfigValue(programID));
+					}catch (Exception e){
+
+					}
 				}
 
 				if(!checkProgramBlock()){
@@ -1212,6 +1248,12 @@ public class TVService extends Service implements TVConfig.Update{
 
 				synchronized(this){
 					programID = p.getID();
+					
+					try{
+						config.set("tv:last_program_id", new TVConfigValue(programID));
+					}catch (Exception e){
+
+					}
 				}
 
 				/*Scan the program's EPG*/
@@ -1825,7 +1867,7 @@ public class TVService extends Service implements TVConfig.Update{
 							if(inputSource == TVConst.SourceInput.SOURCE_DTV){
 								if(dtvTVPlayParams == null && dtvRadioPlayParams == null){
 									/*Get a valid program*/
-									p = TVProgram.selectFirstValid(this, TVProgram.TYPE_DTV);
+									p = getValidProgram(TVProgram.TYPE_DTV);
 									if(p != null){
 										if(p.getType() == TVProgram.TYPE_TV)
 											dtvTVPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
@@ -1836,7 +1878,7 @@ public class TVService extends Service implements TVConfig.Update{
 							}else if(inputSource == TVConst.SourceInput.SOURCE_ATV){
 								if(atvPlayParams == null){
 									/*Get a valid program*/
-									p = TVProgram.selectFirstValid(this, TVProgram.TYPE_ATV);
+									p = getValidProgram(TVProgram.TYPE_ATV);
 									if(p != null)
 										atvPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
 								}
@@ -1866,7 +1908,7 @@ public class TVService extends Service implements TVConfig.Update{
 	                    TVProgram p = null;
 	                    TVChannelParams fe_params = null;
 	                    if(atvPlayParams == null){
-	                        p = TVProgram.selectFirstValid(this, TVProgram.TYPE_ATV);
+	                        p = getValidProgram(TVProgram.TYPE_ATV);
 	                        if(p != null)
 	                            playParams = TVPlayParams.playProgramByNumber(p.getNumber());
 	                    }else
@@ -1929,7 +1971,6 @@ public class TVService extends Service implements TVConfig.Update{
 				break;
 			case TVDevice.Event.EVENT_RECORD_END:
 				Log.d(TAG, "Record end with error code " + event.recEndCode);
-				recorder.onRecordEvent(event);
 				sendMessage(TVMessage.recordEnd(event.recEndCode));
 				break;
 			case TVDevice.Event.EVENT_VGA_ADJUST_STATUS:
@@ -2122,8 +2163,13 @@ public class TVService extends Service implements TVConfig.Update{
 			TVProgram p = null;
 			if(status == TVRunningStatus.STATUS_PLAY_DTV){
 				p = TVProgram.selectByID(this, programID);
-			}else if (status == TVRunningStatus.STATUS_TIMESHIFTING ||
-					status == TVRunningStatus.STATUS_PLAYBACK){
+			}else if (status == TVRunningStatus.STATUS_TIMESHIFTING){
+				try{
+					p = TVProgram.selectByID(this, config.getInt("tv:last_program_id"));
+				}catch(Exception e){
+
+				}
+			}else if (status == TVRunningStatus.STATUS_PLAYBACK){
 				TVProgram[] progs = TVProgram.selectByType(this, TVProgram.TYPE_PLAYBACK, false);
 				if (progs != null){
 					p = progs[0];
@@ -2245,7 +2291,7 @@ public class TVService extends Service implements TVConfig.Update{
 			if((inputSource == TVConst.SourceInput.SOURCE_ATV))
 				progType = TVProgram.TYPE_ATV;
 
-			TVProgram fvp = TVProgram.selectFirstValid(this, progType);
+			TVProgram fvp = getValidProgram(progType);
 			if (fvp != null){
 				id = fvp.getID();
 
@@ -2454,12 +2500,14 @@ public class TVService extends Service implements TVConfig.Update{
 		device = new TVDeviceImpl( this.getMainLooper()){
 			/*Device event handler*/
 			public void onEvent(TVDevice.Event event){
+				/* async processing */
 				if (event.type == TVDevice.Event.EVENT_RECORD_END){
 					recorder.onRecordEvent(event);
-				}else{
-					Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
-					handler.sendMessage(msg);
 				}
+
+				/* sync processing */
+				Message msg = handler.obtainMessage(MSG_DEVICE_EVENT, event);
+				handler.sendMessage(msg);
 			}
 		};
 		

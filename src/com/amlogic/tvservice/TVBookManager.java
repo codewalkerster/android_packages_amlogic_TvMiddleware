@@ -89,9 +89,10 @@ abstract public class TVBookManager{
 					long timeToStart = activeBooking.getStart() - tvTime.getTime();
 					long timeToEnd   =  activeBooking.getStart() +  activeBooking.getDuration() - tvTime.getTime();
 					if (startedBooking != null){
-						dialogTimeout = timeToEnd;
 						dialogTimeoutType = ReminderDialog.TIMEOUT_TO_END;
-					}else if (timeToStart <= 0 ){
+					}
+
+					if (timeToStart <= 0 ){
 						if ((timeToStart + (AUTOCANCEL_SECONDS*1000)) < 0){
 							/* Auto cancel */
 							activeBooking.updateStatus(TVBooking.ST_CANCELLED);
@@ -181,7 +182,7 @@ abstract public class TVBookManager{
 		}
 
 		long currentTime = tvTime.getTime();
-		int preNotifyTime = (getStartedBooking() == null) ? PRENOTIFY_SECONDS : 0;
+		int preNotifyTime = (getStartedBooking() == null) ? PRENOTIFY_SECONDS : PRENOTIFY_SECONDS;
 
 		for (int i=0; i<bookings.length; i++){
 			if (bookings[i].isTimeStart(currentTime+preNotifyTime*1000) && 

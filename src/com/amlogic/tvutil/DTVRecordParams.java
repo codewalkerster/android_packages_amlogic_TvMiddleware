@@ -43,6 +43,7 @@ public class DTVRecordParams implements Parcelable {
 		programID      = in.readInt();
 		programName    = in.readString();
 		recFilePath    = in.readString();
+		isTimeshift    = in.readInt() != 0;
 		
 		int pid, fmt;
 		String lang;
@@ -105,6 +106,7 @@ public class DTVRecordParams implements Parcelable {
 		dest.writeInt(programID);
 		dest.writeString(programName);
 		dest.writeString(recFilePath);
+		dest.writeInt(isTimeshift ? 1 : 0);
 
 		/* write video */
 		if (video != null){
@@ -294,6 +296,10 @@ public class DTVRecordParams implements Parcelable {
 	 */
 	public TVProgram.Teletext[] getAllTeletext(){
 		return teletexts;
+	}
+
+	public boolean getTimeshiftMode(){
+		return isTimeshift;
 	}
 	
 	public void setProgramID(int id){
