@@ -103,6 +103,9 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_PLAYBACK_STOP       = 46;
 	/**节目音视频因被加扰而无法正常播放*/
 	public static final int TYPE_PROGRAM_SCRAMBLED   = 47;
+
+	public static final int TYPE_SCREEN_OFF = 48;
+	public static final int TYPE_SCREEN_ON = 49;
 	
 	private static final String TAG="TVMessage";
 	private int type;

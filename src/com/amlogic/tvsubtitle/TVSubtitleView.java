@@ -284,8 +284,8 @@ public class TVSubtitleView extends View {
 		this.active = active;
 		if(active){
 			activeView = this;
-		}else if(activeView == this){
-			activeView = null;
+		/*}else if(activeView == this){
+			activeView = null;*/
 		}
 		postInvalidate();
 	}

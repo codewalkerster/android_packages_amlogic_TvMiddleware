@@ -881,7 +881,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 		if(!di)
 		{
 			/*disable deinterlace*/
-			if(getSDKVersion()<17){
+			//if(getSDKVersion()<17)
+			{
 				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
 				LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
 			}	
@@ -889,7 +890,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 		else
 		{
 			/*enable deinterlace*/
-			if(getSDKVersion()<17){
+			//if(getSDKVersion()<17)
+			{
 				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
 				LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
 			}	
@@ -900,7 +902,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 	}
 	else
 	{
-		if(getSDKVersion()<17){	
+		//if(getSDKVersion()<17)
+		{	
 			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
 			LOGE("AM_AV_SetVPathPara exit\n");
 		}
@@ -922,7 +925,7 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 	jint w_t=w;
 	jint h_t=h;
 
-	/*	
+	
 	property_get("ubootenv.var.outputmode",outputmode,NULL);
 
 	if(strstr(outputmode,"1080p")!=NULL){
@@ -964,14 +967,17 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 		w_t=w*720/1280;
 		h_t=h*480/720;
 	}
-	*/
+	
 	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, x_t+w_t, y_t+h_t);
 	vidoview_x=x;
 	vidoview_y=y;
 	vidoview_w=w;
 	vidoview_h=h;	
+
+	//LOGI("------%d---%d---%d---%d",x,y,w,h);
 	
 	AM_FileEcho("/sys/class/video/axis", buf);
+	
 }
 
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)

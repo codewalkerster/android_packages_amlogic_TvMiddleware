@@ -12,10 +12,12 @@
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 	<application android:process="com.amlogic.tvservice" android:label="TVTest">
 		<activity android:name=".TVTest" android:process="com.amlogic.tvtest"  android:theme="@style/theme_fullScreen">
+			<!--
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
+			-->
 		</activity>
 	</application>
 </manifest>

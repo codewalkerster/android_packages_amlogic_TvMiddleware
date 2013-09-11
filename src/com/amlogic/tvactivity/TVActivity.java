@@ -290,7 +290,7 @@ abstract public class TVActivity extends Activity
 
 		TVSubtitleView.DVBSubParams subp;
 		TVSubtitleView.DTVTTParams ttp;
-		int dmx_id = (prog.getType() == TVProgram.TYPE_PLAYBACK) ? 1 : 0;
+		int dmx_id = (getPlaybackParams() != null) ? 1 : 0;
 
 		if(pm == SUBTITLE_SUB){
 			subp = new TVSubtitleView.DVBSubParams(dmx_id, pid, id1, id2);
@@ -530,6 +530,11 @@ abstract public class TVActivity extends Activity
 
 		//Log.d(TAG,"--"+loc[0]+"---"+loc[1]+"---"+ videoView.getWidth()+"---"+ videoView.getHeight());
 		client.setVideoWindow(loc[0], loc[1], videoView.getWidth(), videoView.getHeight());
+	}
+
+	public void setVideoWindow(int x,int y,int w,int h){
+		if(client!=null)
+		client.setVideoWindow(x,y,w,h);
 	}
 
     /**
@@ -1458,6 +1463,50 @@ abstract public class TVActivity extends Activity
 		
 		return 0;
 	}
-	
+
+
+	public String getVideoWindowSize(){
+		String val=null;
+		
+		File file = new File("/sys/class/video/axis");
+		if (!file.exists()) {        	
+			return "0 0 0 0";
+		}
+
+		//read
+		try {
+			BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/axis"), 1);
+			try {
+				val=in.readLine();
+			} finally {
+				in.close();
+    			}
+		} catch (Exception e) {
+			Log.e(TAG, "IOException when read screen_mode");
+		}
+
+		if(val!=null){
+			return val;
+		}
+		
+		return "0 0 0 0";
+	}
+
+	public void setVideoWindowSize(String val){
+		
+		try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/axis"));
+            try {
+                writer.write(val);
+                } finally {
+                    writer.close();
+                }
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }catch (Exception e) {
+                Log.e(TAG,"setVideoWindowSize ERROR!",e);
+				return;
+        } 
+	}
 }
 

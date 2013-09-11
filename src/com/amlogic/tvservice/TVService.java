@@ -2290,7 +2290,6 @@ public class TVService extends Service implements TVConfig.Update{
 
 			if((inputSource == TVConst.SourceInput.SOURCE_ATV))
 				progType = TVProgram.TYPE_ATV;
-
 			TVProgram fvp = getValidProgram(progType);
 			if (fvp != null){
 				id = fvp.getID();
@@ -2334,6 +2333,8 @@ public class TVService extends Service implements TVConfig.Update{
 				TVPlayParams tp = TVPlayParams.playProgramByID(id);
 				resolvePlayProgram(tp);
 			}
+		}else if (status == TVRunningStatus.STATUS_PLAY_ATV || status == TVRunningStatus.STATUS_PLAY_DTV){
+			Log.d(TAG, "TV already playing.");
 		}else{
 			Log.d(TAG, "Play last program");
 			playCurrentProgram();
@@ -2627,11 +2628,17 @@ public class TVService extends Service implements TVConfig.Update{
 		if(intent.getAction().equals(SCREEN_OFF)) {
 				Log.d(TAG,"SCREEN_OFF+++++++++++++");
 				channelParams = null;
+				TVMessage msg = new TVMessage(TVMessage.TYPE_SCREEN_OFF);
+				
+				sendMessage(msg);
+				
 				return;
 			}
 			if(intent.getAction().equals(SCREEN_ON)) {
 				Log.d(TAG,"SCREEN_ON++++++++++++++++++");
+				TVMessage msg = new TVMessage(TVMessage.TYPE_SCREEN_ON);
 				
+				sendMessage(msg);
 				return;
 			}
 			

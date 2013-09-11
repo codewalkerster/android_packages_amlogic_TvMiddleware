@@ -44,7 +44,6 @@ public class DTVRecordParams implements Parcelable {
 		programName    = in.readString();
 		recFilePath    = in.readString();
 		isTimeshift    = in.readInt() != 0;
-		
 		int pid, fmt;
 		String lang;
 		TVProgram p = new TVProgram();
