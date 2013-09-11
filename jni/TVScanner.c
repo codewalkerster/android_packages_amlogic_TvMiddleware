@@ -815,6 +815,7 @@ static jint tv_scan_destroy(JNIEnv *env, jobject obj, jint hscan, jboolean store
             AM_DMX_Close(prog->dmx_id);
             log_info("Closing frontend%d ...", prog->fend_id);
             AM_FEND_Close(prog->fend_id);
+            AM_SEC_Cache_Reset(prog->fend_id);
             if (prog->obj)
                 (*env)->DeleteGlobalRef(env, prog->obj);
             free(prog);

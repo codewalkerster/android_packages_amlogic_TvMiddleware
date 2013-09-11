@@ -810,6 +810,7 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 
 	if(dev->dev_open){
 		AM_FEND_Close(FEND_DEV_NO);
+		AM_SEC_Cache_Reset(FEND_DEV_NO);
 		AM_DMX_Close(DMX_DEV_NO);
 		AM_AV_Close(DMX_DEV_NO);
 	}
@@ -1104,6 +1105,7 @@ static void dev_free_frontend(JNIEnv *env, jobject obj)
 	
 	LOGI("free frontend");
 	AM_FEND_Close(FEND_DEV_NO);
+	AM_SEC_Cache_Reset(FEND_DEV_NO);
 	AM_DMX_Close(DMX_DEV_NO);
 	AM_AV_Close(AV_DEV_NO);
 
