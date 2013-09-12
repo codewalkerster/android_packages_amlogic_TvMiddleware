@@ -30,6 +30,7 @@ import android.content.BroadcastReceiver;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import com.amlogic.tvutil.TVBooking;
+import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
 abstract public class TVBookManager{
@@ -187,6 +188,13 @@ abstract public class TVBookManager{
 		for (int i=0; i<bookings.length; i++){
 			if (bookings[i].isTimeStart(currentTime+preNotifyTime*1000) && 
 				!bookings[i].isTimeEnd(currentTime)){
+				if (bookings[i].getProgram() == null){
+					/* this program may be deleted by user, skip this booking */
+					Log.d(TAG, "Cannot get program, has been deleted? Auto skip this booking.");
+					bookings[i].updateStatus(TVBooking.ST_END);
+					continue;
+				}
+				
 				return bookings[i];
 			}
 		}

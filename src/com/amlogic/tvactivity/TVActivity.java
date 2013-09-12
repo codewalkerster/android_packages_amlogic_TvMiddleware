@@ -299,7 +299,7 @@ abstract public class TVActivity extends Activity
 			int pgno;
 
 			pgno = (id1==0) ? 800 : id1*100;
-			pgno += id2;
+			pgno += Integer.parseInt(Integer.toHexString(id2));
 			ttp = new TVSubtitleView.DTVTTParams(dmx_id, pid, pgno, 0x3F7F, 
 				getTeletextRegionID(getStringConfig("tv:teletext:region")));
 

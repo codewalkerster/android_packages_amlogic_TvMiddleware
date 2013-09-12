@@ -575,12 +575,15 @@ static int getRecordError(int error)
 
 static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMediaInfo_t *info)
 {
-	uint8_t buf[sizeof(AM_REC_MediaInfo_t) + 4];
-	int pos = 0, info_len, i, fd, name_len;
+	uint8_t buffer[2][sizeof(AM_REC_MediaInfo_t) + 4*(sizeof(AM_REC_MediaInfo_t)/188 + 1)];
+	uint8_t *buf = buffer[0];
+	uint8_t *pkt_buf = buffer[1];
+	int pos = 0, info_len, i, fd, name_len, data_len;
 	
 #define READ_INT(_i)\
 	AM_MACRO_BEGIN\
 		if ((info_len-pos) >= 4){\
+			(_i) = ((int)buf[pos]<<24) | ((int)buf[pos+1]<<16) | ((int)buf[pos+2]<<8) | (int)buf[pos+3];\
 			pos += 4;\
 		}else{\
 			goto read_error;\
@@ -593,9 +596,18 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 		return -1;
 	}
 	
-	info_len = read(fd, buf, sizeof(buf));
+	info_len = read(fd, pkt_buf, sizeof(buffer[1]));
 
-	pos += 4; /*skip the packet header*/
+	data_len = 0;
+	/*skip the packet headers*/
+	for (i=0; i<info_len; i++){
+		if ((i%188) > 3){
+			buf[data_len++] = pkt_buf[i];
+		}
+	}
+
+	info_len = data_len;
+
 	READ_INT(info->duration);
 		
 	name_len = sizeof(info->program_name);
@@ -608,7 +620,9 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 	}
 	READ_INT(info->vid_pid);
 	READ_INT(info->vid_fmt);
+	
 	READ_INT(info->aud_cnt);
+	LOGI("audio count %d", info->aud_cnt);
 	for (i=0; i<info->aud_cnt; i++){
 		READ_INT(info->audios[i].pid);
 		READ_INT(info->audios[i].fmt);
@@ -616,6 +630,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 		pos += 4;
 	}
 	READ_INT(info->sub_cnt);
+	LOGI("subtitle count %d", info->sub_cnt);
 	for (i=0; i<info->sub_cnt; i++){
 		READ_INT(info->subtitles[i].pid);
 		READ_INT(info->subtitles[i].type);
@@ -627,6 +642,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 		pos += 4;
 	}
 	READ_INT(info->ttx_cnt);
+	LOGI("teletext count %d", info->ttx_cnt);
 	for (i=0; i<info->ttx_cnt; i++){
 		READ_INT(info->teletexts[i].pid);
 		READ_INT(info->teletexts[i].magzine_no);
