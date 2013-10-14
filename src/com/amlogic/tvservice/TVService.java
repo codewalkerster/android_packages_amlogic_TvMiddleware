@@ -2447,6 +2447,18 @@ public class TVService extends Service implements TVConfig.Update{
 		}			
 
 		try{
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/dmx/aml_dmx_dynamic_config"));
+			try {
+				writer.write(valuedmx);
+			} finally {
+				writer.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot config dmx !!!");
+		}	
+
+		try{
 			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/aml_fe_dynamic_config"));
 			try {
 				writer.write(valuefe);
@@ -2457,18 +2469,6 @@ public class TVService extends Service implements TVConfig.Update{
 			e.printStackTrace();
 			Log.d(TAG, "Cannot config fe !!!");
 		}
-
-		try{
-			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/dmx/aml_dmx_dynamic_config"));
-			try {
-				writer.write(valuedmx);
-			} finally {
-				writer.close();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			Log.d(TAG, "Cannot config dmx !!!");
-		}		
 
 		int i = 0;
 		do{
