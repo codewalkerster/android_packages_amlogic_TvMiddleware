@@ -37,7 +37,7 @@ public class TVRegion{
 
 		Cursor cur = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
-				"select * from region_table where name = '" + name + "' and fe_type = " + sourceMode,
+				"select * from region_table where name = '" + sqliteEscape(name) + "' and fe_type = " + sourceMode,
 				null, null);
 		if(cur != null){
 			if(cur.moveToFirst()){
@@ -109,6 +109,11 @@ public class TVRegion{
 
 		return e;
 	}
+
+	public static String sqliteEscape(String keyWord){
+		keyWord = keyWord.replace("'", "''");
+		return keyWord;
+	}	
 	
 	/**
 	 *根据Region name取得对应的TVRegion
@@ -118,13 +123,15 @@ public class TVRegion{
 	 */
 	public static TVRegion selectByName(Context context, String name){
 		TVRegion e = null;
+		
 
 		if (name == null)
 			return null;
-		
+		String cmd;
+		cmd = "select * from region_table where name = "+ "\'"+sqliteEscape(name)+"\'";
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
-				"select * from region_table where name = '" + name + "'",
+				cmd,
 				null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -192,6 +199,74 @@ public class TVRegion{
 					name = c.getString(col);
 					countryName = name.substring(0, name.indexOf(','));
 					set.add(countryName);
+				}while(c.moveToNext());
+				ret = (String[])set.toArray(new String[0]);
+			}
+			c.close();
+		}
+
+		return ret;
+	}
+
+	/**
+	 *取得当前支持的ATSC表名称
+	 *@param context 当前Context
+	 *@return 返回名称数组
+	 */
+	public static String[] getCountryByATSC(Context context){
+		String[] ret = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null, "select * from region_table", null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int col;
+				String name;
+				String countryName;
+				HashSet set = new HashSet();
+				do{
+					col = c.getColumnIndex("name");
+					name = c.getString(col);
+					//countryName = name.substring(0, name.indexOf(','));
+
+					if (name.contains("ATSC")){
+						set.add(name);
+					}
+					
+				}while(c.moveToNext());
+				ret = (String[])set.toArray(new String[0]);
+			}
+			c.close();
+		}
+
+		return ret;
+	}
+
+	/**
+	 *取得当前支持的DVBT国家名称
+	 *@param context 当前Context
+	 *@return 返回名称数组
+	 */
+	public static String[] getCountryByDVBT(Context context){
+		String[] ret = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null, "select * from region_table", null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int col;
+				String name;
+				String countryName;
+				HashSet set = new HashSet();
+				do{
+					col = c.getColumnIndex("name");
+					name = c.getString(col);
+
+					if (name.contains("DVB-T")){
+						countryName = name.substring(0, name.indexOf(','));
+						set.add(countryName);
+					}
+					
 				}while(c.moveToNext());
 				ret = (String[])set.toArray(new String[0]);
 			}

@@ -61,6 +61,8 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 
 	abstract public void setFrontend(TVChannelParams params);
 
+	abstract public void setFrontendProp(int cmd,int val);
+
 	abstract public TVChannelParams getFrontend();
 
 	abstract public int getFrontendStatus();

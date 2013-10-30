@@ -1350,6 +1350,10 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "Cannot read dtv sx unicable !!!");
 			}		
 		}
+		else if(fe_params.isDVBTMode()&&fe_params.getOFDM_Mode()==TVChannelParams.OFDM_MODE_DVBT2){
+			//Add for DVBT2
+			device.setFrontendProp(43,p.getDvbt2PlpID());
+		}
 		
 		synchronized(this){
 			programNum = p.getNumber();
@@ -1873,6 +1877,9 @@ public class TVService extends Service implements TVConfig.Update{
 											dtvTVPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
 										else
 											dtvRadioPlayParams = TVPlayParams.playProgramByNumber(p.getNumber());
+
+										if (p.getType() != dtvProgramType)
+											dtvProgramType = p.getType();
 									}
 								}
 							}else if(inputSource == TVConst.SourceInput.SOURCE_ATV){

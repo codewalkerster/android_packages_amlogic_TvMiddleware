@@ -21,7 +21,7 @@ public class TVChannel{
 
 	private void constructFromCursor(Context context, Cursor c){
 		int col;
-		int src, freq, mod, symb, bw, satid, satpolar;
+		int src, freq, mod, symb, bw, satid, satpolar,ofdm_mode;
 
 		this.context = context;
 
@@ -49,7 +49,13 @@ public class TVChannel{
 			col = c.getColumnIndex("bw");
 			bw = c.getInt(col);
 
-			this.params = TVChannelParams.dvbtParams(freq, bw);
+			col = c.getColumnIndex("dvbt_flag");
+			ofdm_mode = c.getInt(col);
+
+			if(ofdm_mode==TVChannelParams.OFDM_MODE_DVBT)
+				this.params = TVChannelParams.dvbtParams(freq, bw);
+			else
+				this.params = TVChannelParams.dvbt2Params(freq, bw);
 		}else if(src == TVChannelParams.MODE_ATSC){
 			col = c.getColumnIndex("mod");
 			mod = c.getInt(col);

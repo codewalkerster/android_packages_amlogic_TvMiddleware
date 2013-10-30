@@ -40,6 +40,9 @@ public class TVChannelParams  implements Parcelable {
 	/**DTMB模式*/
 	public static final int MODE_DTMB = 5;
 
+	public static final int OFDM_MODE_DVBT=0;
+	public static final int OFDM_MODE_DVBT2=1;
+
 	/**
 	 *由字符串获得调制模式
 	 *@param str 字符串
@@ -202,6 +205,7 @@ public class TVChannelParams  implements Parcelable {
 	public int symbolRate;
 	public int modulation;
 	public int bandwidth;
+	public int ofdm_mode;
 	public int audio;
 	public int standard;
 	public int afc_data;
@@ -225,8 +229,10 @@ public class TVChannelParams  implements Parcelable {
 			symbolRate = in.readInt();
 		if(mode == MODE_QAM)
 			modulation = in.readInt();
-		if(mode == MODE_OFDM || mode == MODE_DTMB)
+		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			bandwidth = in.readInt();
+			ofdm_mode = in.readInt(); 
+		}
 		if(mode == MODE_ANALOG){
 			audio = in.readInt();
 			standard = in.readInt();
@@ -250,6 +256,7 @@ public class TVChannelParams  implements Parcelable {
 			dest.writeInt(modulation);
 		if(mode == MODE_OFDM || mode == MODE_DTMB)
 			dest.writeInt(bandwidth);
+			dest.writeInt(ofdm_mode);
 		if(mode == MODE_ANALOG){
 			dest.writeInt(audio);
 			dest.writeInt(standard);
@@ -302,11 +309,26 @@ public class TVChannelParams  implements Parcelable {
 	 *@return 返回新创建的参数
 	 */
 	public static TVChannelParams dvbtParams(int frequency, int bandwidth){
-		TVChannelParams tp = new TVChannelParams(MODE_OFDM);
-
+		TVChannelParams tp = new TVChannelParams(MODE_OFDM);	
 		tp.frequency = frequency;
 		tp.bandwidth = bandwidth;
+		tp.ofdm_mode = OFDM_MODE_DVBT;
+	
+		return tp;
+	}
 
+	/**
+	 *创建DVBT2参数
+	 *@param frequency 频率Hz为单位
+	 *@param bandwidth 带宽
+	 *@return 返回新创建的参数
+	 */
+	public static TVChannelParams dvbt2Params(int frequency, int bandwidth){
+		TVChannelParams tp = new TVChannelParams(MODE_OFDM);
+		Log.d(TAG,"---new DVBT2 channel params---");
+		tp.frequency = frequency;
+		tp.bandwidth = bandwidth;
+		tp.ofdm_mode = OFDM_MODE_DVBT2;
 		return tp;
 	}
 
@@ -756,6 +778,14 @@ public class TVChannelParams  implements Parcelable {
 	 */
 	public int getFrequency(){
 		return frequency;
+	}
+
+  /**
+	 *取得OFDM_MODE
+	 @return 返回OFDM_MODE
+	 */
+	public int getOFDM_Mode(){
+		return ofdm_mode;
 	}
 
 	/**

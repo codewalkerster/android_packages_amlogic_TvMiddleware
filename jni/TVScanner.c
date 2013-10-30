@@ -174,6 +174,8 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "bandwidth", "I"), pd->cur_tp.fend_para.terrestrial.para.u.ofdm.bandwidth); 
     (*env)->SetIntField(env,cp,\
+                        (*env)->GetFieldID(env, gChanParamClass, "ofdm_mode", "I"), pd->cur_tp.fend_para.terrestrial.para.u.ofdm.ofdm_mode); 
+    (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "audio", "I"), pd->cur_tp.fend_para.analog.para.u.analog.audmode);
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "standard", "I"), pd->cur_tp.fend_para.analog.para.u.analog.std);
@@ -383,6 +385,7 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
     jfieldID modulation = 0;
     jfieldID freq = 0;
     jfieldID bandwidth = 0;
+    jfieldID ofdm_mode = 0;
     jfieldID polar = 0;
     jfieldID mode = 0;
     AM_FENDCTRL_DVBFrontendParameters_t *fparam;
@@ -396,6 +399,8 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
     symbol_rate = (*env)->GetFieldID(env,objclass, "symbolRate", "I");
     modulation =(*env)->GetFieldID(env,objclass, "modulation", "I");
     bandwidth=(*env)->GetFieldID(env,objclass, "bandwidth", "I");
+	ofdm_mode=(*env)->GetFieldID(env,objclass, "ofdm_mode", "I");
+	log_info(" ofdm_mode-------%d\n",ofdm_mode);	
     polar=(*env)->GetFieldID(env,objclass, "sat_polarisation", "I");
 
     if (*ppfp == NULL){
@@ -417,7 +422,8 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
         fparam[i].terrestrial.para.frequency = (*env)->GetIntField(env, para, freq);
         fparam[i].terrestrial.para.inversion = 0;
         fparam[i].terrestrial.para.u.ofdm.bandwidth = (*env)->GetIntField(env, para, bandwidth);
-        break;
+	 fparam[i].terrestrial.para.u.ofdm.ofdm_mode = (*env)->GetIntField(env, para, ofdm_mode);
+	break;
     case FE_QPSK:
         fparam[i].sat.para.frequency = (*env)->GetIntField(env, para, freq);
         fparam[i].sat.para.inversion = 0;

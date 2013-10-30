@@ -45,6 +45,7 @@ public class TVProgram{
 	private int sourceID;
 	private int audioTrack;
 	private int pmtPID;
+	private int dvbt2_plp_id;
 	
 	/**
 	 *Service中的基础元素信息
@@ -337,6 +338,9 @@ public class TVProgram{
 		
 		col   = c.getColumnIndex("aud_track");
 		this.audioTrack = c.getInt(col);
+
+		col = c.getColumnIndex("dvbt2_plp_id");
+		this.dvbt2_plp_id = c.getInt(col);
 		
 		if (src == TVChannelParams.MODE_ATSC || (src == TVChannelParams.MODE_ANALOG && major > 0)){
 			this.number = new TVProgramNumber(major, minor);
@@ -2395,8 +2399,10 @@ public class TVProgram{
             }
         }
     }
-    
-    
+
+    public int getDvbt2PlpID(){
+	return this.dvbt2_plp_id;
+    }	
     
 }
 

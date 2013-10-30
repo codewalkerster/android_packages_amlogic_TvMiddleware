@@ -78,6 +78,7 @@ static jfieldID  gChanParamsFreqID;
 static jfieldID  gChanParamsModID;
 static jfieldID  gChanParamsSymID;
 static jfieldID  gChanParamsBWID;
+static jfieldID  gChanParamsOfdmModeID;
 static jfieldID  gChanParamsSatPolarID;
 static jfieldID  gChanParamsSatParaID;
 static jfieldID  gEventFEParamsID;
@@ -163,7 +164,7 @@ static void on_event(jobject obj, jobject event)
 
 static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendParameters_t *para)
 {
-	jint mode, freq, mod, sym, bw, polar;
+	jint mode, freq, mod, sym, bw, ofdm_mode,polar;
 
 	memset(para, 0, sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
 
@@ -172,11 +173,15 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 
 	freq = env->GetIntField(chan, gChanParamsFreqID);
 
+	
+
 	switch(mode){
 		case FE_OFDM:
 			bw = env->GetIntField(chan, gChanParamsBWID);
+			ofdm_mode = env->GetIntField(chan,gChanParamsOfdmModeID);
 			para->cable.para.frequency = freq;
 			para->cable.para.u.ofdm.bandwidth = (fe_bandwidth_t)bw;
+			para->cable.para.u.ofdm.ofdm_mode = (fe_ofdm_mode_t)ofdm_mode;
 			break;
 		case FE_QAM:
 			mod = env->GetIntField(chan, gChanParamsModID);
@@ -213,6 +218,7 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 	switch(mode){
 		case FE_OFDM:
 			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
+			env->SetIntField(obj,gChanParamsOfdmModeID,para->u.ofdm.ofdm_mode);
 			break;
 		case FE_QAM:
 			env->SetIntField(obj, gChanParamsSymID, para->u.qam.symbol_rate);
@@ -1052,6 +1058,24 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 	}
 }
 
+
+static jint dev_set_frontend_prop(JNIEnv *env, jobject obj, jint cmd, jint val){
+	 struct dtv_properties props;
+	 struct dtv_property prop;
+	
+	 memset(&props, 0, sizeof(props));
+	 memset(&prop, 0, sizeof(prop));
+
+	 prop.cmd = cmd;
+	 prop.u.data = val;
+	 
+	props.num = 1;
+	props.props = &prop;
+	
+	return AM_FEND_SetProp(FEND_DEV_NO, &props);
+}
+
+
 static jobject dev_get_frontend(JNIEnv *env, jobject obj)
 {
 	struct dvb_frontend_parameters fpara;
@@ -1421,7 +1445,8 @@ static JNINativeMethod gMethods[] = {
 	{"native_device_destroy", "()V", (void*)dev_destroy},
 	{"native_set_input_source", "(I)V", (void*)dev_set_input_source},
 	{"native_set_video_window", "(IIII)V", (void*)dev_set_video_window},
-	{"native_set_frontend", "(Lcom/amlogic/tvutil/TVChannelParams;)V", (void*)dev_set_frontend},
+	{"native_set_frontend", "(Lcom/amlogic/tvutil/TVChannelParams;)V", (void*)dev_set_frontend},	
+	{"native_set_frontend_prop", "(II)V", (void*)dev_set_frontend_prop},
 	{"native_get_frontend", "()Lcom/amlogic/tvutil/TVChannelParams;", (void*)dev_get_frontend},
 	{"native_get_frontend_status", "()I", (void*)dev_get_frontend_status},
 	{"native_get_frontend_signal_strength", "()I", (void*)dev_get_frontend_signal_strength},
@@ -1493,6 +1518,7 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gChanParamsModID  = env->GetFieldID(gChanParamsClass, "modulation", "I");
 	gChanParamsSymID  = env->GetFieldID(gChanParamsClass, "symbolRate", "I");
 	gChanParamsBWID   = env->GetFieldID(gChanParamsClass, "bandwidth", "I");
+	gChanParamsOfdmModeID = env->GetFieldID(gChanParamsClass,"ofdm_mode","I");
 	gChanParamsSatPolarID   = env->GetFieldID(gChanParamsClass, "sat_polarisation", "I");
 	gChanParamsSatParaID = env->GetFieldID(gChanParamsClass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;");
 	gChanParamsInitID = env->GetMethodID(gChanParamsClass, "<init>", "(I)V");

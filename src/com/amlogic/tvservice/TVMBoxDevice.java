@@ -21,6 +21,7 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_set_input_source(int src);
 	private native void native_set_video_window(int x, int y, int w, int h);
 	private native void native_set_frontend(TVChannelParams params);
+	private native void native_set_frontend_prop(int cmd, int val);
 	private native TVChannelParams native_get_frontend();
 	private native int  native_get_frontend_status();
 	private native int  native_get_frontend_signal_strength();
@@ -87,6 +88,10 @@ abstract public class TVDeviceImpl extends TVDevice{
 
 	public void setFrontend(TVChannelParams params){
 		native_set_frontend(params);
+	}
+
+	public void setFrontendProp(int cmd,int val){
+		native_set_frontend_prop(cmd,val);	
 	}
 
 	public TVChannelParams getFrontend(){
