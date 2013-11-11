@@ -254,9 +254,10 @@ public class TVChannelParams  implements Parcelable {
 			dest.writeInt(symbolRate);
 		if(mode == MODE_QAM)
 			dest.writeInt(modulation);
-		if(mode == MODE_OFDM || mode == MODE_DTMB)
+		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			dest.writeInt(bandwidth);
 			dest.writeInt(ofdm_mode);
+		}
 		if(mode == MODE_ANALOG){
 			dest.writeInt(audio);
 			dest.writeInt(standard);
