@@ -28,6 +28,8 @@ public class TVProgram{
 	/** PVR/Timeshifting playback program*/
 	public static final int TYPE_PLAYBACK = 6;
 
+	public static boolean lcn_status=false;
+
 	private Context context;
 	private int id;
 	private int dvbServiceID;
@@ -327,7 +329,13 @@ public class TVProgram{
 		col = c.getColumnIndex("name");
 		this.name = c.getString(col);
 
-		col = c.getColumnIndex("chan_num");
+		if(lcn_status==false){
+			col = c.getColumnIndex("chan_num");
+		}
+		else{
+			col = c.getColumnIndex("lcn");
+		}
+		
 		num = c.getInt(col);
 			
 		col   = c.getColumnIndex("major_chan_num");
@@ -542,7 +550,10 @@ public class TVProgram{
 		if (num.isATSCMode()){
 			cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
 		}else{
-			cmd += "chan_num = "+num.getNumber();
+			if(lcn_status==false)
+				cmd += "chan_num = "+num.getNumber();
+			else
+				cmd += "lcn = "+num.getNumber();
 		}
 		return context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -846,8 +857,11 @@ public class TVProgram{
 			}else{
 				cmd += "major_chan_num = "+num.getMajor()+" and minor_chan_num = "+num.getMinor();
 			}
-		}else{
-			cmd += "chan_num = "+num.getNumber();
+		}else{	
+			if(lcn_status==false)
+				cmd += "chan_num = "+num.getNumber();
+			else
+				cmd += "lcn = "+num.getNumber();
 		}
 
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
@@ -889,10 +903,18 @@ public class TVProgram{
 		if(num.isATSCMode()){
 			cmd += "(major_chan_num > "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num > "+num.getMinor()+")) ";
 		}else{
-			cmd += "chan_num > "+num.getNumber()+" ";
+			
+			if(lcn_status==false)
+				cmd += "chan_num > "+num.getNumber()+" ";
+			else
+				cmd += "lcn > "+num.getNumber()+" ";
 		}
 
-		cmd += "order by chan_num";
+		
+		if(lcn_status==false)
+			cmd += "order by chan_num";
+		else
+			cmd += "order by lcn";
 
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -920,10 +942,17 @@ public class TVProgram{
 		if(num.isATSCMode()){
 			cmd += "(major_chan_num < "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num < "+num.getMinor()+")) ";
 		}else{
-			cmd += "chan_num < "+num.getNumber()+" ";
+			
+			if(lcn_status==false)
+				cmd += "chan_num < "+num.getNumber()+" ";
+			else
+				cmd += "lcn < "+num.getNumber()+" ";
 		}
 
-		cmd += "order by chan_num";
+		if(lcn_status==false)
+			cmd += "order by chan_num";
+		else
+			cmd += "order by lcn";
 
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -964,11 +993,17 @@ public class TVProgram{
 
 		if(num.isATSCMode()){
 			cmd += "(major_chan_num < "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num < "+num.getMinor()+")) ";
-		}else{
-			cmd += "chan_num < "+num.getNumber()+" ";
+		}else{			
+			if(lcn_status==false)
+				cmd += "chan_num < "+num.getNumber()+" ";
+			else
+				cmd += "lcn < "+num.getNumber()+" ";
 		}
 
-		cmd += "order by chan_num desc";
+		if(lcn_status==false)
+			cmd += "order by chan_num desc";
+		else
+			cmd += "order by lcn desc";
 
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
@@ -996,11 +1031,18 @@ public class TVProgram{
 		if(num.isATSCMode()){
 			cmd += "(major_chan_num > "+num.getMajor()+" or (major_chan_num = "+num.getMajor()+" and minor_chan_num > "+num.getMinor()+")) ";
 		}else{
-			cmd += "chan_num > "+num.getNumber()+" ";
+			if(lcn_status==false)
+				cmd += "chan_num > "+num.getNumber()+" ";
+			else
+				cmd += "lcn > "+num.getNumber()+" ";
 		}
 
-		cmd += "order by chan_num desc";
+		if(lcn_status==false)
+			cmd += "order by chan_num desc";
+		else
+			cmd += "order by lcn desc";
 
+		
 		c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
 				cmd,
@@ -1026,7 +1068,11 @@ public class TVProgram{
 		Cursor c;
 
 		if((type == TYPE_TV) || (type == TYPE_DTV) || (type == TYPE_UNKNOWN)){
-			cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_TV+" order by chan_num";
+			if(lcn_status==false)
+				cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_TV+" order by chan_num";
+			else
+				cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_TV+" order by lcn";
+
 			c = context.getContentResolver().query(TVDataProvider.RD_URL,
 					null,
 					cmd,
@@ -1042,7 +1088,11 @@ public class TVProgram{
 		}
 
 		if((type == TYPE_RADIO) || (type == TYPE_DTV) || (type == TYPE_UNKNOWN)){
-			cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_RADIO+" order by chan_num";
+			if(lcn_status==false)
+				cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_RADIO+" order by chan_num";
+			else
+				cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_RADIO+" order by lcn";
+
 			c = context.getContentResolver().query(TVDataProvider.RD_URL,
 					null,
 					cmd,
@@ -1058,7 +1108,11 @@ public class TVProgram{
 		}
 
 		if((type == TYPE_ATV) || (type == TYPE_UNKNOWN)){
-			cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_ATV+" order by chan_num";
+			if(lcn_status ==false)
+				cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_ATV+" order by chan_num";	
+			else
+				cmd = "select * from srv_table where skip = 0 and service_type = "+TYPE_ATV+" order by lcn";	
+
 			c = context.getContentResolver().query(TVDataProvider.RD_URL,
 					null,
 					cmd,
@@ -1265,8 +1319,11 @@ public class TVProgram{
 		TVProgram p[] = null;
 		String cmd;
 
-		cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and service_type = "+type +" order by chan_num";
-
+		if(lcn_status==false)
+			cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and service_type = "+type +" order by chan_num";
+		else
+			cmd = "select * from srv_table where db_sat_para_id = " + sat_id + " and service_type = "+type +" order by lcn";
+			
 		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
 				null,
 				cmd,
@@ -2403,6 +2460,13 @@ public class TVProgram{
     public int getDvbt2PlpID(){
 	return this.dvbt2_plp_id;
     }	
-    
+
+    public static void setLCNStatus(boolean value){
+	lcn_status=value;
+    }	
+
+    public static boolean getLCNStatus(){
+	return lcn_status;
+    }	
 }
 

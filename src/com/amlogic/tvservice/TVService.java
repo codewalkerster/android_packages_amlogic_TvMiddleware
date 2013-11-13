@@ -1087,6 +1087,8 @@ public class TVService extends Service implements TVConfig.Update{
 		try{
 			switch(params.getType()){
 				case TVPlayParams.PLAY_PROGRAM_NUMBER:
+					boolean lcn = config.getBoolean("tv:dtv:dvbt:lcn");
+					TVProgram.setLCNStatus(lcn);
 					int type = getCurProgramType();
 					TVProgramNumber num = params.getProgramNumber();
 					p = TVProgram.selectByNumber(this, type, num);
@@ -2547,6 +2549,8 @@ public class TVService extends Service implements TVConfig.Update{
             config.registerUpdate("tv:dtv:mode", this);
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
+			boolean lcn = config.getBoolean("tv:dtv:dvbt:lcn");
+			TVProgram.setLCNStatus(lcn);
 		}catch(Exception e){
 			Log.e(TAG, "intialize config failed");
 		}

@@ -243,7 +243,7 @@ public class TVChannelParams  implements Parcelable {
 			int satparams_notnull = in.readInt();
 			if(satparams_notnull == 1)
 				tv_satparams = new TVSatelliteParams(in);
-			sat_polarisation = in.readInt();			
+			sat_polarisation = in.readInt();
 		}		
 	}
 
@@ -257,7 +257,7 @@ public class TVChannelParams  implements Parcelable {
 		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			dest.writeInt(bandwidth);
 			dest.writeInt(ofdm_mode);
-		}
+		}	
 		if(mode == MODE_ANALOG){
 			dest.writeInt(audio);
 			dest.writeInt(standard);
@@ -274,7 +274,7 @@ public class TVChannelParams  implements Parcelable {
 			dest.writeInt(satparams_notnull);
 			if(satparams_notnull == 1)
 				tv_satparams.writeToParcel(dest, flags);
-			dest.writeInt(sat_polarisation);		
+			dest.writeInt(sat_polarisation);	
 		}
 	}
 

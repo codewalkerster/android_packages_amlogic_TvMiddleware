@@ -527,7 +527,6 @@ abstract public class TVActivity extends Activity
 		int[] loc = new int[2];
 
 		videoView.getLocationOnScreen(loc);
-
 		//Log.d(TAG,"--"+loc[0]+"---"+loc[1]+"---"+ videoView.getWidth()+"---"+ videoView.getHeight());
 		client.setVideoWindow(loc[0], loc[1], videoView.getWidth(), videoView.getHeight());
 	}
