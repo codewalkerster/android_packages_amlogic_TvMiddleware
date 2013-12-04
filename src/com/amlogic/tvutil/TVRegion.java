@@ -78,6 +78,9 @@ public class TVRegion{
 						case TVChannelParams.MODE_DTMB:
 							channels[channelCount++] = TVChannelParams.dtmbParams(frequency,bandwidth);
 							break;
+						case TVChannelParams.MODE_ISDBT:
+							channels[channelCount++] = TVChannelParams.isdbtParams(frequency,bandwidth);
+							break;
 						default:
 							break;
 					}

@@ -24,6 +24,8 @@ public class TVScanParams implements Parcelable {
 	public static final int DTV_OPTION_FTA      = 0x20;      //Only store free programs
 	public static final int DTV_OPTION_NO_TV    = 0x40;      //Only store tv programs
 	public static final int DTV_OPTION_NO_RADIO = 0x80;      //Only store radio programs
+	public static final int DTV_OPTION_ISDBT_ONESEG  = 0x100; //Only scan ISDBT layer A
+	public static final int DTV_OPTION_ISDBT_FULLSEG = 0x200; //Scan ISDBT full-seg
 	
 	/** ATV scan mode */
 	public static final int ATV_MODE_AUTO   = 1;

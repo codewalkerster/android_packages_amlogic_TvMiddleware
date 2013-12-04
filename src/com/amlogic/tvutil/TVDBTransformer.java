@@ -28,7 +28,7 @@ public class TVDBTransformer{
 
 	private static final String DTD_PATH = "/system/etc/tv_default.dtd";
 
-	private static final String feTypes[] = {"dvbs", "dvbc", "dvbt", "atsc", "analog", "dtmb"};
+	private static final String feTypes[] = {"dvbs", "dvbc", "dvbt", "atsc", "analog", "dtmb", "isdbt"};
 	private static final String srvTypes[] = {"other", "dtv", "radio", "atv", "other"};
 	private static final String vidFmts[] = {"mpeg12", "mpeg4", "h264", "mjpeg", "real", "jpeg", "vc1", "avs"};
 	private static final String audFmts[] = {"mpeg", "pcm_s16le", "aac", "ac3", "alaw", "mulaw", "dts", "pcm_s16be",
@@ -444,6 +444,8 @@ public class TVDBTransformer{
 						elemChan.setAttribute("audio_standard", atvAudioStds[astd]);
 						elemChan.setAttribute("sound_sys", "a2");
 					}else if (src == 5){
+						elemChan.setAttribute("bandwidth", bandwidths[getIntValue(curChan, "bw", 0)]);
+					}else if (src == 6){
 						elemChan.setAttribute("bandwidth", bandwidths[getIntValue(curChan, "bw", 0)]);
 					}
 

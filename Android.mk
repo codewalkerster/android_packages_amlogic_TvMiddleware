@@ -15,6 +15,7 @@ LOCAL_SRC_FILES += $(call all-Iaidl-files-under, src/com/amlogic/tvclient)
 LOCAL_SRC_FILES += $(call all-Iaidl-files-under, src/com/amlogic/tvsubtitle)
 LOCAL_SRC_FILES += $(call all-Iaidl-files-under, src/com/amlogic/tvactivity)
 LOCAL_SRC_FILES += $(call all-Iaidl-files-under, src/com/amlogic/tvservice)
+LOCAL_SRC_FILES += src/com/amlogic/tvservice/TVConfig.java
 
 #LOCAL_SDK_VERSION := current
 

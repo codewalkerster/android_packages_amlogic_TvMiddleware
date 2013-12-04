@@ -21,7 +21,7 @@ public class TVChannel{
 
 	private void constructFromCursor(Context context, Cursor c){
 		int col;
-		int src, freq, mod, symb, bw, satid, satpolar,ofdm_mode;
+		int src, freq, mod, symb, bw, satid, satpolar,ofdm_mode, layer;
 
 		this.context = context;
 
@@ -86,6 +86,15 @@ public class TVChannel{
 			bw = c.getInt(col);
 
 			this.params = TVChannelParams.dtmbParams(freq, bw);
+		}else if(src == TVChannelParams.MODE_ISDBT){
+			col = c.getColumnIndex("bw");
+			bw = c.getInt(col);
+			/** use the dvbt_flag to store the isdbt layer */
+			col = c.getColumnIndex("dvbt_flag");
+			layer = c.getInt(col);
+
+			this.params = TVChannelParams.isdbtParams(freq, bw);
+			this.params.setISDBTLayer(layer);
 		}
 
 		this.fendID = 0;

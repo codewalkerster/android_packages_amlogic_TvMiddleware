@@ -830,6 +830,24 @@ public class TVService extends Service implements TVConfig.Update{
 		return p;
 	}
 
+	private void setInputSourceToConfig(){
+		try{
+			String strSource = null;
+
+			if (inputSource == TVConst.SourceInput.SOURCE_ATV){
+				strSource = "atv";
+			}else if (inputSource == TVConst.SourceInput.SOURCE_DTV){
+				strSource = "dtv";
+			}else{
+				/* no use, to indicate that we are not in TV mode */
+				strSource = "mpeg";
+			}
+			config.set("tv:input_source", new TVConfigValue(strSource));
+		}catch (Exception e){
+
+		}  
+	}
+
 	private void stopPlaying(){
 		if(status == TVRunningStatus.STATUS_PLAY_ATV){
 			device.stopATV();
@@ -1088,7 +1106,6 @@ public class TVService extends Service implements TVConfig.Update{
 			switch(params.getType()){
 				case TVPlayParams.PLAY_PROGRAM_NUMBER:
 					boolean lcn = config.getBoolean("tv:dtv:dvbt:lcn");
-					TVProgram.setLCNStatus(lcn);
 					int type = getCurProgramType();
 					TVProgramNumber num = params.getProgramNumber();
 					p = TVProgram.selectByNumber(this, type, num);
@@ -1351,10 +1368,12 @@ public class TVService extends Service implements TVConfig.Update{
 				e.printStackTrace();
 				Log.d(TAG, "Cannot read dtv sx unicable !!!");
 			}		
-		}
-		else if(fe_params.isDVBTMode()&&fe_params.getOFDM_Mode()==TVChannelParams.OFDM_MODE_DVBT2){
+		}else if(fe_params.isDVBTMode()&&fe_params.getOFDM_Mode()==TVChannelParams.OFDM_MODE_DVBT2){
 			//Add for DVBT2
 			device.setFrontendProp(43,p.getDvbt2PlpID());
+		}else if (fe_params.isISDBTMode()){
+			//ISDBT layer setting
+			device.setFrontendProp(41, fe_params.getISDBTLayer());
 		}
 		
 		synchronized(this){
@@ -1903,6 +1922,10 @@ public class TVService extends Service implements TVConfig.Update{
 					}
 					//else
 	              //      device.freeFrontend();
+
+					//
+					/*Set to config*/
+					setInputSourceToConfig();   
 				}else{
 				    Log.v(TAG, "source: " + source + " TVConst.SourceInput.SOURCE_MPEG: " + TVConst.SourceInput.SOURCE_MPEG);
 				    reqInputSource = source;
@@ -2158,9 +2181,16 @@ public class TVService extends Service implements TVConfig.Update{
 			}else if (name.equals("tv:dtv:mode")){
 				String strMode = config.getString("tv:dtv:mode");
 
-				Log.d(TAG, "tv:dtv:mode changed -> "+strMode+", clearing database...");
+				Log.d(TAG, "tv:dtv:mode changed -> "+strMode);
 				dtvMode = TVChannelParams.getModeFromString(strMode);
-				resolveRestoreFactorySetting(RESTORE_FL_DATABASE);
+				if(dtvMode >= 0){
+					/* restart epg */
+					String orderedTextLangs = config.getString("tv:scan:dtv:ordered_text_languages");
+					epgScanner.setSource(0, 0, dtvMode, orderedTextLangs);
+
+					/* reset the last played program id */
+					config.set("tv:last_program_id", new TVConfigValue(-1));
+				}
 			}
 		}catch(Exception e){
 		}
@@ -2281,6 +2311,7 @@ public class TVService extends Service implements TVConfig.Update{
 		/*restore config*/
 		if ((flags & RESTORE_FL_CONFIG) != 0){
 			config.restore();
+			setInputSourceToConfig();  
 		}
 		
 		/**/
@@ -2523,7 +2554,7 @@ public class TVService extends Service implements TVConfig.Update{
 		
 		recorder.open(device);
 
-		TVDataProvider.openDatabase(this);
+		TVDataProvider.openDatabase(this, config);
 	
 		bookManager.open(time, config);
 
@@ -2543,6 +2574,10 @@ public class TVService extends Service implements TVConfig.Update{
 			epgScanner.setDvbTextCoding(config.getString("tv:dtv:dvb_text_coding"));
 			
 			isAtvEnabled = config.getBoolean("tv:atv:enable");
+
+			/* Update current input source to config */
+			inputSource = device.getCurInputSource();
+			setInputSourceToConfig();   
 			
 			config.registerUpdate("tv:audio:language", this);
 			config.registerUpdate("tv:dtv:record_storage_path", this);            
@@ -2550,7 +2585,6 @@ public class TVService extends Service implements TVConfig.Update{
 			config.registerUpdate("setting", device);
 			config.registerRead("setting", device);
 			boolean lcn = config.getBoolean("tv:dtv:dvbt:lcn");
-			TVProgram.setLCNStatus(lcn);
 		}catch(Exception e){
 			Log.e(TAG, "intialize config failed");
 		}

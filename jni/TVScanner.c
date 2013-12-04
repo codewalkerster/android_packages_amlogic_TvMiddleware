@@ -439,6 +439,11 @@ static int tv_scan_get_channel_para(JNIEnv *env, jobject obj, jobject para, AM_F
         fparam[i].dtmb.para.inversion = 0;
         fparam[i].dtmb.para.u.ofdm.bandwidth = (*env)->GetIntField(env, para, bandwidth);
         break;
+	case FE_ISDBT:
+        fparam[i].dtmb.para.frequency = (*env)->GetIntField(env, para, freq);
+        fparam[i].dtmb.para.inversion = 0;
+        fparam[i].dtmb.para.u.ofdm.bandwidth = (*env)->GetIntField(env, para, bandwidth);
+        break;
     default:
         break;
     }

@@ -100,8 +100,14 @@ abstract public class TVClient
 					onConnected();
 					break;
 				case MSG_DISCONNECTED:
-					onDisconnected();
-					service = null;
+					if(service!=null){
+						onDisconnected();
+						try{
+							service.unregisterCallback(TVClient.this.callback);
+						}catch(android.os.RemoteException e){
+						}
+						service = null;
+					}
 					break;
 				case MSG_MESSAGE:
 					TVMessage tvmsg = (TVMessage)msg.obj;
@@ -174,7 +180,10 @@ abstract public class TVClient
      *@param context client运行的Context
      */
     public void disconnect(Context context) {
-        Log.d(TAG, "disconnect");
+	if(handler!=null){
+		Message msg = handler.obtainMessage(MSG_DISCONNECTED);
+		handler.sendMessage(msg);
+	}		
         context.unbindService(conn);
     }
 

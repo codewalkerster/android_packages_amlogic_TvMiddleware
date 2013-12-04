@@ -205,6 +205,11 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 			para->dtmb.para.frequency = freq;
 			para->dtmb.para.u.ofdm.bandwidth = (fe_bandwidth_t)bw;
 			break;	
+		case FE_ISDBT:
+			bw = env->GetIntField(chan, gChanParamsBWID);
+			para->isdbt.para.frequency = freq;
+			para->isdbt.para.u.ofdm.bandwidth = (fe_bandwidth_t)bw;
+			break;
 	}
 }
 
@@ -228,6 +233,9 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 			env->SetIntField(obj, gChanParamsSymID, para->u.qpsk.symbol_rate);
 			break;	
 		case FE_DTMB:
+			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
+			break;
+		case FE_ISDBT:
 			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
 			break;
 	}

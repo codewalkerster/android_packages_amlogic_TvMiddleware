@@ -299,7 +299,7 @@ abstract public class TVActivity extends Activity
 			int pgno;
 
 			pgno = (id1==0) ? 800 : id1*100;
-			pgno += Integer.parseInt(Integer.toHexString(id2));
+			pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
 			ttp = new TVSubtitleView.DTVTTParams(dmx_id, pid, pgno, 0x3F7F, 
 				getTeletextRegionID(getStringConfig("tv:teletext:region")));
 
@@ -310,13 +310,23 @@ abstract public class TVActivity extends Activity
 			}
 		}
 
+		boolean show_flag = true;
 		if(mode == SUBTITLE_SUB){
+			if(getBooleanConfig("tv:subtitle:enable"))
+				show_flag=true;
+			else
+				show_flag=false;
+			
 			subtitleView.startSub();
 		}else{
 			subtitleView.startTT();
+			show_flag=true;
 		}
 
-		subtitleView.show();
+		if(show_flag)
+			subtitleView.show();
+		else 
+			subtitleView.hide();
 
 		currSubtitleMode = mode;
 		currSubtitlePID  = pid;

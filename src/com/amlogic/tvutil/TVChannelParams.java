@@ -39,6 +39,8 @@ public class TVChannelParams  implements Parcelable {
 	public static final int MODE_ANALOG = 4;
 	/**DTMB模式*/
 	public static final int MODE_DTMB = 5;
+	/**ISDBT模式*/
+	public static final int MODE_ISDBT = 6;
 
 	public static final int OFDM_MODE_DVBT=0;
 	public static final int OFDM_MODE_DVBT2=1;
@@ -199,6 +201,16 @@ public class TVChannelParams  implements Parcelable {
 	public static final int SAT_POLARISATION_H = 0; 
 	/**垂直极限*/
 	public static final int SAT_POLARISATION_V = 1;	
+
+	/**ISDBT LAYER全输出*/
+	public static final int ISDBT_LAYER_ALL = 0;
+	/**ISDBT LAYER A*/
+	public static final int ISDBT_LAYER_A = 0;
+	/**ISDBT LAYER B*/
+	public static final int ISDBT_LAYER_B = 0;
+	/**ISDBT LAYER C*/
+	public static final int ISDBT_LAYER_C = 0;
+
     
 	public int mode;
 	public int frequency;
@@ -212,6 +224,7 @@ public class TVChannelParams  implements Parcelable {
 	public int sat_id;
 	public TVSatelliteParams tv_satparams;
 	public int sat_polarisation;
+	public int isdbtLayer;
 
 	public static final Parcelable.Creator<TVChannelParams> CREATOR = new Parcelable.Creator<TVChannelParams>(){
 		public TVChannelParams createFromParcel(Parcel in) {
@@ -245,6 +258,9 @@ public class TVChannelParams  implements Parcelable {
 				tv_satparams = new TVSatelliteParams(in);
 			sat_polarisation = in.readInt();
 		}		
+		if (mode == MODE_ISDBT){
+			isdbtLayer = in.readInt();
+		}
 	}
 
 	public void writeToParcel(Parcel dest, int flags){
@@ -275,6 +291,9 @@ public class TVChannelParams  implements Parcelable {
 			if(satparams_notnull == 1)
 				tv_satparams.writeToParcel(dest, flags);
 			dest.writeInt(sat_polarisation);	
+		}
+		if (mode == MODE_ISDBT){
+			dest.writeInt(isdbtLayer);
 		}
 	}
 
@@ -398,6 +417,22 @@ public class TVChannelParams  implements Parcelable {
 
 		tp.frequency = frequency;
 		tp.bandwidth = bandwidth;
+
+		return tp;
+	}
+
+	/**
+	 *创建ISDBT参数
+	 *@param frequency 频率Hz为单位
+	 *@param bandwidth 带宽
+	 *@return 返回新创建的参数
+	 */
+	public static TVChannelParams isdbtParams(int frequency, int bandwidth){
+		TVChannelParams tp = new TVChannelParams(MODE_ISDBT);
+
+		tp.frequency = frequency;
+		tp.bandwidth = bandwidth;
+		tp.isdbtLayer = ISDBT_LAYER_ALL;
 
 		return tp;
 	}
@@ -774,6 +809,18 @@ public class TVChannelParams  implements Parcelable {
 	}
 
 	/**
+	 *判断是参数否为ISDBT模式
+	 *@return true表示是ISDBT模式，false表示不是ISDBT模式
+	 */
+	public boolean isISDBTMode(){
+		if(mode==MODE_ISDBT){
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 *取得频率(单位Hz)
 	 @return 返回频率
 	 */
@@ -883,6 +930,28 @@ public class TVChannelParams  implements Parcelable {
 			throw new UnsupportedOperationException();
 
 		return this.sat_polarisation;
+	}	
+
+	/**
+	 *取得频率(单位Hz)
+	 @return 返回频率
+	 */
+	public int getISDBTLayer(){
+		if(mode != MODE_ISDBT)
+			throw new UnsupportedOperationException();
+
+		return isdbtLayer;
+	}
+
+	/**
+	 *设置Layer(ISDBT模式)
+	 *@param layer layer值
+	 */
+	public void setISDBTLayer(int layer){
+		if(mode != MODE_ISDBT)
+			throw new UnsupportedOperationException();
+	
+		this.isdbtLayer = isdbtLayer;
 	}	
 
 	/**
