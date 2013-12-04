@@ -130,6 +130,42 @@ static jstring get_java_string(const char *str)
     return jstr;
 }
 
+static jbyteArray get_byte_array(const char *str)  
+{  
+	JNIEnv *env;
+    int attached = 0;
+    int ret = -1;
+    int i;
+	
+    ret = (*gJavaVm)->GetEnv(gJavaVm, (void**) &env, JNI_VERSION_1_4);
+    if(ret <0) {
+        ret = (*gJavaVm)->AttachCurrentThread(gJavaVm,&env,NULL);
+        if(ret <0) {
+            log_error("callback handler:failed to attach current thread");
+            return NULL;
+        }
+        attached = 1;
+    }
+
+	jbyteArray byteArray = (*env)->NewByteArray(env, strlen(str)); 
+
+	jbyte *bytes = (*env)->GetByteArrayElements(env, byteArray, 0);  
+	for (i = 0; i < strlen(str); i++ )  
+	{  
+		bytes[i] = str[i];  
+	}  
+
+	(*env)->SetByteArrayRegion(env, byteArray, 0, strlen(str), bytes);  
+	
+    if(attached) {
+        log_info("callback handler:detach current thread");
+        (*gJavaVm)->DetachCurrentThread(gJavaVm);
+    }	
+	
+	return byteArray;  
+}  
+
+
 /**\brief java event callback*/
 static void tv_scan_onevent(int evt_type, ProgressData *pd)
 {
@@ -158,7 +194,7 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
     (*env)->SetIntField(env,event,\
                         (*env)->GetFieldID(env, gEventClass, "channelNumber", "I"), (int)(pd->cur_tp.index));
     (*env)->SetObjectField(env,event,\
-                           (*env)->GetFieldID(env, gEventClass, "programName", "Ljava/lang/String;"), pd->cur_name[0] ? get_java_string(pd->cur_name) : NULL);
+                           (*env)->GetFieldID(env, gEventClass, "programName", "[B"), pd->cur_name[0] ? get_byte_array(pd->cur_name) : NULL);
     /* Clear the name */
     pd->cur_name[0] = 0;
     (*env)->SetIntField(env,event,\
@@ -561,20 +597,6 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	sat_para = (*env)->GetFieldID(env,objclass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;"); 
 	ub = (*env)->GetFieldID(env,objclass, "user_band", "I");
 	ub_freq = (*env)->GetFieldID(env,objclass, "ub_freq", "I");	
-	langid = (*env)->GetFieldID(env,objclass, "defaultTextLang", "Ljava/lang/String;");
-	jstring lang = (jstring)(*env)->GetObjectField(env, para, langid); 
-	const char *strlang = (*env)->GetStringUTFChars(env, lang, 0);
-	if (strlang != NULL){
-		snprintf(start_para->default_text_lang, sizeof(start_para->default_text_lang), "%s", strlang);
-		(*env)->ReleaseStringUTFChars(env, lang, strlang);
-	}
-	langid = (*env)->GetFieldID(env,objclass, "orderedTextLangs", "Ljava/lang/String;");
-	lang = (jstring)(*env)->GetObjectField(env, para, langid); 
-	strlang = (*env)->GetStringUTFChars(env, lang, 0);
-	if (strlang != NULL){
-		snprintf(start_para->text_langs, sizeof(start_para->text_langs), "%s", strlang);
-		(*env)->ReleaseStringUTFChars(env, lang, strlang);
-	}
 	
 	start_para->fend_dev_id = (*env)->GetIntField(env, para, fend_id); 
 	java_mode = (*env)->GetIntField(env, para, mode); 

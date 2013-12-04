@@ -21,7 +21,7 @@ abstract public class TVScanner{
 		public int lockedStatus;
 		public int channelNumber;
 		public TVChannelParams channelParams;
-		public String programName;
+		public byte[] programName;
 		public int programType;
 		public String msg;
 		

@@ -34,6 +34,7 @@ import com.amlogic.tvutil.TVDimension;
 import com.amlogic.tvutil.TVEvent;
 import com.amlogic.tvutil.TVRegion;
 import com.amlogic.tvutil.TVDBTransformer;
+import com.amlogic.tvutil.TVMultilingualText;
 import com.amlogic.tvdataprovider.TVDataProvider;
 import android.os.SystemClock;
 import android.os.Looper;
@@ -2072,11 +2073,22 @@ public class TVService extends Service implements TVConfig.Update{
 			switch (event.type) {
 				case TVScanner.Event.EVENT_SCAN_PROGRESS:
 					Log.d(TAG, "Progress: " + event.percent + "%" + ", channel no. "+event.channelNumber);
+					String name = null;
+					
 					if (event.programName != null) {
-						Log.d(TAG, "New Program : "+ event.programName + ", type "+ event.programType);
+						try{
+							String composedName = new String(event.programName, "UTF-8");
+							name = TVMultilingualText.getText(this, composedName);
+							if (name == null || name.isEmpty()){
+								name = TVMultilingualText.getText(this, composedName, "first");
+							}
+							Log.d(TAG, "New Program : "+ name + ", type "+ event.programType);
+						}catch (Exception e){
+							e.printStackTrace();
+						}
 					}
 					sendMessage(TVMessage.scanUpdate(event.percent, event.channelNumber, event.totalChannelCount, 
-						event.channelParams, event.lockedStatus, event.programName, event.programType));
+						event.channelParams, event.lockedStatus, name, event.programType));
 					break;
 				case TVScanner.Event.EVENT_STORE_BEGIN:
 					Log.d(TAG, "Store begin...");

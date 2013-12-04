@@ -140,7 +140,7 @@ public class TVEvent{
 	 *@return 返回事件名
 	 */
 	public String getName(){
-		return name;
+		return TVMultilingualText.getText(context, name);
 	}
 
 	/**
@@ -226,7 +226,7 @@ public class TVEvent{
 			c.close();
 		}
 		
-		return descr;
+		return TVMultilingualText.getText(context, descr);
 	}
 	
 	/**
@@ -245,7 +245,8 @@ public class TVEvent{
 			}
 			c.close();
 		}
-		return ext_descr;
+		
+		return TVMultilingualText.getText(context, ext_descr);
 	}
 
 	/**
