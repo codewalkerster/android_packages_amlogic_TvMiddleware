@@ -1409,7 +1409,7 @@ public class TVService extends Service implements TVConfig.Update{
 		playCurrentProgramAV();
 	}
 	
-	
+
 	/*Start scan a specified channel*/
 	private void startChannelAnalyzing(int channelNo){
 		TVChannelParams cp = getChannelParamsByNo(channelNo);
@@ -1421,6 +1421,21 @@ public class TVService extends Service implements TVConfig.Update{
 		/*Send scan dtv channel start message.*/
 		sendMessage(TVMessage.scanDTVChannelStart(channelNo));
 		
+		TVScanParams sp = TVScanParams.dtvManualScanParams(0, cp);
+		resolveStartScan(sp);
+		channelParams = cp;
+		status = TVRunningStatus.STATUS_ANALYZE_CHANNEL;
+	}
+
+	private void startChannelAnalyzing(TVChannelParams cp){
+		if (cp == null || cp.getFrequency() <= 0){
+			Log.d(TAG, "Channel not exist, cannot analyze this channel!");
+			return;
+		}
+		Log.d(TAG, "Start analyzing DTV in channel ("+cp.getFrequency()+" Hz)...");
+		/*Send scan dtv channel start message.*/
+		sendMessage(TVMessage.scanDTVChannelStart(0));
+
 		TVScanParams sp = TVScanParams.dtvManualScanParams(0, cp);
 		resolveStartScan(sp);
 		channelParams = cp;
@@ -1473,6 +1488,11 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 		
 		channelParams = null;
+
+		/* update the current dtv program type */
+		if (validProgram.getType() != dtvProgramType)
+			dtvProgramType = validProgram.getType();
+
 		/*play this validProgram*/
 		resolvePlayProgram(TVPlayParams.playProgramByID(validProgram.getID()));
 	}
@@ -2058,7 +2078,10 @@ public class TVService extends Service implements TVConfig.Update{
 			case TVEpgScanner.Event.EVENT_CHANNEL_UPDATE:
 				Log.d(TAG, "Detect channel "+event.channelID+" update, try a re-scan now...");
 				if (event.channelID == channelID){
-					startChannelAnalyzing(getChannelNoByParams(channelParams));
+					if(channelParams.isATSCMode())
+						startChannelAnalyzing(getChannelNoByParams(channelParams));
+					else
+						startChannelAnalyzing(channelParams);
 				}
 			default:
 				break;
