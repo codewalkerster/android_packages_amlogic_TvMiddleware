@@ -88,6 +88,7 @@ extern "C" {
     static void draw_begin_cb(AM_TT2_Handle_t handle)
     {
         TVSubtitleData *sub = (TVSubtitleData*)AM_TT2_GetUserData(handle);
+        clear_bitmap(sub);		
 
         pthread_mutex_lock(&sub->lock);
     }
