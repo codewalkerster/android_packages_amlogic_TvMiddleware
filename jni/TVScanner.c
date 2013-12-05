@@ -23,7 +23,7 @@ typedef struct {
     jobject obj;
     AM_SCAN_TSProgress_t cur_tp;
     char msg[128];
-    char cur_name[AM_DB_MAX_SRV_NAME_LEN + 1];
+    char cur_name[1024];
 } ProgressData;
 
 enum {
@@ -351,7 +351,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             AM_SCAN_ProgramProgress_t *pp = (AM_SCAN_ProgramProgress_t*)evt->data;
             if (pp != NULL){
                 prog->cur_srv_type = pp->service_type;
-                strcpy(prog->cur_name, pp->name);
+                snprintf(prog->cur_name, sizeof(prog->cur_name), "%s", pp->name);
                 tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
             }
         }

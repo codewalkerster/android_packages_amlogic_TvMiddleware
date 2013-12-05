@@ -36,7 +36,6 @@ public class TVProgram{
 	public static final int SOURCE_ANALOG = 1 << TVChannelParams.MODE_ANALOG;
 	public static final int SOURCE_DTMB   = 1 << TVChannelParams.MODE_DTMB;
 
-
 	private Context context;
 	private int id;
 	private int dvbServiceID;
