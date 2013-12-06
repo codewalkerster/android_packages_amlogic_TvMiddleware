@@ -57,8 +57,9 @@ abstract public class TVScanner{
 		private int tunerStd;
 		/** Dtv set */
 		private int demuxID;
-		private String defaultTextLang;
-		private String orderedTextLangs;
+		private boolean resortAllPrograms;
+		private boolean clearSource;
+		private boolean mixTvRadio;
 		private TVChannelParams ChannelParamsList[];
 
 		/** Dtv-Sx set Unicable settings*/
@@ -69,11 +70,13 @@ abstract public class TVScanner{
 			super(sp);
 		}
 
-		public void setDtvParams(int dmxID, TVChannelParams[] chanelList, String defaultTextLang, String orderedTextLangs) {
+		public void setDtvParams(int dmxID, TVChannelParams[] chanelList, 
+			boolean resortAll, boolean clearAll, boolean mixTvRadio) {
 			this.demuxID = dmxID;
 			this.ChannelParamsList = chanelList;
-			this.defaultTextLang = defaultTextLang;
-			this.orderedTextLangs = orderedTextLangs;
+			this.resortAllPrograms = resortAll;
+			this.clearSource = clearAll;
+			this.mixTvRadio = mixTvRadio;
 
 			/*
 			Log.d(TAG, "setDtvParams " + this.ChannelParamsList.length);

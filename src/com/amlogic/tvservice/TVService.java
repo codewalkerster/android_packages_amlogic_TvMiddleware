@@ -1799,19 +1799,21 @@ public class TVService extends Service implements TVConfig.Update{
 			}		
 		}		
 
-		/* configure the SI text languages */
-		String defLang, orderedLangs;
+		/* get dtv scan params from config */
+		boolean resort, clear, mixTvRadio;
 		try{
-			defLang      = config.getString("tv:scan:dtv:default_text_language");
-			orderedLangs = config.getString("tv:scan:dtv:ordered_text_languages");
+			resort     = config.getBoolean("tv:scan:dtv:resort_all_programs");
+			clear      = config.getBoolean("tv:scan:dtv:clear_source");
+			mixTvRadio = config.getBoolean("tv:dtv:mix_tv_radio");
 		}catch(Exception e){
 			e.printStackTrace();
-			Log.d(TAG, "Cannot read SI text languages config !");
-			defLang      = "eng";
-			orderedLangs = "eng zho chi";
+			Log.d(TAG, "Cannot read DTV scan params config !");
+			resort     = false;
+			clear      = false;
+			mixTvRadio = false;
 		}
 		
-		tsp.setDtvParams(0, channelList, defLang, orderedLangs);
+		tsp.setDtvParams(0, channelList, resort, clear, mixTvRadio);
 
 		/** No exceptions, start scan */
 		stopPlaying();

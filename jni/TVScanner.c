@@ -573,7 +573,7 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 {
 	jfieldID amode, min_freq, max_freq, start_freq, direction, std, doptions;
 	jfieldID dmode, source, chan_para, freqs, mode, fend_id, dmx_id, chan_id,sat_id,sat_para;
-	jfieldID ub, ub_freq, langid;
+	jfieldID ub, ub_freq, resort, clear, mixtvradio;
 	int java_mode;
 	
 	jclass objclass =(*env)->FindClass(env,"com/amlogic/tvservice/TVScanner$TVScannerParams"); 
@@ -597,6 +597,9 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 	sat_para = (*env)->GetFieldID(env,objclass, "tv_satparams", "Lcom/amlogic/tvutil/TVSatelliteParams;"); 
 	ub = (*env)->GetFieldID(env,objclass, "user_band", "I");
 	ub_freq = (*env)->GetFieldID(env,objclass, "ub_freq", "I");	
+	resort = (*env)->GetFieldID(env,objclass, "resortAllPrograms", "Z");
+	clear = (*env)->GetFieldID(env,objclass, "clearSource", "Z");
+	mixtvradio = (*env)->GetFieldID(env,objclass, "mixTvRadio", "Z");
 	
 	start_para->fend_dev_id = (*env)->GetIntField(env, para, fend_id); 
 	java_mode = (*env)->GetIntField(env, para, mode); 
@@ -652,6 +655,9 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
 		log_info("DTV mode 0x%x" , start_para->dtv_para.mode);
         start_para->dtv_para.source = (*env)->GetIntField(env, para, source);
         start_para->dtv_para.dmx_dev_id = (*env)->GetIntField(env, para, dmx_id);
+		start_para->dtv_para.resort_all = (*env)->GetBooleanField(env, para, resort)?AM_TRUE:AM_FALSE;
+		start_para->dtv_para.clear_source = (*env)->GetBooleanField(env, para, clear)?AM_TRUE:AM_FALSE;
+		start_para->dtv_para.mix_tv_radio = (*env)->GetBooleanField(env, para, mixtvradio)?AM_TRUE:AM_FALSE;
         if ((start_para->dtv_para.mode&0x07) == AM_SCAN_DTVMODE_AUTO ||
             (start_para->dtv_para.mode&0x07) == AM_SCAN_DTVMODE_MANUAL) {
             jobject cp = (*env)->GetObjectField(env, para, chan_para);
@@ -717,6 +723,9 @@ static jint tv_scan_get_start_para(JNIEnv *env, jobject thiz, jobject para, AM_S
         start_para->dtv_para.mode |= (*env)->GetIntField(env, para, doptions);       
         start_para->dtv_para.source = (*env)->GetIntField(env, para, source);
         start_para->dtv_para.dmx_dev_id = (*env)->GetIntField(env, para, dmx_id);
+		start_para->dtv_para.resort_all = (*env)->GetBooleanField(env, para, resort)?AM_TRUE:AM_FALSE;
+		start_para->dtv_para.clear_source = (*env)->GetBooleanField(env, para, clear)?AM_TRUE:AM_FALSE;
+		start_para->dtv_para.mix_tv_radio = (*env)->GetBooleanField(env, para, mixtvradio)?AM_TRUE:AM_FALSE;
        
         jobjectArray freq_list = (*env)->GetObjectField(env, para, freqs);
         start_para->dtv_para.fe_cnt = tv_scan_get_fe_paras(env, thiz, start_para->dtv_para.source,
@@ -774,7 +783,6 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
     }
     
     prog->standard = para.dtv_para.standard;
-    para.dtv_para.resort_all = AM_FALSE;
     para.dtv_para.sort_method = AM_SCAN_SORT_BY_FREQ_SRV_ID;
     para.store_cb = NULL;
     /* Open frontend & demux */
