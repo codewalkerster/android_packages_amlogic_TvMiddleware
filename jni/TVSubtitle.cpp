@@ -167,6 +167,12 @@ extern "C" {
             while(rgn) {
                 int sx, sy, dx, dy, rw, rh;
 
+                /* ensure we have a valid buffer */
+                if (! rgn->p_buf){
+                    rgn = rgn->p_next;
+                    continue;
+                }
+                
                 sx = 0;
                 sy = 0;
                 dx = pic->original_x + rgn->left;
