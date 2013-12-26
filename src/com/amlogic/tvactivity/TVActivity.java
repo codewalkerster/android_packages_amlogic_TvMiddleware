@@ -1517,5 +1517,21 @@ abstract public class TVActivity extends Activity
 				return;
         } 
 	}
+
+	public void setBlackoutPolicy(String val){
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/blackout_policy"));
+			try {
+			writer.write(val);
+			} finally {
+			writer.close();
+			}
+		}catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}catch (Exception e) {
+			Log.e(TAG,"setVideoWindowSize ERROR!",e);
+			return;
+		} 
+	}
 }
 
