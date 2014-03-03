@@ -950,7 +950,7 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 {
 	//LOGE("--dev_set_video_window--%d ---%d---%d---%d\n",x,y,w,h);
 	char buf[64];
-	char outputmode[64]= {'\0'};
+	char outputmode[PROPERTY_VALUE_MAX]= {'\0'};
 	jint x_t=x;
 	jint y_t=y;
 	jint w_t=w;
