@@ -392,6 +392,8 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             tv_scan_onevent(EVENT_STORE_BEGIN, prog);
             break;
         case AM_SCAN_PROGRESS_STORE_END:
+	     log_info("====AM_SCAN_PROGRESS_STORE_END====%d----%d",  evt->data,&(evt->data));
+	     prog->progress	 = evt->data;
             tv_scan_onevent(EVENT_STORE_END, prog);
             break;
         case AM_SCAN_PROGRESS_SCAN_END:

@@ -64,7 +64,7 @@ public class TVScanParams implements Parcelable {
 			dtvMode = in.readInt();
 			dtvOptions = in.readInt();
 			tsSourceID = in.readInt();
-			if(dtvMode == DTV_MODE_MANUAL)
+			if(dtvMode == DTV_MODE_MANUAL||dtvMode == DTV_MODE_AUTO)
 				startParams = new TVChannelParams(in);
 			if((dtvMode == DTV_MODE_BLIND) || (dtvMode == DTV_MODE_ALLBAND)){
 				sat_id = in.readInt();
@@ -96,7 +96,7 @@ public class TVScanParams implements Parcelable {
 			dest.writeInt(dtvMode);
 			dest.writeInt(dtvOptions);
 			dest.writeInt(tsSourceID);
-			if(dtvMode == DTV_MODE_MANUAL)
+			if(dtvMode == DTV_MODE_MANUAL||dtvMode == DTV_MODE_AUTO)
 				startParams.writeToParcel(dest, flags);
 			if((dtvMode == DTV_MODE_BLIND) || (dtvMode == DTV_MODE_ALLBAND)){
 				dest.writeInt(sat_id);

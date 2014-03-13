@@ -106,6 +106,7 @@ public class TVMessage implements Parcelable{
 
 	public static final int TYPE_SCREEN_OFF = 48;
 	public static final int TYPE_SCREEN_ON = 49;
+	public static final int TYPE_NIT_TABLE_VER_CHANGED = 50;
 	
 	private static final String TAG="TVMessage";
 	private int type;

@@ -94,9 +94,11 @@ abstract public class TVClient
 					}
 
 					TVStatus s = getStatus();
-					currProgramType = s.programType;
-					currProgramNo   = s.programNo;
-					currProgramID   = s.programID;
+					if(s!=null){
+						currProgramType = s.programType;
+						currProgramNo   = s.programNo;
+						currProgramID   = s.programID;
+					}
 					onConnected();
 					break;
 				case MSG_DISCONNECTED:

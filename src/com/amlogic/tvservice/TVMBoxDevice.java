@@ -34,6 +34,8 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_stop_atv();
 	private native void native_play_dtv(int vpid, int vfmt, int apid, int afmt);
 	private native void native_switch_dtv_audio(int apid, int afmt);
+	private native void native_ad_start(int apid, int afmt);
+	private native void native_ad_stop();
 	private native void native_stop_dtv();
 	private native void native_start_recording(DTVRecordParams params);
 	private native void native_stop_recording();
@@ -143,6 +145,14 @@ abstract public class TVDeviceImpl extends TVDevice{
 
   	public void switchDTVAudio(int apid, int afmt){
 		native_switch_dtv_audio(apid, afmt);
+	}
+
+	public void startAD(int apid,int afmt){
+		native_ad_start(apid,afmt);
+	}
+
+	public void stopAD(){
+		native_ad_stop();
 	}
 
 	public void stopDTV(){

@@ -3,6 +3,7 @@
 #include <am_fend_ctrl.h>
 #include <am_misc.h>
 #include <am_rec.h>
+#include <am_ad.h>
 #include <jni.h>
 #include <android/log.h>
 #include <stdio.h>
@@ -27,6 +28,7 @@ typedef struct {
 	jobject   dev_obj;
 	AM_DMX_Source_t ts_src;
 	AM_AV_TimeshiftPara_t timeshift_para;
+	//AM_AD_Data_t ad_data;
 } TVDevice;
 
 #define FEND_DEV_NO    0
@@ -906,6 +908,8 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 	}
 
 	int di = 1;
+	char platform[PROPERTY_VALUE_MAX]= {'\0'};
+	property_get("ro.board.platform",platform,"meson6");
 
 	if(src == SOURCE_DTV)
 	{
@@ -914,8 +918,11 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 			/*disable deinterlace*/
 			//if(getSDKVersion()<17)
 			{
-				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
-				LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
+				if(!strncmp(platform, "meson6", 6)){		
+					AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
+					LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
+				}
+				
 			}	
 		}
 		else
@@ -923,24 +930,52 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 			/*enable deinterlace*/
 			//if(getSDKVersion()<17)
 			{
-				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
-				LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
+				if(!strncmp(platform, "meson6", 6)){
+					AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
+					LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
+				}
 			}	
 		}
 
-		AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
+		char platform[PROPERTY_VALUE_MAX]= {'\0'};
+		property_get("ro.board.platform",platform,"meson6");
+		if(!strncmp(platform, "meson6", 6)){		
+			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
+		}
+		else if(!strncmp(platform, "meson8", 6)){	
+			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_DMX0);
+		}
+		else 
+			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
+		
 		AM_AV_ClearVideoBuffer(AV_DEV_NO);
 	}
 	else
 	{
 		//if(getSDKVersion()<17)
 		{	
-			AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
-			LOGE("AM_AV_SetVPathPara exit\n");
+			if(!strncmp(platform, "meson6", 6)){
+				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
+				LOGE("AM_AV_SetVPathPara exit\n");
+			}	
 		}
 	}
 	
 }
+
+unsigned long getFreescaleOutputPara(char* cmd){
+    char prop_value[PROPERTY_VALUE_MAX];
+    unsigned long value=0;
+   
+    memset(prop_value, '\0', PROPERTY_VALUE_MAX);
+    property_get(cmd,prop_value,"0");
+    if (strcmp(prop_value, "\0") != 0) {
+		value = strtol(prop_value, NULL, 10);
+		//LOGE("value --- %ld", value);
+    }
+	return value;
+}
+
 
 static jint vidoview_x=0;
 static jint vidoview_y=0;
@@ -956,33 +991,174 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 	jint w_t=w;
 	jint h_t=h;
 
-	
+	long outputheight = 0;
+	long outputwidth =  0;
+	long outputx =  0;
+	long outputy =  0;
+
+	char free_scale_enable[32];
+	jboolean free_scale_state = false;
+	AM_FileRead("sys/class/graphics/fb0/free_scale", free_scale_enable, sizeof(free_scale_enable));
+	if(!strncmp(free_scale_enable, "free_scale_enable:[0x1]", 23)) {
+		free_scale_state = true;
+	}		
+
 	property_get("ubootenv.var.outputmode",outputmode,NULL);
+	char verstr[PROPERTY_VALUE_MAX];
+       int version=0;
+       property_get("ro.build.version.sdk",verstr,"10");
+
+	char platform[PROPERTY_VALUE_MAX];
+	property_get("ro.board.platform",platform,"meson6");
 
 	if(strstr(outputmode,"720")!=NULL){
-		
+		if(free_scale_state){			
+			outputheight =  getFreescaleOutputPara("ubootenv.var.720poutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.720poutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.720poutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.720poutputy");
+
+			
+				
+			x_t=x*outputwidth/1280+outputx;
+			y_t=y*outputheight/720+outputy;
+
+			w_t=w*outputwidth/1280;
+			h_t=h*outputheight/720;
+
+			if(x==0&&y==0&&w==0&&h==0){
+				x_t=outputx;
+				y_t=outputy;
+
+				w_t=outputwidth;
+				h_t=outputheight;
+			}
+			
+		}
+		else{
+			if(!strncmp(platform, "meson6", 6)){
+				if(sscanf(verstr, "%d", &version)==1){
+		                       if(version < 19){
+		  
+		                       }
+					 else{   //above 4.2
+						
+					 }  		   
+		               }
+			}
+			else{   //meson8
+				x_t=x;
+		               y_t=y;
+		               w_t=w;
+		               h_t=h;
+			}
+		}
 	}
 	else if(strstr(outputmode,"1080")!=NULL){
-		x_t=x*1920/1280;
-		y_t=y*1080/720;
-		w_t=w*1920/1280;
-		h_t=h*1080/720;
+		
+		if(free_scale_state){
+			outputheight =  getFreescaleOutputPara("ubootenv.var.1080poutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.1080poutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.1080poutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.1080poutputy");
+
+			x_t=(long)x*outputwidth/1920+outputx;
+			y_t=(long)y*outputheight/1080+outputy;
+
+			w_t=(long)w*outputwidth/1920;
+			h_t=(long)h*outputheight/1080;
+
+			
+			if(x==0&&y==0&&w==0&&h==0){
+				x_t=outputx;
+				y_t=outputy;
+
+				w_t=outputwidth;
+				h_t=outputheight;
+			}
+		}
+		else{
+			if(!strncmp(platform, "meson6", 6)){
+				if(sscanf(verstr, "%d", &version)==1){
+		                       if(version < 19){
+		                               x_t=x*1920/1280;
+		                               y_t=y*1080/720;
+		                               w_t=w*1920/1280;
+		                               h_t=h*1080/720;
+		                       }
+					 else{   //above 4.2
+						
+					 }  		   
+		               }
+			}
+			else{   //meson8
+				x_t=x;
+		               y_t=y;
+		               w_t=w;
+		               h_t=h;
+			}
+		}
 	}
 	else if(strstr(outputmode,"576")!=NULL){
-		x_t=x*720/1280;
-		y_t=y*576/720;
-		w_t=w*720/1280;
-		h_t=h*576/720;
+
+		if(free_scale_state){
+
+		}
+		else{
+			x_t=x*720/1280;
+			y_t=y*576/720;
+			w_t=w*720/1280;
+			h_t=h*576/720;
+			
+		}
 	}
 	else if(strstr(outputmode,"480")!=NULL){
-		x_t=x*720/1280;
-		y_t=y*480/720;
-		w_t=w*720/1280;
-		h_t=h*480/720;
+		if(free_scale_state){
+				
+			outputheight =  getFreescaleOutputPara("ubootenv.var.480poutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.480poutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.480poutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.480poutputy");
+			
+			x_t=(x*outputwidth/1280)+outputx;
+			y_t=(y*outputheight/720)+outputy;
+			w_t=w*outputwidth/1280;
+			h_t=h* outputheight/720;
+
+			if(x==0&&y==0&&w==0&&h==0){
+				x_t=outputx;
+				y_t=outputy;
+
+				w_t=outputwidth;
+				h_t=outputheight;
+			}
+		}
+		else{
+			if(!strncmp(platform, "meson6", 6)){
+				if(sscanf(verstr, "%d", &version)==1){
+		                       if(version < 19){
+		                              x_t=x*720/1280;
+						y_t=y*480/720;
+						w_t=w*720/1280;
+						h_t=h*480/720;
+		                       }
+					 else{   //above 4.2
+						
+					 }  		   
+		               }
+			}
+			else{   //meson8
+				x_t=x*720/1280;
+				y_t=y*480/720;
+				w_t=w*720/1280;
+				h_t=h*480/720;
+			}
+		}
+		
 	}
 	
-	
-	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, x_t+w_t, y_t+h_t);
+	//LOGE("-------------video_window--%d ---%d---%d---%d\n",x_t,y_t,w_t+x_t,h_t+y_t);
+	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, w_t+x_t, h_t+y_t);
 	vidoview_x=x;
 	vidoview_y=y;
 	vidoview_w=w;
@@ -1166,7 +1342,7 @@ static void dev_play_dtv(JNIEnv *env, jobject obj, jint vpid, jint vfmt, jint ap
 		return;
 
 	AM_AV_StartTS(AV_DEV_NO, vpid, apid, (AM_AV_VFormat_t)vfmt, (AM_AV_AFormat_t)afmt);
-	//LOGE("dev_play_dtv---%d---%d---%d---%d\n",vidoview_x,vidoview_y,vidoview_w,vidoview_h);
+	LOGE("dev_play_dtv---%d---%d---%d---%d\n",vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 	dev_set_video_window(env,obj,vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 }
 
@@ -1182,6 +1358,56 @@ static void dev_switch_dtv_audio(JNIEnv *env, jobject obj, jint apid, jint afmt)
 		AM_AV_SwitchTSAudio(AV_DEV_NO, apid, (AM_AV_AFormat_t)afmt);
 	}
 }
+
+static void dev_ad_start(JNIEnv *env, jobject obj, jint apid, jint afmt){
+	/*
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return;
+	
+	AM_AD_Para_t ad_para;
+	ad_para.dmx_id = AV_DEV_NO;
+	ad_para.pid = apid;
+	
+	AM_AD_Handle_t ad_handle = (AM_AD_Handle_t)dev->ad_date;
+	
+	ret = AM_AD_Create(&ad_handle, &ad_para);
+	if (ret != AM_SUCCESS)
+		goto error;
+
+	ret = AM_AD_Start(ad_handle);
+	if (ret != AM_SUCCESS)
+		goto error;
+
+	LOGI("start ad successfully!");
+	return ;
+error:
+	if (ad_handle != NULL){
+		AM_AD_Destroy(ad_handle);
+	}
+	LOGI("start ad failed!");
+	return;
+	*/
+}
+
+static void dev_ad_stop(JNIEnv *env, jobject obj){
+	/*
+	TVDevice *dev = get_dev(env, obj);
+	if(!dev->dev_open)
+		return;
+
+	AM_AD_Handle_t ad_handle = (AM_AD_Handle_t)&dev->ad_date;
+		
+
+	if(ad_handle!=NULL){
+		AM_AD_Stop(ad_handle);
+		AM_AD_Destroy(ad_handle);
+	}
+	
+	return ;
+	*/
+}
+
 
 static void dev_stop_dtv(JNIEnv *env, jobject obj)
 {
@@ -1450,6 +1676,8 @@ static JNINativeMethod gMethods[] = {
 	{"native_stop_atv", "()V", (void*)dev_stop_atv},
 	{"native_play_dtv", "(IIII)V", (void*)dev_play_dtv},
 	{"native_switch_dtv_audio", "(II)V", (void*)dev_switch_dtv_audio},
+	{"native_ad_start", "(II)V", (void*)dev_ad_start},
+	{"native_ad_stop", "()V", (void*)dev_ad_stop},
 	{"native_stop_dtv", "()V", (void*)dev_stop_dtv},
 	{"native_start_recording", "(Lcom/amlogic/tvutil/DTVRecordParams;)V", (void*)dev_start_recording},
 	{"native_stop_recording", "()V", (void*)dev_stop_recording},
