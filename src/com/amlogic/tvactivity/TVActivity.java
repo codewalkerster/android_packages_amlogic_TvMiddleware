@@ -557,11 +557,13 @@ abstract public class TVActivity extends Activity
 		if(subv!=null){
 			subtitleView = subv;
 			externalSubtitleView = true;
+			subtitleView.setLayerType(View.LAYER_TYPE_SOFTWARE, null); 
 			initSubtitle();
 		}else if(subtitleView == null) {
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
             externalSubtitleView = false;
+	     subtitleView.setLayerType(View.LAYER_TYPE_SOFTWARE, null); 	
             root.addView(subtitleView, 0);
             initSubtitle();
         }

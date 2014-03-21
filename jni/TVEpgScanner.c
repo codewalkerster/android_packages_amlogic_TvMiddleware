@@ -83,6 +83,12 @@ static void epg_evt_callback(int dev_no, int event_type, void *param, void *user
 		return;
 	memset(&edata, 0, sizeof(edata));
 	switch(event_type){
+		case AM_EPG_EVT_NEW_NIT:
+			log_info(".....................AM_EPG_EVT_NEW_NIT.................%d\n",(int)param);
+			edata.type = EVENT_NIT_END;
+			edata.dvbVersion =(int)param; 
+			epg_on_event(priv_data->obj, &edata);
+			break;
 		case AM_EPG_EVT_NEW_TDT:
 		case AM_EPG_EVT_NEW_STT:
 		{
@@ -159,6 +165,7 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
 	(*env)->SetIntField(env, obj, gHandleID, (jint)data);
 
 	/*注册EIT通知事件*/
+	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_NIT,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
 	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);

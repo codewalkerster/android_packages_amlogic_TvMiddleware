@@ -49,7 +49,7 @@ abstract public class TVEpgScanner{
         public int dvbServiceID;
         public long time;
         public int dvbVersion;
-        
+	 	
         public Event(int type){
 			this.type = type;
 		}
