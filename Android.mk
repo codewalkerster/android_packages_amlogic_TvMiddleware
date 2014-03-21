@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-include $(ANDROID_BUILD_TOP)/device/amlogic/$(TARGET_PRODUCT)/BoardConfig.mk
+-include $(ANDROID_BUILD_TOP)/device/amlogic/$(TARGET_PRODUCT)/BoardConfig.mk
 
 LOCAL_SRC_FILES := $(call all-java-files-under, src/com/amlogic/tvutil)
 LOCAL_SRC_FILES += $(call all-java-files-under, src/com/amlogic/tvclient)
