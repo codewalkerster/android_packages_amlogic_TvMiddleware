@@ -134,6 +134,7 @@ public class TVMessage implements Parcelable{
 	private TVChannelParams secCurParams;
 	private int secPositionerMoveUnit;	
 	private DTVRecordParams recordParams;
+	private int reserved=-1;
 
 	private int errorCode;
 	public static final int REC_ERR_NONE        = 0; // Success, no error
@@ -248,6 +249,8 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_RECORD_PARAM) != 0){
 			recordParams = new DTVRecordParams(in);
 		}
+
+		reserved = in.readInt();
 	}
 
 	public void writeToParcel(Parcel dest, int flag){
@@ -318,6 +321,8 @@ public class TVMessage implements Parcelable{
 		if((flags & FLAG_RECORD_PARAM) != 0){
 			recordParams.writeToParcel(dest, flag);
 		}
+
+		dest.writeInt(reserved);
 	}
 
 	public TVMessage(Parcel in){
@@ -335,6 +340,11 @@ public class TVMessage implements Parcelable{
 		this.type = type;
 	}
 
+	public TVMessage(int type,int reserved){
+		this.type = type;
+		this.reserved = reserved;
+	}
+
 	/**
 	 *取得消息类型
 	 *@return 返回消息类型
@@ -342,6 +352,12 @@ public class TVMessage implements Parcelable{
 	public int getType(){
 		return type;
 	}
+
+	public  int getReservedValue(){
+		return reserved;
+	}
+    
+
 
 	public int getSource(){
 		return inputSource;
@@ -998,7 +1014,7 @@ public class TVMessage implements Parcelable{
 			Log.d(TAG,"*************tvin_info is null TVMessage************");
         return msg;
     }
-    
+
 	/**
 	 *创建一个开始搜索当前Channel的DTV节目消息,一般用于ATSC频道分析
 	 *@param channelNo 频点在频率表中的序号

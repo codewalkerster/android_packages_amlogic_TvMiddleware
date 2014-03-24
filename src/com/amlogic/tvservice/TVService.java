@@ -573,25 +573,24 @@ public class TVService extends Service implements TVConfig.Update{
 				case TVEpgScanner.Event.EVENT_NIT_END:			
 					//Log.d(TAG, "-------------TVEpgScanner.Event.EVENT_NIT_END---------version number="+event.dvbVersion);	
 					try{
-						String mode = config.getString("tv:dtv:mode");
-						if(mode.contains("dvbs"))
-							return;
-						if(mode.contains("dvbc")||mode.contains("dvbt")||mode.contains("dvbt2")||mode.contains("isdbt")){
-						}				
-						int nit_version=config.getInt("tv:dtv:nit_version");
-						if(nit_version==-1){
-							return;
+						boolean nit_scan=config.getBoolean("tv:dtv:nit_scan");
+						if(nit_scan){
+							String mode = config.getString("tv:dtv:mode");
+							if(mode.contains("dvbs"))
+								return;
+							if(mode.contains("dvbc")||mode.contains("dvbt")||mode.contains("dvbt2")||mode.contains("isdbt")){
+								TVMessage msg = new TVMessage(TVMessage.TYPE_NIT_TABLE_VER_CHANGED,event.dvbVersion);
+								sendMessage(msg);
+							}	
 						}
-						else	 if(nit_version==event.dvbVersion)
-							return;
 					}catch(Exception e){
 						e.printStackTrace();
 					}	
 					break;
 			}
 
-			Message msg = handler.obtainMessage(MSG_EPG_EVENT, event);
-			handler.sendMessage(msg);
+			//Message msg = handler.obtainMessage(MSG_EPG_EVENT, event);
+			//handler.sendMessage(msg);
 		}
 	};
 	
@@ -2103,9 +2102,6 @@ public class TVService extends Service implements TVConfig.Update{
 					else
 						startChannelAnalyzing(channelParams);
 				}
-			case TVEpgScanner.Event.EVENT_NIT_END:
-				TVMessage msg = new TVMessage(TVMessage.TYPE_NIT_TABLE_VER_CHANGED);
-				sendMessage(msg);	
 				break;
 			default:
 				break;
@@ -2143,20 +2139,6 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 				case TVScanner.Event.EVENT_STORE_END:
 					Log.d(TAG, "Store end");
-					try{
-						String mode = config.getString("tv:dtv:mode");
-						if(mode.contains("dvbs"))
-							return;
-						if(mode.contains("dvbc")||mode.contains("dvbt")||mode.contains("dvbt2")||mode.contains("isdbt")){
-						}	
-						int nit_version=config.getInt("tv:dtv:nit_version");
-						if(nit_version==-1||nit_version!=event.percent){
-							config.set("tv:dtv:nit_version", new TVConfigValue(event.percent));
-						}
-					}catch(Exception e){
-						e.printStackTrace();
-					}	
-					
 					sendMessage(TVMessage.scanStoreEnd());
 					break;
 				case TVScanner.Event.EVENT_SCAN_END:
