@@ -1017,9 +1017,11 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 			outputwidth =  getFreescaleOutputPara("ubootenv.var.720poutputwidth");
 			outputx =  getFreescaleOutputPara("ubootenv.var.720poutputx");
 			outputy =  getFreescaleOutputPara("ubootenv.var.720poutputy");
+			if(outputheight==0&&outputwidth==0){
+				outputheight = 720-1;
+				outputwidth = 1280-1;
+			}
 
-			
-				
 			x_t=x*outputwidth/1280+outputx;
 			y_t=y*outputheight/720+outputy;
 
@@ -1055,13 +1057,26 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 		}
 	}
 	else if(strstr(outputmode,"1080")!=NULL){
-		
-		if(free_scale_state){
+		if(strstr(outputmode,"1080p")!=NULL){
 			outputheight =  getFreescaleOutputPara("ubootenv.var.1080poutputheight");
 			outputwidth =  getFreescaleOutputPara("ubootenv.var.1080poutputwidth");
 			outputx =  getFreescaleOutputPara("ubootenv.var.1080poutputx");
 			outputy =  getFreescaleOutputPara("ubootenv.var.1080poutputy");
-
+		}
+		else{
+			outputheight =  getFreescaleOutputPara("ubootenv.var.1080ioutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.1080ioutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.1080ioutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.1080ioutputy");
+		}
+		
+		
+		if(free_scale_state){
+			if(outputheight==0&&outputwidth==0){
+				outputheight = 1080-1;
+				outputwidth = 1920-1;
+			}
+			
 			x_t=(long)x*outputwidth/1920+outputx;
 			y_t=(long)y*outputheight/1080+outputy;
 
@@ -1100,25 +1115,79 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 		}
 	}
 	else if(strstr(outputmode,"576")!=NULL){
-
-		if(free_scale_state){
-
+		if(strstr(outputmode,"576p")!=NULL){
+			outputheight =  getFreescaleOutputPara("ubootenv.var.576poutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.576poutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.576poutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.576poutputy");
 		}
 		else{
-			x_t=x*720/1280;
-			y_t=y*576/720;
-			w_t=w*720/1280;
-			h_t=h*576/720;
+			outputheight =  getFreescaleOutputPara("ubootenv.var.576ioutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.576ioutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.576ioutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.576ioutputy");
+		}
+	
+		if(free_scale_state){
+			if(outputheight==0&&outputwidth==0){
+				outputheight = 576-1;
+				outputwidth = 720-1;
+			}
 			
+			x_t=(x*outputwidth/1280)+outputx;
+			y_t=(y*outputheight/720)+outputy;
+			w_t=w*outputwidth/1280;
+			h_t=h* outputheight/720;
+
+			if(x==0&&y==0&&w==0&&h==0){
+				x_t=outputx;
+				y_t=outputy;
+
+				w_t=outputwidth;
+				h_t=outputheight;
+			}
+		}
+		else{
+			if(!strncmp(platform, "meson6", 6)){
+				if(sscanf(verstr, "%d", &version)==1){
+		                       if(version < 19){
+		                             	x_t=x*720/1280;
+						y_t=y*576/720;
+						w_t=w*720/1280;
+						h_t=h*576/720;
+		                       }
+					 else{   //above 4.2
+						
+					 }  		   
+		               }
+			}
+			else{   //meson8
+				x_t=x*720/1280;
+				y_t=y*576/720;
+				w_t=w*720/1280;
+				h_t=h*576/720;
+			}
 		}
 	}
 	else if(strstr(outputmode,"480")!=NULL){
-		if(free_scale_state){
-				
+		if(strstr(outputmode,"480p")!=NULL){
 			outputheight =  getFreescaleOutputPara("ubootenv.var.480poutputheight");
 			outputwidth =  getFreescaleOutputPara("ubootenv.var.480poutputwidth");
 			outputx =  getFreescaleOutputPara("ubootenv.var.480poutputx");
 			outputy =  getFreescaleOutputPara("ubootenv.var.480poutputy");
+		}
+		else{
+			outputheight =  getFreescaleOutputPara("ubootenv.var.480ioutputheight");
+			outputwidth =  getFreescaleOutputPara("ubootenv.var.480ioutputwidth");
+			outputx =  getFreescaleOutputPara("ubootenv.var.480ioutputx");
+			outputy =  getFreescaleOutputPara("ubootenv.var.480ioutputy");
+		}
+		
+		if(free_scale_state){
+			if(outputheight==0&&outputwidth==0){
+				outputheight = 480-1;
+				outputwidth = 720-1;
+			}
 			
 			x_t=(x*outputwidth/1280)+outputx;
 			y_t=(y*outputheight/720)+outputy;
