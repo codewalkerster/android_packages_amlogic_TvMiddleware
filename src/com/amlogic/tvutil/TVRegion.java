@@ -280,6 +280,40 @@ public class TVRegion{
 	}
 
 	/**
+	 *取得当前支持的ISDBT国家名称
+	 *@param context 当前Context
+	 *@return 返回名称数组
+	 */
+	public static String[] getCountryByISDBT(Context context){
+		String[] ret = null;
+		
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null, "select * from region_table", null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int col;
+				String name;
+				String countryName;
+				HashSet set = new HashSet();
+				do{
+					col = c.getColumnIndex("name");
+					name = c.getString(col);
+
+					if (name.contains("ISDBT")){
+						countryName = name.substring(0, name.indexOf(','));
+						set.add(countryName);
+					}
+					
+				}while(c.moveToNext());
+				ret = (String[])set.toArray(new String[0]);
+			}
+			c.close();
+		}
+
+		return ret;
+	}
+
+	/**
 	 *取得Region的ID
 	 *@return 返回Region的ID
 	 */
