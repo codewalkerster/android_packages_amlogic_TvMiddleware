@@ -51,6 +51,7 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_resume();
 	private native void native_seek_to(int pos);
 	private native void native_setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit);
+	private native void native_switch_video_blackout(int val);
 
 	static{
 		System.loadLibrary("am_adp");
@@ -209,6 +210,10 @@ abstract public class TVDeviceImpl extends TVDevice{
 
 	public void seekTo(int pos){
 		native_seek_to(pos);
+	}
+
+	public void switch_video_blackout(int val){
+		native_switch_video_blackout(val);
 	}
 
 	protected void finalize() throws Throwable {

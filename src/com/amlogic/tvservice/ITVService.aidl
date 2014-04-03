@@ -162,6 +162,8 @@ interface ITVService{
       
 	//卫星设备控制
 	void secRequest(in TVMessage sec_msg);
+
+	void switch_video_blackout(int val);
     
 	void importDatabase(String inputXmlPath);
 

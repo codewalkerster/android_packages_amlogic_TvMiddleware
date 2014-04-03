@@ -1725,6 +1725,15 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 	}
 }
 
+	
+static void dev_switch_video_blackout(JNIEnv *env, jobject obj, jint v)
+{
+	if(v==0)
+		AM_AV_DisableVideoBlackout(AV_DEV_NO);
+	else
+		AM_AV_EnableVideoBlackout(AV_DEV_NO);
+}
+
 static JNINativeMethod gMethods[] = {
 	/* name, signature, funcPtr */
 	{"native_device_init", "()V", (void*)dev_init},
@@ -1761,7 +1770,8 @@ static JNINativeMethod gMethods[] = {
 	{"native_pause", "()V", (void*)dev_pause},
 	{"native_resume", "()V", (void*)dev_resume},
 	{"native_seek_to", "(I)V", (void*)dev_seek_to},
-	{"native_setSecRequest", "(ILcom/amlogic/tvutil/TVChannelParams;I)V", (void*)dev_setSecRequest}
+	{"native_setSecRequest", "(ILcom/amlogic/tvutil/TVChannelParams;I)V", (void*)dev_setSecRequest},
+	{"native_switch_video_blackout","(I)V",(void*)dev_switch_video_blackout}
 };
 
 JNIEXPORT jint

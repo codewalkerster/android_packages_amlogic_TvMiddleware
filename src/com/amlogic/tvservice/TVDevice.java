@@ -126,7 +126,8 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
     abstract public void SetCvbsAmpOut(int amp);
 
 	abstract public void setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit);
-	
+
+	abstract public void  switch_video_blackout(int val);
     public int GetSrcInputType()
     {
         return 0;

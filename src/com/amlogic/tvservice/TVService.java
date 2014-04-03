@@ -411,10 +411,14 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}	
 
+		public void switch_video_blackout(int val){
+			device.switch_video_blackout(val);
+		}	
+		
 		public void lock(TVChannelParams curParams){
 			Message msg = handler.obtainMessage(MSG_LOCK, curParams);
 			handler.sendMessage(msg);
-		}		
+		}	
 
         @Override
         public int GetSrcInputType(){

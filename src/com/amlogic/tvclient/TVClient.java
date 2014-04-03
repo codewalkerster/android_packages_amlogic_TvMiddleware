@@ -1015,6 +1015,15 @@ abstract public class TVClient
         }
     }	
 
+   public void switch_video_blackout(int val){
+	  if(service != null) {
+            try {
+                service.switch_video_blackout(val);
+            } catch(RemoteException e) {
+            }
+        }
+   }	
+
 	/**
 	 *将指定xml文件导入到当前数据库
 	 *@param inputXmlPath xml文件全路径
