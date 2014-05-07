@@ -915,28 +915,25 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 	{
 		if(!di)
 		{
-			/*disable deinterlace*/
-			//if(getSDKVersion()<17)
-			{
+			
 				if(!strncmp(platform, "meson6", 6)){		
 					AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
 					LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
 				}
 				
-			}	
+			
 		}
 		else
 		{
-			/*enable deinterlace*/
-			//if(getSDKVersion()<17)
-			{
+			
 				if(!strncmp(platform, "meson6", 6)){
 					AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
 					LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
 				}
-			}	
+				
 		}
-
+		
+		/*
 		char platform[PROPERTY_VALUE_MAX]= {'\0'};
 		property_get("ro.board.platform",platform,"meson6");
 		if(!strncmp(platform, "meson6", 6)){		
@@ -947,6 +944,7 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 		}
 		else 
 			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
+		*/
 		
 		AM_AV_ClearVideoBuffer(AV_DEV_NO);
 	}
