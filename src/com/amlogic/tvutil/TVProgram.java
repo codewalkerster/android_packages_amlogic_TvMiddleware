@@ -728,9 +728,7 @@ public class TVProgram{
 		ArrayList dvbSubsList = new ArrayList();
 		ArrayList ttxSubsList = new ArrayList();
 		Subtitle[] dvbSubs = null;
-		Subtitle[] ttxSubs = null;
-		
-		
+		Subtitle[] ttxSubs = null;		
 		for (int i=0; subs != null && i<subs.length; i++){
 			if (subs[i].getType() == Subtitle.TYPE_DTV_TELETEXT){
 				ttxSubsList.add(subs[i]);
@@ -771,24 +769,25 @@ public class TVProgram{
 				tlangs   += " "+ttxs[i].getLang();
 				ttypes   += " "+0x1/*not used*/;
 			}
+			
 			/*add subtitle ttx*/
 			for (int i=0; i<ttxSubsList.size(); i++){
 				tpids    += " "+ttxSubs[i].getPID();
-				tmagnums += " "+ttxSubs[i].getCompositionPageID();
-				tpgnums  += " "+ttxSubs[i].getAncillaryPageID();
+				tmagnums += " "+ttxSubs[i].getMagazineNumber();
+				tpgnums  += " "+ttxSubs[i].getPageNumber();
 				tlangs   += " "+ttxSubs[i].getLang();
 				ttypes   += " "+0x2;
 			}
 		}else if (ttxSubsList.size() > 0) {
 			tpids    += ttxSubs[0].getPID();
-			tmagnums += ttxSubs[0].getCompositionPageID();
-			tpgnums  += ttxSubs[0].getAncillaryPageID();
+			tmagnums += ttxSubs[0].getMagazineNumber();
+			tpgnums  += ttxSubs[0].getPageNumber();
 			tlangs   += ttxSubs[0].getLang();
 			ttypes   += 0x2; //maybe 0x5
 			for (int i=1; i<ttxSubsList.size(); i++){
 				tpids    += " "+ttxSubs[i].getPID();
-				tmagnums += " "+ttxSubs[i].getCompositionPageID();
-				tpgnums  += " "+ttxSubs[i].getAncillaryPageID();
+				tmagnums += " "+ttxSubs[i].getMagazineNumber();
+				tpgnums  += " "+ttxSubs[i].getPageNumber();
 				tlangs   += " "+ttxSubs[i].getLang();
 				ttypes   += " "+0x2;
 			}

@@ -460,12 +460,14 @@ error:
         AM_SUB2_Para_t subp;
         int ret;
 
+	memset(&pesp, 0, sizeof(pesp));
         pesp.packet    = pes_sub_cb;
         pesp.user_data = data;
         ret = AM_PES_Create(&data->pes_handle, &pesp);
         if(ret != AM_SUCCESS)
             goto error;
 
+	memset(&subp, 0, sizeof(subp));
         subp.show      = show_sub_cb;
         subp.get_pts   = get_pts_cb;
         subp.composition_id = page_id;
@@ -504,6 +506,7 @@ error:
         int ret;
 
         if(!data->tt_handle) {
+            memset(&ttp, 0, sizeof(ttp));
             ttp.draw_begin= draw_begin_cb;
             ttp.draw_end  = draw_end_cb;
             ttp.is_subtitle = is_sub;
@@ -521,6 +524,7 @@ error:
         AM_TT2_GotoPage(data->tt_handle, page, sub_page);
         AM_TT2_Start(data->tt_handle);
 
+	memset(&pesp, 0, sizeof(pesp));
         pesp.packet    = pes_tt_cb;
         pesp.user_data = data;
         ret = AM_PES_Create(&data->pes_handle, &pesp);
