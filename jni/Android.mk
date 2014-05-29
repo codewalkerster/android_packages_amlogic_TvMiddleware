@@ -59,11 +59,12 @@ LOCAL_C_INCLUDES := external/libzvbi/src \
 	bionic/libc/include \
 	packages/amlogic/LibPlayer/amadec/include \
 	packages/amlogic/LibPlayer/amcodec/include \
+	packages/amlogic/LibPlayer/amavutils/include \
 	packages/amlogic/LibPlayer/amffmpeg \
 	packages/amlogic/LibPlayer/amplayer \
 	$(DVB_PATH)/android/ndk/include
 
-LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libskia liblog libcutils
+LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libskia liblog libcutils libamavutils
 
 LOCAL_PRELINK_MODULE := false
 

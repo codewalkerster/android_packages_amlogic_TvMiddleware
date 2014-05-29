@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <cutils/properties.h>
+#include <Amavutils.h>
 
 extern "C" {
 
@@ -981,7 +982,8 @@ static jint vidoview_w=0;
 static jint vidoview_h=0;
 static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
 {
-	//LOGE("--dev_set_video_window--%d ---%d---%d---%d\n",x,y,w,h);
+#if 0 	
+	LOGE("--dev_set_video_window--%d ---%d---%d---%d\n",x,y,w,h);
 	char buf[64];
 	char outputmode[PROPERTY_VALUE_MAX]= {'\0'};
 	jint x_t=x;
@@ -1224,16 +1226,18 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 		
 	}
 	
-	//LOGE("-------------video_window--%d ---%d---%d---%d\n",x_t,y_t,w_t+x_t,h_t+y_t);
+	LOGE("-------------video_window--%d ---%d---%d---%d\n",x_t,y_t,w_t+x_t,h_t+y_t);
 	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, w_t+x_t, h_t+y_t);
 	vidoview_x=x;
 	vidoview_y=y;
 	vidoview_w=w;
 	vidoview_h=h;	
 
-	//LOGI("------%d---%d---%d---%d",x,y,w,h);
+	LOGI("------%d---%d---%d---%d",x,y,w,h);
 	
 	AM_FileEcho("/sys/class/video/axis", buf);
+#endif
+	amvideo_utils_set_virtual_position(x,y,w,h,0);
 	
 }
 
