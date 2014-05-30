@@ -1287,8 +1287,16 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 
 	AM_FEND_GetTSSource(FEND_DEV_NO, &src);
 
+	{
+		char buf[16];
+		memset(buf, 0, sizeof(buf));
+		AM_FileRead("/sys/class/stb/source", buf, sizeof(buf));
+		if(strncmp(buf, "dmx0", 4)) {
+			AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)(AM_AV_TS_SRC_DMX0+DMX_DEV_NO));
+		}
+	}
+
 	if(src != dev->ts_src){
-		AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)src);
 		AM_DMX_SetSource(DMX_DEV_NO, src);
 		AM_DMX_SetSource(DVR_DEV_NO, src);
 
@@ -1718,8 +1726,16 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 
 	AM_FEND_GetTSSource(FEND_DEV_NO, &src);
 
+	{
+		char buf[16];
+		memset(buf, 0, sizeof(buf));
+		AM_FileRead("/sys/class/stb/source", buf, sizeof(buf));
+		if(strncmp(buf, "dmx0", 4)) {
+			AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)(AM_AV_TS_SRC_DMX0+DMX_DEV_NO));
+		}
+	}
+
 	if(src != dev->ts_src){
-		AM_AV_SetTSSource(AV_DEV_NO, (AM_AV_TSSource_t)src);
 		AM_DMX_SetSource(DMX_DEV_NO, src);
 		AM_DMX_SetSource(DVR_DEV_NO, src);
 
