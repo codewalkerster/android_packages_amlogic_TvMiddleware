@@ -1282,7 +1282,7 @@ public class TVService extends Service implements TVConfig.Update{
 			TVProgram p;
 			TVProgram.Video video;
 			TVProgram.Audio audio;
-			int vpid = 0x1fff, apid = 0x1fff, vfmt = -1, afmt = -1;
+			int vpid = 0x1fff, apid = 0x1fff, pcr = 0x1fff, vfmt = -1, afmt = -1;
 
 			p = playParamsToProgram(getDTVPlayParams());
 			if(p != null){
@@ -1329,10 +1329,11 @@ public class TVService extends Service implements TVConfig.Update{
 
 				programVideoPID = vpid;
 				programAudioPID = apid;
+				pcr = p.getPCRPID();
 
 				if(!checkProgramBlock()){
-					Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+afmt);
-					device.playDTV(vpid, vfmt, apid, afmt);
+					Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+afmt+" pcr "+pcr);
+					device.playDTV(vpid, vfmt, apid, afmt, pcr);
 					switchAudTrack(p.getAudTrack());
 				}
 

@@ -1414,13 +1414,13 @@ static void dev_stop_atv()
 {
 }
 
-static void dev_play_dtv(JNIEnv *env, jobject obj, jint vpid, jint vfmt, jint apid, jint afmt)
+static void dev_play_dtv(JNIEnv *env, jobject obj, jint vpid, jint vfmt, jint apid, jint afmt, jint pcr)
 {
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
 
-	AM_AV_StartTS(AV_DEV_NO, vpid, apid, (AM_AV_VFormat_t)vfmt, (AM_AV_AFormat_t)afmt);
+	AM_AV_StartTSWithPCR(AV_DEV_NO, vpid, apid, pcr, (AM_AV_VFormat_t)vfmt, (AM_AV_AFormat_t)afmt);
 	LOGE("dev_play_dtv---%d---%d---%d---%d\n",vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 	dev_set_video_window(env,obj,vidoview_x,vidoview_y,vidoview_w,vidoview_h);
 }
@@ -1770,7 +1770,7 @@ static JNINativeMethod gMethods[] = {
 	{"native_stop_vbi", "(I)V", (void*)dev_stop_vbi},
 	{"native_play_atv", "()V", (void*)dev_play_atv},
 	{"native_stop_atv", "()V", (void*)dev_stop_atv},
-	{"native_play_dtv", "(IIII)V", (void*)dev_play_dtv},
+	{"native_play_dtv", "(IIIII)V", (void*)dev_play_dtv},
 	{"native_switch_dtv_audio", "(II)V", (void*)dev_switch_dtv_audio},
 	{"native_ad_start", "(II)V", (void*)dev_ad_start},
 	{"native_ad_stop", "()V", (void*)dev_ad_stop},

@@ -53,6 +53,7 @@ public class TVProgram{
 	private int sourceID;
 	private int audioTrack;
 	private int pmtPID;
+	private int pcrPID;
 	private int dvbt2_plp_id;
 	
 	/**
@@ -367,6 +368,9 @@ public class TVProgram{
 
 		col = c.getColumnIndex("pmt_pid");
 		pmtPID = c.getInt(col);
+
+		col = c.getColumnIndex("pcr_pid");
+		pcrPID = c.getInt(col);
 
 		if(type == 1)
 			this.type = TYPE_TV;
@@ -2572,5 +2576,11 @@ public class TVProgram{
 	return this.dvbt2_plp_id;
     }	
 
+	/**
+	 *取得PCR PID
+	 */
+	public int getPCRPID(){
+		return this.pcrPID;
+	}
 }
 
