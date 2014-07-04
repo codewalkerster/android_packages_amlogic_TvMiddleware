@@ -1425,6 +1425,15 @@ public class TVService extends Service implements TVConfig.Update{
 			device.setFrontend(fe_params);
 			Log.d(TAG, "Set frontend end");
 			status = TVRunningStatus.STATUS_SET_FRONTEND;
+
+			 if(fe_params.isDVBTMode()&&fe_params.getOFDM_Mode()==TVChannelParams.OFDM_MODE_DVBT2){
+			//Add for DVBT2
+				device.setFrontendProp(43,p.getDvbt2PlpID());
+			}else if (fe_params.isISDBTMode()){
+				//ISDBT layer setting
+				device.setFrontendProp(41, fe_params.getISDBTLayer());
+			}
+			
 			return;
 		}
 
