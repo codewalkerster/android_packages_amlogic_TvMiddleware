@@ -67,7 +67,7 @@ public class TVRegion{
 							channels[channelCount++] = TVChannelParams.dvbcParams(frequency, modulation, symbolRate);
 							break;
 						case TVChannelParams.MODE_OFDM:
-							channels[channelCount++] = TVChannelParams.dvbtParams(frequency,bandwidth);
+							channels[channelCount++] = TVChannelParams.dvbt2Params(frequency,bandwidth);
 							break;
 						case TVChannelParams.MODE_ATSC:
 							channels[channelCount++] = TVChannelParams.atscParams(frequency, modulation);
