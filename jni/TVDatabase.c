@@ -32,7 +32,8 @@ static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jo
 		log_info("setup database %p", handle);
 		AM_DB_Setup((char*)str, handle);
 
-		if(create){
+		//if(create)
+		{
 			log_info("create tables");
 			AM_DB_GetHandle(&handle);
 			AM_DB_CreateTables(handle);
