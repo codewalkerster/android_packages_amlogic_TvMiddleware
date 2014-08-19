@@ -24,7 +24,8 @@ import com.amlogic.tvutil.TVProgram;
 import com.amlogic.tvutil.TVBooking;
 import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvdataprovider.TVDataProvider;
-
+import java.net.URLDecoder;  
+import java.net.URLEncoder;   
 
 abstract public class TVRecorder{	
 	/** Record status */
@@ -70,10 +71,12 @@ abstract public class TVRecorder{
 		}else if (progName.isEmpty()){
 			progName = "Program";
 		}
-		
+ 		 
+		progName = URLEncoder.encode(progName);  
+   	 				
 		SimpleDateFormat sdf = new SimpleDateFormat("-MMddyyyy-HHmmss");
   		String prefixName = progName + sdf.format(new Date());
-
+ 
 		DTVRecordParams recStartPara = new DTVRecordParams(book,storePath+"/"+STORE_DIR, 
 			prefixName, SUFFIX_NAME, recordParams.isTimeshift);
 
