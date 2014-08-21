@@ -210,6 +210,7 @@ public class TVService extends Service implements TVConfig.Update{
 		public void setConfig(String name, TVConfigValue value){
 			try{
 				config.set(name, value);
+				onUpdate(name, value);
 			}catch(Exception e){
 				Log.e(TAG, "failed to set config "+name);
 			}
