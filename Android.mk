@@ -79,6 +79,8 @@ LOCAL_STATIC_JAVA_LIBRARIES := tvmiddleware
 LOCAL_PROGUARD_ENABLED := disabled
 LOCAL_CERTIFICATE := platform
 LOCAL_PACKAGE_NAME := TVService
+LOCAL_JNI_SHARED_LIBRARIES := libam_adp libam_mw libjnitvmboxdevice libjnitvdatabase libjnitvscanner libjnitvsubtitle libjnitvepgscanner libzvbi
+
 LOCAL_MODULE :=
 LOCAL_MODULE_CLASS :=
 include $(BUILD_PACKAGE)

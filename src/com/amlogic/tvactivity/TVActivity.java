@@ -474,6 +474,7 @@ abstract public class TVActivity extends Activity
             Log.d(TAG, "surfaceChanged");
 			try{
             	initSurface(holder);
+		 updateVideoWindow();
 			} catch(Exception e){
 			}
         }

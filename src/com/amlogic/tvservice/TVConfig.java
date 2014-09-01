@@ -24,6 +24,8 @@ import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
 
+import android.content.res.AssetManager; 
+
 /**
  *TV 配置管理
  */
@@ -292,13 +294,22 @@ public class TVConfig{
 		if(!loaded){
 			root = new TVConfigEntry();
 
+			AssetManager assetManager = this.context.getAssets(); 	
+
 			is = null;
 			try{
+
+				/*	
 				File file = new File("/system/etc/"+CFG_FILE_DEFAULT_NAME);
 
 				Log.d(TAG, "try to load "+file.toString());
 				is = new FileInputStream(file);
 				loadConfigFile(is);
+				*/
+			
+				is = assetManager.open(CFG_FILE_DEFAULT_NAME);
+
+				
 			}catch(Exception e){
 				Log.d(TAG, "load config failed");
 			}finally{

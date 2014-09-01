@@ -2597,6 +2597,44 @@ public class TVService extends Service implements TVConfig.Update{
 
 	}	
 
+
+	public void dynamicConfigDemodAndFe(){
+		String valuefe = null;
+
+		try{
+			valuefe = config.getString("tv:dtv:config_demod_fe");
+			Log.d(TAG, "valuefe = " + valuefe);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot read dynamic info !!!");
+		}			
+
+		
+		String[] valuefe_array =valuefe.split("\\|");
+
+		if(valuefe_array.length>0)
+		for(int i=0;i<valuefe_array.length;i++){
+			Log.d(TAG, "valuefe_array=="+valuefe_array[i]);
+		}		
+		for(int i=0;i<valuefe_array.length;i++){
+			try{
+				BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));
+				try {
+					
+						writer.write(valuefe_array[i]);
+					
+				} finally {
+					writer.close();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.d(TAG, "Cannot config fe !!!");
+			}
+		}
+	}
+
+
 	public IBinder onBind (Intent intent){
 		return mBinder;
 	}
@@ -2606,7 +2644,8 @@ public class TVService extends Service implements TVConfig.Update{
 
 		config = new TVConfig(this);
 
-		dynamicConfigFeAndDmx();
+		//dynamicConfigFeAndDmx();
+		dynamicConfigDemodAndFe();
 		
 		device = new TVDeviceImpl( this.getMainLooper()){
 			/*Device event handler*/
