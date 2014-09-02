@@ -21,12 +21,13 @@ import org.xml.sax.ErrorHandler;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
+import android.content.res.AssetManager; 
 
 public class TVDBTransformer{
 	public static final int DB_TO_XML = 0;
 	public static final int XML_TO_DB = 1;
 
-	private static final String DTD_PATH = "/system/etc/tv_default.dtd";
+	private static final String DTD_PATH = "tv_default.dtd";
 
 	private static final String feTypes[] = {"dvbs", "dvbc", "dvbt", "atsc", "analog", "dtmb", "isdbt"};
 	private static final String srvTypes[] = {"other", "dtv", "radio", "atv", "other"};
@@ -332,7 +333,7 @@ public class TVDBTransformer{
 		}
 	}
 	
-	private static void databaseToXml(SQLiteDatabase db, String xmlPath) throws Exception{
+	private static void databaseToXml(Context context,SQLiteDatabase db, String xmlPath) throws Exception{
 		Log.d(TAG, "Creating xml file "+xmlPath);
 		DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder=factory.newDocumentBuilder();
@@ -774,7 +775,7 @@ public class TVDBTransformer{
 		}
 	}
 
-	private static void xmlToDatabase(SQLiteDatabase db, String xmlPath) throws Exception{
+	private static void xmlToDatabase(Context context,SQLiteDatabase db, String xmlPath) throws Exception{
 		Log.d(TAG, "Clearing database ...");
 		db.execSQL("delete from net_table");
 		db.execSQL("delete from ts_table");
@@ -801,8 +802,11 @@ public class TVDBTransformer{
 		builder.setErrorHandler(h);
 
 		Document dom;
+		
 		try{
-			InputStream is = new FileInputStream(xmlPath);
+			//InputStream is = new FileInputStream(xmlPath);
+			AssetManager assetManager = context.getAssets(); 	
+			InputStream is = assetManager.open(xmlPath);
 			dom = builder.parse(is);
 		} catch (Exception e) {
 			Log.d(TAG, e.toString());    
@@ -886,11 +890,11 @@ public class TVDBTransformer{
 			
 	}
 	
-	public static void transform(int transDirection, SQLiteDatabase db, String xmlPath) throws Exception{
+	public static void transform(Context context,int transDirection, SQLiteDatabase db, String xmlPath) throws Exception{
 		if (transDirection == XML_TO_DB){
-			xmlToDatabase(db, xmlPath);
+			xmlToDatabase(context,db, xmlPath);
 		}else if (transDirection == DB_TO_XML){
-			databaseToXml(db, xmlPath);
+			databaseToXml(context,db, xmlPath);
 		}
 	}
 

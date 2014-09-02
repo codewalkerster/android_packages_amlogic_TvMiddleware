@@ -23,7 +23,6 @@ import android.os.Handler;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
-
 import android.content.res.AssetManager; 
 
 /**
@@ -308,7 +307,7 @@ public class TVConfig{
 				*/
 			
 				is = assetManager.open(CFG_FILE_DEFAULT_NAME);
-
+				loadConfigFile(is);
 				
 			}catch(Exception e){
 				Log.d(TAG, "load config failed");

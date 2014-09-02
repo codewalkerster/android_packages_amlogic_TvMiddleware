@@ -2376,7 +2376,7 @@ public class TVService extends Service implements TVConfig.Update{
 		
 		/*restore database*/
 		if ((flags & RESTORE_FL_DATABASE) != 0){
-			TVDataProvider.restore();
+			TVDataProvider.restore(this);
 		}
 		/*restore config*/
 		if ((flags & RESTORE_FL_CONFIG) != 0){
@@ -2600,16 +2600,20 @@ public class TVService extends Service implements TVConfig.Update{
 
 	public void dynamicConfigDemodAndFe(){
 		String valuefe = null;
+		String valuedmx = null;
+
+		Log.d(TAG, "dynamicConfigFeAndDmx !!!");
 
 		try{
 			valuefe = config.getString("tv:dtv:config_demod_fe");
 			Log.d(TAG, "valuefe = " + valuefe);
 			
+			valuedmx = config.getString("tv:dtv:config_dmx");
+			Log.d(TAG, "valuedmx = " + valuedmx);
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG, "Cannot read dynamic info !!!");
 		}			
-
 		
 		String[] valuefe_array =valuefe.split("\\|");
 
@@ -2632,6 +2636,18 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "Cannot config fe !!!");
 			}
 		}
+
+		try{
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/stb/hw_setting"));
+			try {
+				writer.write(valuedmx);
+			} finally {
+				writer.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot config dmx !!!");
+		}	
 	}
 
 

@@ -87,7 +87,9 @@ include $(BUILD_PACKAGE)
 
 
 ##################################################
+NO_CFG_FILES :=true
 
+ifneq ($(NO_CFG_FILES), true)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := tv_default.cfg
@@ -141,5 +143,5 @@ LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 
 ##################################################
-
+endif
 include $(call all-makefiles-under,$(LOCAL_PATH))

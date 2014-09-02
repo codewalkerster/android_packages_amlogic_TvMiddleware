@@ -68,7 +68,7 @@ public class TVDataProvider extends ContentProvider{
 		}
 	}
 
-	public synchronized static void restore(){
+	public synchronized static void restore(Context context){
 		db.getWritableDatabase().execSQL("delete from net_table");
 		db.getWritableDatabase().execSQL("delete from ts_table");
 		db.getWritableDatabase().execSQL("delete from srv_table");
@@ -82,16 +82,16 @@ public class TVDataProvider extends ContentProvider{
 		modified = true;
 		
 		/*load all builtin data*/
-		db.loadBuiltins();
+		db.loadBuiltins(context);
 	}
 
 	public synchronized static void importDatabase(Context context, String inputXmlPath) throws Exception{
-		db.importFromXml(inputXmlPath);
+		db.importFromXml(context,inputXmlPath);
 		modified = true;
 	}
 
 	public synchronized static void exportDatabase(Context context, String outputXmlPath) throws Exception{
-		db.exportToXml(outputXmlPath);
+		db.exportToXml(context,outputXmlPath);
 	}
 	
 	@Override

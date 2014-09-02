@@ -163,30 +163,30 @@ public class TVDatabase extends SQLiteOpenHelper
 
 		if(create){
 			/*Generate builtin data*/
-			loadBuiltins();
+			loadBuiltins(context);
 
 			pref.edit().putInt(DB_VERSION_FIELD, DB_VERSION).commit();
 		}
 	}
 
-	public void importFromXml(String inputXmlPath) throws Exception{
-		TVDBTransformer.transform(TVDBTransformer.XML_TO_DB, 
+	public void importFromXml(Context context, String inputXmlPath) throws Exception{
+		TVDBTransformer.transform(context,TVDBTransformer.XML_TO_DB, 
 			getWritableDatabase(), inputXmlPath);
 	}
 
-	public void exportToXml(String outputXmlPath) throws Exception{
-		TVDBTransformer.transform(TVDBTransformer.DB_TO_XML, 
+	public void exportToXml(Context context,String outputXmlPath) throws Exception{
+		TVDBTransformer.transform(context,TVDBTransformer.DB_TO_XML, 
 			getReadableDatabase(), outputXmlPath);
 	}
 	
 	/**
 	 *加载需要内置的数据到数据库
 	 */
-	public void loadBuiltins(){
+	public void loadBuiltins(Context context){
 		try{
 			/* load database from xml */
 			Log.d(TAG, "Loading default database from " + DEFAULT_DB_PATH + "...");
-			importFromXml(DEFAULT_DB_PATH);
+			importFromXml(context,DEFAULT_DB_PATH);
 		}catch (Exception e){
 			e.printStackTrace();
 		}
