@@ -27,7 +27,7 @@ public class TVDBTransformer{
 	public static final int DB_TO_XML = 0;
 	public static final int XML_TO_DB = 1;
 
-	private static final String DTD_PATH = "tv_default.dtd";
+	private static final String DTD_PATH = "system/etc/tv_default.dtd";
 
 	private static final String feTypes[] = {"dvbs", "dvbc", "dvbt", "atsc", "analog", "dtmb", "isdbt"};
 	private static final String srvTypes[] = {"other", "dtv", "radio", "atv", "other"};

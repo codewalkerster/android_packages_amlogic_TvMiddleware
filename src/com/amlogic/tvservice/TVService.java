@@ -2617,10 +2617,18 @@ public class TVService extends Service implements TVConfig.Update{
 		
 		String[] valuefe_array =valuefe.split("\\|");
 
-		if(valuefe_array.length>0)
-		for(int i=0;i<valuefe_array.length;i++){
-			Log.d(TAG, "valuefe_array=="+valuefe_array[i]);
-		}		
+		try{
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));
+			try {			
+					writer.write("disable 0");
+			} finally {
+				writer.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.d(TAG, "Cannot config fe !!!");
+		}
+
 		for(int i=0;i<valuefe_array.length;i++){
 			try{
 				BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));

@@ -16,7 +16,7 @@ import com.amlogic.tvutil.TVDBTransformer;
 public class TVDatabase extends SQLiteOpenHelper
 {
 	private static final String TAG = "TVDatabase";
-	private static final String DEFAULT_DB_PATH = "/system/etc/tv_default.xml";
+	private static final String DEFAULT_DB_PATH = "tv_default.xml";
 	private static final int DB_VERSION = 8;
 	private static final String DB_VERSION_FIELD = "DATABASE_VERSION";
 
