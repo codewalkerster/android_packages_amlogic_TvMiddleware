@@ -106,7 +106,10 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	private final ITVService.Stub mBinder = new ITVService.Stub(){
-
+		public void resetFeConfigAndDmxConfig(){
+			dynamicConfigDemodAndFe();
+		}
+	
 		public TVStatus getStatus(){
 			TVStatus s = new TVStatus();
 

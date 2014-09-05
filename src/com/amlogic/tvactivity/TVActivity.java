@@ -1525,5 +1525,9 @@ abstract public class TVActivity extends Activity
 	public void setBlackoutPolicy(int val){
 		client.switch_video_blackout(val);
 	}
+
+	public void FeConfigAndDmxConfig(){
+		client.resetFeConfigAndDmxConfig();
+	}
 }
 

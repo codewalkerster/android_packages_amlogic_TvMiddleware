@@ -16,6 +16,8 @@ import com.amlogic.tvutil.TVChannelParams;
 
 //TV Service接口
 interface ITVService{
+	void resetFeConfigAndDmxConfig();	
+	
 	//取得当前状态
 	TVStatus getStatus();
 

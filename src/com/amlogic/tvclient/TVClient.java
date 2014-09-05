@@ -1049,6 +1049,15 @@ abstract public class TVClient
 			}
 		}
 	}
-    
+
+	public void resetFeConfigAndDmxConfig(){
+		if(service != null) {
+			try {
+				service.resetFeConfigAndDmxConfig();
+			} catch(RemoteException e) {
+			}
+		}
+	}
+	
 }
 
