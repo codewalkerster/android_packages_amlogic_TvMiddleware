@@ -26,6 +26,8 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 		public static final int EVENT_PLAYBACK_START          = 10;
 		public static final int EVENT_PLAYBACK_END            = 11;
 		public static final int EVENT_DTV_DATA_RESUME         = 12;
+		public static final int EVENT_AUDIO_AC3_NO_LICENCE        =    13;
+		public static final int EVENT_AUDIO_AC3_LICENCE_RESUME    =     14;
 		
 		public int                                type;
 		public TVChannelParams                    feParams;

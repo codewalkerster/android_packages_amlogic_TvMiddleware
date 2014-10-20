@@ -51,7 +51,8 @@ typedef struct {
 #define EVENT_PLAYBACK_START          10
 #define EVENT_PLAYBACK_END            11
 #define EVENT_DTV_DATA_RESUME         12
-
+#define EVENT_AUDIO_AC3_NO_LICENCE            13
+#define EVENT_AUDIO_AC3_LICENCE_RESUME         14
 
 #define SOURCE_DTV	10
 
@@ -778,6 +779,10 @@ static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 		evttype = EVENT_DTV_NO_DATA;
 	}else if (event_type == AM_AV_EVT_AV_DATA_RESUME){
 		evttype = EVENT_DTV_DATA_RESUME;
+	}else if (event_type == AM_AV_EVT_AUDIO_AC3_NO_LICENCE){
+		evttype = EVENT_AUDIO_AC3_NO_LICENCE;
+	}else if (event_type == AM_AV_EVT_AUDIO_AC3_LICENCE_RESUME){
+		evttype = EVENT_AUDIO_AC3_LICENCE_RESUME;
 	}
 
 	if (evttype < 0)
@@ -831,6 +836,9 @@ static void dev_init(JNIEnv *env, jobject obj)
 	AM_EVT_Subscribe(0, AM_AV_EVT_AUDIO_SCAMBLED, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Subscribe(0, AM_AV_EVT_VIDEO_SCAMBLED, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Subscribe(0, AM_AV_EVT_AV_DATA_RESUME, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Subscribe(0, AM_AV_EVT_AUDIO_AC3_NO_LICENCE, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Subscribe(0, AM_AV_EVT_AUDIO_AC3_LICENCE_RESUME, dev_av_evt_cb, (void*)dev);
+	
 }
 
 static void dev_destroy(JNIEnv *env, jobject obj)
@@ -855,6 +863,10 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 	AM_EVT_Unsubscribe(0, AM_AV_EVT_AUDIO_SCAMBLED, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Unsubscribe(0, AM_AV_EVT_VIDEO_SCAMBLED, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Unsubscribe(0, AM_AV_EVT_AV_DATA_RESUME, dev_av_evt_cb, (void*)dev);
+
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_AUDIO_AC3_NO_LICENCE, dev_av_evt_cb, (void*)dev);
+	AM_EVT_Unsubscribe(0, AM_AV_EVT_AUDIO_AC3_LICENCE_RESUME, dev_av_evt_cb, (void*)dev);
+	
 	
 	free(dev);
 }
