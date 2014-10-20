@@ -87,18 +87,23 @@ abstract public class TVActivity extends Activity
 		subtitleViewActive=false;
 		if(subtitleView != null){
 			subtitleView.setActive(false);
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.hide();
+			
 		}
-		super.onStop();
+		super.onPause();
 	}
 
 	protected void onResume(){
 		Log.d(TAG, "onResume");
 		
-        super.onResume();
+        	super.onResume();
 		subtitleViewActive=true;
 		updateVideoWindow();
 		if(subtitleView != null){
-			subtitleView.setActive(true);
+			subtitleView.setActive(true);	
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.show();
 		}
 	}
 	
@@ -583,8 +588,11 @@ abstract public class TVActivity extends Activity
             updateVideoWindow();
         }
 
-		if(subtitleViewActive&&subtitleView!=null)
+		if(subtitleViewActive&&subtitleView!=null){
 			subtitleView.setActive(true);
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.show();
+		}	
     }
 
 	public void openVideo(){
