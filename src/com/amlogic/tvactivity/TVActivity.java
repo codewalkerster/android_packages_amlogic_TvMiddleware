@@ -87,18 +87,23 @@ abstract public class TVActivity extends Activity
 		subtitleViewActive=false;
 		if(subtitleView != null){
 			subtitleView.setActive(false);
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.hide();
+			
 		}
-		super.onStop();
+		super.onPause();
 	}
 
 	protected void onResume(){
 		Log.d(TAG, "onResume");
 		
-        super.onResume();
+        	super.onResume();
 		subtitleViewActive=true;
 		updateVideoWindow();
 		if(subtitleView != null){
-			subtitleView.setActive(true);
+			subtitleView.setActive(true);	
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.show();
 		}
 	}
 	
@@ -135,8 +140,8 @@ abstract public class TVActivity extends Activity
 	private int getTeletextRegionID(String ttxRegionName){
 		final String[] supportedRegions= {"English", "Deutsch", "Svenska/Suomi/Magyar",
                                           "Italiano", "Français", "Português/Español", 
-                                          "Cesky/Slovencina", "Türkçe", "Ellinika"};
-		final int[] regionIDMaps = {16, 17, 18, 19, 20, 21, 14, 22, 55};
+                                          "Cesky/Slovencina", "Türkçe", "Ellinika","Alarabia / English"};
+		final int[] regionIDMaps = {16, 17, 18, 19, 20, 21, 14, 22, 55 , 64};
 
 		int i;
 		for (i=0; i<supportedRegions.length; i++){
@@ -584,8 +589,11 @@ abstract public class TVActivity extends Activity
             updateVideoWindow();
         }
 
-		if(subtitleViewActive&&subtitleView!=null)
+		if(subtitleViewActive&&subtitleView!=null){
 			subtitleView.setActive(true);
+			if(getBooleanConfig("tv:subtitle:enable"))
+				subtitleView.show();
+		}	
     }
 
 	public void openVideo(){
@@ -1407,33 +1415,32 @@ abstract public class TVActivity extends Activity
 	 *@param mode screen type  0：normal 2：4-3 3：16-9
 	 */
 	public void switchScreenType(int mode){
-		
-		String value=null;
-		switch(mode){
-			case 0:
-				value="0";
-				break;
-			case 2:
-				value="2";
-				break;
-			case 3:
-				value="3";
-				break;
-		}
+		/************************************
+		VIDEO_WIDEOPTION_4_3_IGNORE       = 6,
+		VIDEO_WIDEOPTION_4_3_LETTER_BOX   = 7,
+		VIDEO_WIDEOPTION_4_3_PAN_SCAN     = 8,
+		VIDEO_WIDEOPTION_4_3_COMBINED     = 9,
+		VIDEO_WIDEOPTION_16_9_IGNORE      = 10,
+		VIDEO_WIDEOPTION_16_9_LETTER_BOX  = 11,
+		VIDEO_WIDEOPTION_16_9_PAN_SCAN    = 12,
+		VIDEO_WIDEOPTION_16_9_COMBINED    = 13,
+		***************************************/
+	
+		String value=String.valueOf(mode);
 
 		try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/screen_mode"));
-            try {
-                writer.write(value);
-                } finally {
-                    writer.close();
-                }
-        }catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }catch (Exception e) {
-                Log.e(TAG,"set screen_mode ERROR!",e);
-				return;
-        } 
+			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/screen_mode"));
+			try {
+				writer.write(value);
+			} finally {
+				writer.close();
+			}
+		}catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}catch (Exception e) {
+		        Log.e(TAG,"set screen_mode ERROR!",e);
+			return;
+		} 
 
 	}
 	
@@ -1463,18 +1470,59 @@ abstract public class TVActivity extends Activity
 		if(val!=null){
 			Log.d(TAG,"---"+val);
 			//return Integer.valueOf(val);
-			if(val.equals("0:normal")){				
-				return 0;			
+			if(val.contains("1:full stretch")){				
+				return 1;			
+			}
+			if(val.contains("6:4-3 ignore")){				
+				return 6;			
 			}			
-			else  if(val.equals("2:4-3")){				
-				return 2;		
+			else  if(val.equals("7:4-3 letter box")){				
+				return 7;		
 			}			
-			else  if(val.equals("3:16-9")){			
-				return 3;	
+			else  if(val.equals("8:4-3 pan scan")){			
+				return 8;	
+			}
+			else  if(val.equals("9:4-3 combined")){			
+				return 9;	
+			}
+			else  if(val.equals("10:16-9 ignore")){			
+				return 10;	
+			}
+			else  if(val.equals("11:16-9 letter box")){			
+				return 11;	
+			}
+			else  if(val.equals("12:16-9 pan scan")){			
+				return 12;	
+			}
+			else  if(val.equals("13:4-3 combined")){			
+				return 13;	
 			}
 		}
 		
-		return 0;
+		return 1;
+	}
+
+	public String getScreenTypeStrings(){
+		String val= "Full";
+		
+		File file = new File("/sys/class/video/screen_mode");
+		if (!file.exists()) {        	
+			return val;
+		}
+
+		//read
+		try {
+			BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/screen_mode"), 1);
+			try {
+				val=in.readLine();
+			} finally {
+				in.close();
+    			}
+		} catch (Exception e) {
+			Log.e(TAG, "IOException when read screen_mode");
+		}
+		
+		return val;
 	}
 
 

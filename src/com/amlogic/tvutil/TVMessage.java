@@ -107,6 +107,9 @@ public class TVMessage implements Parcelable{
 	public static final int TYPE_SCREEN_OFF = 48;
 	public static final int TYPE_SCREEN_ON = 49;
 	public static final int TYPE_NIT_TABLE_VER_CHANGED = 50;
+
+	public static final int TYPE_AUDIO_AC3_NO_LICENCE = 51;
+	public static final int TYPE_AUDIO_AC3_LICENCE_RESUME = 52;
 	
 	private static final String TAG="TVMessage";
 	private int type;
@@ -809,6 +812,26 @@ public class TVMessage implements Parcelable{
 
 		msg.flags = FLAG_PROGRAM_ID;
 		msg.type = TYPE_DATA_LOST;
+		msg.programID = programID;
+
+		return msg;
+	}
+
+	public static TVMessage ac3NoLience(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_AUDIO_AC3_NO_LICENCE;
+		msg.programID = programID;
+
+		return msg;
+	}
+
+	public static TVMessage ac3LienceResume(int programID){
+		TVMessage msg = new TVMessage();
+
+		msg.flags = FLAG_PROGRAM_ID;
+		msg.type = TYPE_AUDIO_AC3_LICENCE_RESUME;
 		msg.programID = programID;
 
 		return msg;

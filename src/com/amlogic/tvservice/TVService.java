@@ -2094,6 +2094,14 @@ public class TVService extends Service implements TVConfig.Update{
 				Log.d(TAG, "DTV av data resumed.");
 				sendMessage(TVMessage.dataResume(programID));
 				break;
+			case TVDevice.Event.EVENT_AUDIO_AC3_NO_LICENCE:
+				Log.d(TAG, "DTV AC3 no licence.");
+				sendMessage(TVMessage.ac3NoLience(programID));
+				break;
+			case TVDevice.Event.EVENT_AUDIO_AC3_LICENCE_RESUME:
+				Log.d(TAG, "DTV EVENT_AUDIO_AC3_LICENCE_RESUME.");
+				sendMessage(TVMessage.ac3LienceResume(programID));
+				break;	
 		}
 	}
 
