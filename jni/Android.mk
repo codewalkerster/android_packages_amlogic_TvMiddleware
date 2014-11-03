@@ -49,6 +49,27 @@ include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE    := libjnitvdbcheck
+LOCAL_MODULE_TAGS := optional
+LOCAL_SRC_FILES := TVDatabaseCheck.c
+LOCAL_ARM_MODE := arm
+LOCAL_C_INCLUDES := external/libzvbi/src \
+	$(DVB_PATH)/include/am_mw \
+	$(DVB_PATH)/include/am_adp \
+	external/sqlite/dist \
+	bionic/libc/include \
+	$(DVB_PATH)/android/ndk/include
+
+LOCAL_SHARED_LIBRARIES += libzvbi libam_mw libam_adp libsqlite libskia liblog
+
+LOCAL_PRELINK_MODULE := false
+
+include $(BUILD_SHARED_LIBRARY)
+
+#######################################################################
+
+include $(CLEAR_VARS)
+
 LOCAL_MODULE    := libjnitvmboxdevice
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := TVMBoxDevice.cpp

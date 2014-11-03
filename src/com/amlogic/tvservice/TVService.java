@@ -2138,6 +2138,10 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolveScanEvent(TVScanner.Event event){
 		Log.d(TAG, "Channel scan event: " + event.type);
 
+		if(event.type == TVScanner.Event.EVENT_STORE_BEGIN){
+			Log.d(TAG, "@@TvService to back up database");	
+			TVDataProvider.backUpDatabase();
+		}
 		if (status == TVRunningStatus.STATUS_SCAN){
 			switch (event.type) {
 				case TVScanner.Event.EVENT_SCAN_PROGRESS:

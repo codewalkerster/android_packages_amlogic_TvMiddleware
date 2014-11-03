@@ -132,8 +132,8 @@ public class TVDatabase extends SQLiteOpenHelper
 		native_db_unsetup();
 	}
 
-	public TVDatabase(Context context, String dbName){
-		super(context, dbName, null, DB_VERSION);
+	public TVDatabase(Context context, String dbName, TVDatabaseErrorHandler dbErrorHandle){
+		super(context, dbName, null, DB_VERSION, dbErrorHandle);
 
 		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
 		int curVer = pref.getInt(DB_VERSION_FIELD, -1);

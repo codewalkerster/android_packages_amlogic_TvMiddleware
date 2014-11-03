@@ -18,12 +18,18 @@ public class TVDataProvider extends ContentProvider{
 	private static final String TAG = "TVDataProvider";
 	private static final String DB_NAME = "dvb.db";
 	private static final String AUTHORITY = "com.amlogic.tv.tvdataprovider";
+	private static final String DB_PATH = "/data/data/com.amlogic.tvservice/databases/dvb.db";
+	private static final String DB_BAK_PATH = "/data/data/com.amlogic.tvservice/databases/dvb.db.bak";
 	private static final int RD_SQL = 1;
 	private static final int WR_SQL = 2;
 	private static final int RD_CONFIG = 3;
 	private static final int WR_CONFIG = 4;
 	private static final UriMatcher URI_MATCHER;
-	
+	private static final int FORMAT_OK = 0;
+	private static final int MINOR_FORMAT_ERROR = 1;
+	private static final int MAJOR_FORMAT_ERROR = 2;
+	private static final int FORMAT_ERROR = 3;
+
 	public static final Uri RD_URL = Uri.parse("content://com.amlogic.tv.tvdataprovider/rd_db");
 	public static final Uri WR_URL = Uri.parse("content://com.amlogic.tv.tvdataprovider/wr_db");
 	public static final Uri RD_CONFIG_URL = Uri.parse("content://com.amlogic.tv.tvdataprovider/rd_config");
@@ -33,7 +39,10 @@ public class TVDataProvider extends ContentProvider{
 	private static TVDatabase db;
 	private static boolean modified = false;
 	private static TVConfig config;
+	private static TVDatabaseErrorHandler errorHandle;
 
+
+	private native static int native_db_check();
 	static{
 		URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
 		URI_MATCHER.addURI(TVDataProvider.AUTHORITY, "rd_db", RD_SQL);
@@ -45,7 +54,24 @@ public class TVDataProvider extends ContentProvider{
 
 	public synchronized static void openDatabase(Context context, TVConfig cfg){
 		if(openCount == 0){
-			db = new TVDatabase(context, DB_NAME);
+			errorHandle = new TVDatabaseErrorHandler();
+			int db_check = native_db_check();
+			//String dbName = new String(DB_PATH);
+			//String dbBakName = new String(DB_BAK_PATH);
+			if(db_check == FORMAT_OK) {
+				Log.d(TAG, "*************check db ok, do nothing");
+			}else if(db_check == MINOR_FORMAT_ERROR) {
+				Log.d(TAG, "*************check db_bak is error, do backup");
+				errorHandle.copyFile(DB_PATH, DB_BAK_PATH);
+			}else if(db_check == MAJOR_FORMAT_ERROR) {
+				Log.d(TAG, "*************check db is error, do recovery");
+				errorHandle.copyFile(DB_BAK_PATH, DB_PATH);
+			}else if(db_check == FORMAT_ERROR) {
+				Log.d(TAG, "*************check db&bak is error, do delete");
+				errorHandle.deleteDatabaseFile(DB_PATH);
+				errorHandle.deleteDatabaseFile(DB_BAK_PATH);
+			}
+			db = new TVDatabase(context, DB_NAME, errorHandle);
 			modified = true;
 		}
 		if (cfg != null){
@@ -80,10 +106,15 @@ public class TVDataProvider extends ContentProvider{
 		db.getWritableDatabase().execSQL("delete from sat_para_table");
 		db.getWritableDatabase().execSQL("delete from region_table");
 		modified = true;
-		
+
 		/*load all builtin data*/
 		db.loadBuiltins(context);
 	}
+
+	/*Load native library*/
+    static {
+        System.loadLibrary("jnitvdbcheck");
+    }
 
 	public synchronized static void importDatabase(Context context, String inputXmlPath) throws Exception{
 		db.importFromXml(context,inputXmlPath);
@@ -93,7 +124,7 @@ public class TVDataProvider extends ContentProvider{
 	public synchronized static void exportDatabase(Context context, String outputXmlPath) throws Exception{
 		db.exportToXml(context,outputXmlPath);
 	}
-	
+
 	@Override
 	public boolean onCreate()
 	{
@@ -121,13 +152,13 @@ public class TVDataProvider extends ContentProvider{
 			modified = true;
 		}else if (id == RD_CONFIG){
 			String strType;
-			
-			if (selection == null || selectionArgs == null || 
+
+			if (selection == null || selectionArgs == null ||
 				selectionArgs.length < 1 || config == null){
 				Log.d(TAG, "Cannot read config, invalid args.");
 				return c;
 			}
-			
+
 			/* parse the config type */
 			strType = selectionArgs[0];
 			if (!strType.equalsIgnoreCase("Int") &&
@@ -152,17 +183,17 @@ public class TVDataProvider extends ContentProvider{
 			}catch (Exception e){
 
 			}
-			
+
 			c = mc;
 		}else if (id == WR_CONFIG && selection != null){
 			String strType, strValue;
-			
-			if (selection == null || selectionArgs == null || 
+
+			if (selection == null || selectionArgs == null ||
 				selectionArgs.length < 2 || config == null){
 				Log.d(TAG, "Cannot write config, invalid args.");
 				return c;
 			}
-			
+
 			/* parse the config type */
 			strType = selectionArgs[0];
 			if (!strType.equalsIgnoreCase("Int") &&
@@ -213,6 +244,12 @@ public class TVDataProvider extends ContentProvider{
 			modified = false;
 			db.sync();
 		}
+	}
+
+	public static boolean backUpDatabase(){
+		//String dbName = new String(DB_PATH);
+		//String dbBakName = new String("/data/data/com.amlogic.tvservice/databases/dvb.db.bak");
+		return errorHandle.copyFile(DB_PATH, DB_BAK_PATH);
 	}
 }
 
