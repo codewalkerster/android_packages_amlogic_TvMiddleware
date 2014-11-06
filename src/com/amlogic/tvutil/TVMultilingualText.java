@@ -28,7 +28,10 @@ public class TVMultilingualText{
 								"eng");
 				}
 				if (formatString.length() > 3){
-					text = formatString.substring(3, formatString.length());
+					if(formatString.startsWith("xxx"))
+						text = formatString.substring(3, formatString.length());
+					else 
+						text = formatString.substring(0, formatString.length());
 				}else{
 					text = "";
 				}
