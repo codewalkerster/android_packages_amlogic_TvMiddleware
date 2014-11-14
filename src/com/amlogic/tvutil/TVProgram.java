@@ -811,7 +811,7 @@ public class TVProgram{
 					int col = cr.getColumnIndex("db_id");
 					int db_id = cr.getInt(col);
 					cmd = "update srv_table set ";
-					cmd += "name='" + sqliteEscape(name) + "',";
+					cmd += "name='" + sqliteEscape("xxx"+name) + "',";
 					cmd += "vid_pid="+vpid+",vid_fmt="+vfmt+",";
 					cmd += "current_aud=-1,aud_pids='"+apids+"',aud_fmts='"+afmts+"',aud_langs='"+alangs+"',";
 					cmd += "current_sub=-1,sub_pids='"+spids+"',sub_types='"+stypes+"',sub_composition_page_ids='"+scpgids+
