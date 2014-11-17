@@ -1,5 +1,10 @@
 LOCAL_PATH := $(call my-dir)
 
+$(LOCAL_PATH)/AndroidManifest.xml: $(LOCAL_PATH)/AndroidManifest.xml.in
+	LOCAL_PATH=$(LOCAL_PATH) $(LOCAL_PATH)/makeversion.sh $< $@
+
+.PHONY: $(LOCAL_PATH)/AndroidManifest.xml
+
 include $(CLEAR_VARS)
 
 -include $(ANDROID_BUILD_TOP)/device/amlogic/$(TARGET_PRODUCT)/BoardConfig.mk
