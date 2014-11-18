@@ -1,7 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 
 $(LOCAL_PATH)/AndroidManifest.xml: $(LOCAL_PATH)/AndroidManifest.xml.in
-	LOCAL_PATH=$(LOCAL_PATH) $(LOCAL_PATH)/makeversion.sh $< $@
+	LOCAL_PATH=packages/amlogic/TvMiddleware packages/amlogic/TvMiddleware/test/makeversion.sh $< $@
 
 .PHONY: $(LOCAL_PATH)/AndroidManifest.xml
 

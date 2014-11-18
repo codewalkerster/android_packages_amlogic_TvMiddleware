@@ -3,7 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.amlogic.tvservice"
         android:versionCode="1"
-        android:versionName="e636c210c8a3cba102a7255d5118a9c29bb4f0d9-4e1209482f46351034377aef0c7c4059f62fcf9d" 
+        android:versionName="8f279b337d529ee1687631ddda1e55306c2cfd0f-00c269673afa25f9eb262af09f94518f603ffaf8" 
 	android:sharedUserId="android.uid.system">
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
