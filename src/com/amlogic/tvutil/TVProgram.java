@@ -2517,11 +2517,16 @@ public class TVProgram{
 	 *@param name 节目名称
 	 */
 	public void setProgramName(String name){
-		this.name = name;
+		String prefix = null;
+		if (this.name != null && this.name.length() >= 3)
+			prefix = this.name.substring(0, 3);
+		else
+			prefix = "xxx";
+		this.name =prefix+name;
 		
 		Cursor c = context.getContentResolver().query(TVDataProvider.WR_URL,
 				null,
-				"update srv_table set name = "+"\'"+sqliteEscape(name)+"\'"+" where srv_table.db_id = " + id,
+				"update srv_table set name = "+"\'"+sqliteEscape(this.name)+"\'"+" where srv_table.db_id = " + id,
 				null, null);
 		if(c != null){
 			c.close();
