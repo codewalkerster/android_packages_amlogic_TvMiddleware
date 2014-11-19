@@ -438,7 +438,10 @@ public class TVProgram{
 
 			pid = Integer.parseInt(pids[i]);
 			fmt = Integer.parseInt(fmts[i]);
-			lang = langs[i];
+			if(langs!=null&&i<langs.length)
+				lang = langs[i];
+			else
+				lang = " ";
 			this.audioes[i] = new Audio(pid, lang, fmt);
 		}
 
