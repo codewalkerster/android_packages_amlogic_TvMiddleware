@@ -3032,8 +3032,8 @@ public class TVService extends Service implements TVConfig.Update{
 
 		public DVBApkUpdate(File updateFile){
 			dvbapks = new ArrayList<String>();
-			dvbapks.add("DTVPlayer.apk");
-			dvbapks.add("TVService.apk");
+			dvbapks.add("DTVPlayer.*\\.apk$");
+			dvbapks.add("TVService.*\\.apk$");
 
 			zip = new ZipUtils();
 
@@ -3055,7 +3055,7 @@ public class TVService extends Service implements TVConfig.Update{
 			ArrayList<String> newdvbapks = new ArrayList<String>();
 			for(String dvbapk:dvbapks) {
 				for(String apk:apks){
-					if(apk.contains(dvbapk)){
+					if(apk.matches(dvbapk)){
 						newdvbapks.add(apk);
 						got=got+1;
 					}
