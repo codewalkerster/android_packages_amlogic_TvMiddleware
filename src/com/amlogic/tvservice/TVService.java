@@ -47,8 +47,24 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 
+import android.os.Environment;
+import android.os.RecoverySystem;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.zip.ZipFile;
+import java.io.*;
+import android.net.Uri;
+
 public class TVService extends Service implements TVConfig.Update{
 	private static final String TAG = "TVService";
+
+	private static final String Version = "1.0.0";
 
 	/*Message types*/
 	private static final int MSG_SET_SOURCE    = 1949;
@@ -85,6 +101,8 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_CVBS_AMP_OUT        = 1980;
 	private static final int MSG_SEC             = 1981;
 	private static final int MSG_LOCK             = 1982;
+	private static final int MSG_UPDATE_EVENT      = 1983;
+	private static final int MSG_UPDATECTRL      = 1984;
 	
 	/*Restore flags*/
 	private static final int RESTORE_FL_DATABASE  = 0x1;
@@ -436,6 +454,11 @@ public class TVService extends Service implements TVConfig.Update{
             return device.GetCurrentSignalInfo();
         }
 
+		@Override
+		public void controlUpdate(int cmd, int param, String str){
+			Message msg = handler.obtainMessage(MSG_UPDATECTRL, cmd, param, str);
+			handler.sendMessage(msg);
+		}
 		
 	};
 
@@ -521,7 +544,7 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_FINE_TUNE:
 					resolveFineTune((Integer)msg.obj);
 					break;
-                		case MSG_CVBS_AMP_OUT:
+				case MSG_CVBS_AMP_OUT:
 					resolveSetCvbsAmpOut((Integer)msg.obj);
 					break;    
                     
@@ -549,6 +572,12 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_SEC:
 					resolveSec((TVMessage)msg.obj);
 					break;					
+				case MSG_UPDATE_EVENT:
+					resolveUpdateEvt((TVUpdater.Event)msg.obj);
+					break;
+				case MSG_UPDATECTRL:
+					resolveUpdateCtl(msg.arg1, msg.arg2, (String)msg.obj);
+					break;
 			}
 		}
 	};
@@ -622,7 +651,7 @@ public class TVService extends Service implements TVConfig.Update{
 			handler.sendMessage(msg);
 		}
 	};
-	
+
 	private Runnable programBlockCheck = new Runnable() {
 		public void run() {
 			Message msg = handler.obtainMessage(MSG_CHECK_BLOCK);
@@ -2743,6 +2772,10 @@ public class TVService extends Service implements TVConfig.Update{
 		/*Start data sync timer*/
 		dataSyncHandler.postDelayed(dataSync, 1000);
         registerServiceBroadcast();
+
+		if(UpdDownloadFile.exists())
+			UpdDownloadFile.delete();
+		waitForClientVersion();
 	}
 	
 	public void onUpdate(String name, TVConfigValue value){
@@ -2768,6 +2801,10 @@ public class TVService extends Service implements TVConfig.Update{
 			Log.d(TAG, "Failed to dispose device");
 		}
 		super.onDestroy();
+
+		Updater.stopMonitor();
+		stopUpdateDownload();
+		stopUpdateSearch();
 	}
     
     ServiceReceiver myServiceReceiver = null;
@@ -2837,6 +2874,525 @@ public class TVService extends Service implements TVConfig.Update{
 			
 		}					
 	}
+
+
+
+	/*Updater*/
+
+    public static final File CHCHE_PARTITION_DIRECOTRY = Environment.getDownloadCacheDirectory();
+    public static final String DEFAULT_PACKAGE_NAME = "update.zip";
+	private File UpdDownloadFile = new File(CHCHE_PARTITION_DIRECOTRY,DEFAULT_PACKAGE_NAME);
+	private int UpdDownloadTimeout = 10*60*1000;
+	private int UpdClientVersionTimeout = 60*1000;
+	private TVUpdater.Event UpdEvent=null;
+	private TVUpdater Updater=null;
+	private Timer UpdVerCheckTimer = new Timer();
+	private String UpdClientVersion = "0.0.0";
+
+	private void openUpdater(String version){
+		Log.d(TAG, "openUpdater("+version+")");
+
+		if(Updater!=null)
+			return;
+
+		Updater = new TVUpdater(this, Version+"-"+version){
+			public void onEvent(TVUpdater.Event event){
+				Message msg = handler.obtainMessage(MSG_UPDATE_EVENT, event);
+				handler.sendMessage(msg);
+			}
+		};
+		Updater.startMonitor();
+		UpdClientVersion = version;
+	}
+
+	private void waitForClientVersion() {
+		final Handler handler = new Handler(){
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                case 0x33:
+					openUpdater("");
+                    break;
+                }
+                super.handleMessage(msg);
+            }
+        };
+        TimerTask task = new TimerTask(){
+            public void run() {
+                Message message = Message.obtain();
+                message.what = 0x33;
+                handler.sendMessage(message);
+            }
+        };
+
+        UpdVerCheckTimer.cancel();
+        UpdVerCheckTimer = new Timer();
+		UpdVerCheckTimer.schedule(task, UpdClientVersionTimeout);
+	}
+
 	
+	TVUpdater.NotifyDialog UpdDialog=null;
+	boolean UpdDownloadDone = true;
+	Timer UpdCheckTimer = new Timer();
+
+	private boolean RunUpdateReboot(File updatefile)
+	{
+		try {
+			RecoverySystem.verifyPackage(updatefile, null, null);
+		} catch (IOException e) {
+			UpdDialog.setEvent3("UpdateFile lost!");
+			return false;
+		} catch (GeneralSecurityException e) {
+			UpdDialog.setEvent3("Invalid UpdateFile!");
+			return false;
+		}
+
+		try {
+            RecoverySystem.installPackage(this, updatefile);
+        } catch (IOException e) {
+            UpdDialog.setEvent3("install Update Fail!");
+			return false;
+        }
+
+		UpdDialog.setEvent3("install Update Successfully!");
+		return true;
+	}
+
+	public class ZipUtils {
+		private static final int BUFF_SIZE = 1024 * 1024; // 1M Byte
+
+		public ZipUtils(){
+		}
+
+		public void upZipFile(File zipFile, String folderPath) throws ZipException, IOException {
+			File desDir = new File(folderPath);
+			if (!desDir.exists()) {
+				desDir.mkdirs();
+			}
+			ZipFile zf = new ZipFile(zipFile);
+			for (Enumeration<?> entries = zf.entries(); entries.hasMoreElements();) {
+				ZipEntry entry = ((ZipEntry)entries.nextElement());
+				InputStream in = zf.getInputStream(entry);
+				String str = folderPath + File.separator + entry.getName();
+				str = new String(str.getBytes("8859_1"), "GB2312");
+				File desFile = new File(str);
+				if (!desFile.exists()) {
+					File fileParentDir = desFile.getParentFile();
+					if (!fileParentDir.exists()) {
+						fileParentDir.mkdirs();
+					}
+					desFile.createNewFile();
+				}
+				OutputStream out = new FileOutputStream(desFile);
+				byte buffer[] = new byte[BUFF_SIZE];
+				int realLength;
+				while ((realLength = in.read(buffer)) > 0) {
+					out.write(buffer, 0, realLength);
+				}
+				in.close();
+				out.close();
+			}
+		}
+
+		public String getEntryName(ZipEntry entry) throws UnsupportedEncodingException {
+				return new String(entry.getName().getBytes("GB2312"), "8859_1");
+			}
+
+		public Enumeration<?> getEntriesEnumeration(File zipFile) throws ZipException,
+					IOException {
+				ZipFile zf = new ZipFile(zipFile);
+				return zf.entries();
+		 
+			}
+		public ArrayList<String> getEntriesNames(File zipFile) throws ZipException, IOException {
+			ArrayList<String> entryNames = new ArrayList<String>();
+			Enumeration<?> entries = getEntriesEnumeration(zipFile);
+			while (entries.hasMoreElements()) {
+				ZipEntry entry = ((ZipEntry)entries.nextElement());
+				entryNames.add(new String(getEntryName(entry).getBytes("GB2312"), "8859_1"));
+			}
+			return entryNames;
+		}
+	}
+	
+	public static void install(Context context, File file) {
+		Intent i = new Intent(Intent.ACTION_VIEW);
+		i.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
+		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		context.startActivity(i);
+	}
+
+	public class DVBApkUpdate {
+		//private final File unzipPath = new File(CHCHE_PARTITION_DIRECOTRY, "dvbupdate");
+		private final File unzipPath = new File("/storage/sdcard0/"+"dvbupdate");
+
+		private File updateFile;
+		private ArrayList<String> apks;
+		private ArrayList<String> dvbapks;
+		private ZipUtils zip;
+
+		public DVBApkUpdate(File updateFile){
+			dvbapks = new ArrayList<String>();
+			dvbapks.add("DTVPlayer.apk");
+			dvbapks.add("TVService.apk");
+
+			zip = new ZipUtils();
+
+			this.updateFile = updateFile;
+		}
+
+		public boolean match() {
+			try{
+				apks = zip.getEntriesNames(updateFile);
+				for(String apk:apks)
+					Log.d(TAG, "Zip:item:"+apk);
+			}catch(ZipException e){
+				return false;
+			}catch(IOException e){
+				return false;
+			}
+
+			int got=0;
+			ArrayList<String> newdvbapks = new ArrayList<String>();
+			for(String dvbapk:dvbapks) {
+				for(String apk:apks){
+					if(apk.contains(dvbapk)){
+						newdvbapks.add(apk);
+						got=got+1;
+					}
+				}
+			}
+			if(got==0)
+				return false;
+
+			dvbapks = newdvbapks;
+			return true;
+		}
+
+		
+		public boolean update(Context context)throws Exception {
+
+			clean();
+
+			if(!unzipPath.mkdir())
+				throw new Exception("Can not create temp dir!");
+			
+			try {
+				zip.upZipFile(updateFile, unzipPath.getPath());
+			}catch(ZipException e){
+				throw new Exception("zip:zip:"+e.getMessage());
+			}catch(IOException e){
+				throw new Exception("zip:io:"+e.getMessage());
+			}
+
+			for(String dvbapk:dvbapks) {
+				File apk = new File(unzipPath, dvbapk);
+				if(apk.exists())
+					install(context, apk);
+				else {
+					throw new Exception("apk["+apk+"] not found.");
+				}
+			}
+			return true;
+		}
+
+		private void deleteAllFilesOfDir(File path) {
+			if (!path.exists())
+				return;
+			if (path.isFile()) {
+				path.delete();
+				return;
+			}
+			File[] files = path.listFiles();
+			for (int i = 0; i < files.length; i++) {
+				deleteAllFilesOfDir(files[i]);
+			}
+			path.delete();
+		}
+
+		public void clean(){
+			if(unzipPath.exists())
+				deleteAllFilesOfDir(unzipPath);
+		}
+	}
+
+	private boolean RunApkUpdate(File updateFile){		
+		DVBApkUpdate apkUpdate = new DVBApkUpdate(updateFile);
+		try{
+			if(apkUpdate.match()) {
+				boolean ret = apkUpdate.update(this);
+				return ret;
+			}
+		}catch(Exception e){
+			UpdDialog.setEvent3(e.getMessage());
+			apkUpdate.clean();
+			return false;
+		}
+		
+		apkUpdate.clean();
+		return false;
+	}
+	private boolean RunUpdate(File updateFile){
+		return RunApkUpdate(updateFile);
+		//return RunRecoveryUpdate(updatefile);
+	}
+
+	private void closeUpdateDownloadDialog(){
+		if(UpdDialog!=null) {
+			if(UpdDialog.getName().equals("download")) {
+				UpdDialog.cancel();
+				UpdDialog=null;
+			}
+		}
+	}
+	private void cancelUpdateDownload()
+	{
+		if(UpdEvent!=null){
+			Log.d(TAG, "stopUpdateDownload");
+			Updater.stopDownloader();
+			if(UpdDownloadFile.exists())
+				UpdDownloadFile.delete();
+			UpdEvent = null;
+		}
+	}
+
+	private void stopUpdateDownload()
+	{
+		cancelUpdateDownload();
+		closeUpdateDownloadDialog();
+	}
+
+	private void openUpdateDownloadDialog()
+	{
+		if(UpdDialog!=null) {
+			UpdDialog.setEvent3("Downloading : 0%");
+			if(!Updater.isForce(UpdEvent))
+				UpdDialog.setFlags(TVUpdater.NotifyDialog.FLAG_CANCEL).show();
+			else
+				UpdDialog.setFlags(0).show();
+		}
+	}
+	private void startUpdateDownload()
+	{
+		if(UpdEvent!=null){
+			Updater.stopDownloader();
+
+			TVChannelParams tvcp =
+				TVChannelParams.dvbtParams(UpdEvent.dl_frequency,
+								TVChannelParams.BANDWIDTH_8_MHZ);
+			device.setFrontend(tvcp);
+
+			Updater.startDownloader(UpdEvent.download_pid,	UpdEvent.download_tableid,
+								UpdDownloadFile.getPath(), UpdDownloadTimeout);
+		}
+	}
+	private void resolveUpdateEvt(TVUpdater.Event event){
+		switch(event.type){
+			case TVUpdater.Event.EVENT_UPDATE_FOUND:
+
+				Log.d(TAG, "Detect New Update");
+
+				stopUpdateDownload();
+				stopUpdateSearch();
+
+				UpdDownloadDone = false;
+				UpdEvent = Updater.new Event(event);
+
+				UpdDialog =
+					Updater.new NotifyDialog("download", this, getString(R.string.update_found),/*title*/
+										new String(getString(R.string.version_now)+": "+UpdEvent.sw_ver)/*subtile*/,
+										new String(getString(R.string.version_new)+": "+UpdEvent.sw_ver_new)/*evt1*/,
+										UpdEvent.msg,/*evt2*/
+										getString(R.string.start_download) /*evt3*/,
+										Updater.isForce(UpdEvent)?
+											TVUpdater.NotifyDialog.FLAG_OK
+											: TVUpdater.NotifyDialog.FLAG_OKCANCEL){
+							public void onBtnOK(){
+								Log.d(TAG, "on confirm.");
+
+								if(!UpdDownloadDone) {
+									openUpdateDownloadDialog();
+									startUpdateDownload();
+								} else {
+									if(UpdDialog!=null)
+										UpdDialog.setEvent3(getString(R.string.updating));
+									if(!RunUpdate(UpdDownloadFile)) {
+										UpdDialog.setEvent2(getString(R.string.update_fail))
+												.setFlags(TVUpdater.NotifyDialog.FLAG_CANCEL)
+												.show();
+										//closeUpdateDownloadDialog();
+									}else{
+										/*wont get here*/
+										UpdDialog.setEvent3(getString(R.string.follow_system))
+												.setFlags(TVUpdater.NotifyDialog.FLAG_CANCEL)
+												.setCancelText(getString(R.string.ok))
+												.show();
+									}
+								}
+							}
+							public void onBtnCancel(){
+								Log.d(TAG, "on Canel.");
+								if(!UpdDownloadDone) {
+									if(!Updater.isForce(UpdEvent)) {
+										stopUpdateDownload();
+									}
+								} else {
+									closeUpdateDownloadDialog();
+								}
+							}
+					};
+				UpdDialog.show();
+
+				/*if(Updater.isForce(UpdEvent)){
+					openUpdateDownloadDialog();
+					startUpdateDownload();
+				}*/
+				break;
+
+			case TVUpdater.Event.EVENT_UPDATE_NOTFOUND:
+			case TVUpdater.Event.EVENT_UPDATE_TIMEOUT:
+				Log.d(TAG, "Update not found or timeout.");
+				stopUpdateDownload();
+				break;
+
+			case TVUpdater.Event.EVENT_UPDATE_DL_NOTFOUND:
+			case TVUpdater.Event.EVENT_UPDATE_DL_TIMEOUT:
+				Log.d(TAG, "Update download not found or timeout.");
+				stopUpdateDownload();
+				break;
+
+			case TVUpdater.Event.EVENT_UPDATE_DL_PROGRESS:
+				Log.d(TAG, "progress:" +event.param1+"%");
+
+				if(UpdDialog!=null)
+					UpdDialog.setEvent3(getString(R.string.downloading)+" : "+String.valueOf(event.param1)+"%");
+				break;
+
+			case TVUpdater.Event.EVENT_UPDATE_DL_DONE:
+				UpdDialog.setEvent3(getString(R.string.download_ok)+", "+getString(R.string.start_update))
+						.setFlags(Updater.isForce(UpdEvent)?
+											TVUpdater.NotifyDialog.FLAG_OK
+											: TVUpdater.NotifyDialog.FLAG_OKCANCEL)
+						.show();
+
+				UpdDownloadDone = true;
+				Updater.stopDownloader();
+
+				/*if(UpdEvent!=null){
+					if(Updater.isForce(UpdEvent)) {
+						UpdDialog.setEvent3("Download ok, updating...");
+						if(!RunUpdate(UpdDownloadFile))
+							closeUpdateDownloadDialog();
+					}
+				}*/
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	 private void waitForUpdateSearch() {
+		final Handler handler = new Handler(){
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                case 0x55:
+					if((UpdDialog!=null)
+						&& UpdDialog.getName().equals("search"))
+						UpdDialog.setEvent2(getString(R.string.update_notfound));
+                    break;
+                }
+                super.handleMessage(msg);
+            }
+        };
+        TimerTask task = new TimerTask(){
+            public void run() {
+                Message message = Message.obtain();
+                message.what = 0x55;
+                handler.sendMessage(message);
+            }
+        };
+
+		UpdCheckTimer.cancel();
+		UpdCheckTimer = new Timer();
+		UpdCheckTimer.schedule(task, 1000*30);
+    }
+
+	private void cancelUpdateSearch(){
+		UpdCheckTimer.cancel();
+	}
+
+	private void openUpdateSearchDialog(){
+
+		closeUpdateDownloadDialog();
+		closeUpdateSearchDialog();
+
+		UpdDialog = Updater.new NotifyDialog("search",
+							this,
+							getString(R.string.update_check),
+							getString(R.string.version_now)+": "+Version+"-"+UpdClientVersion,
+							"",
+							getString(R.string.searching),
+							"",
+							TVUpdater.NotifyDialog.FLAG_CANCEL){
+			public void onBtnOK(){
+				Log.d(TAG, "on confirm.");
+			}
+			public void onBtnCancel(){
+				Log.d(TAG, "on Cancel.");
+				cancelUpdateSearch();
+				closeUpdateSearchDialog();
+			}
+		};
+		UpdDialog.show();
+	}
+
+	private void closeUpdateSearchDialog(){
+		if(UpdDialog!=null){
+			if(UpdDialog.getName().equals("search"))
+			{
+				UpdDialog.cancel();
+				UpdDialog = null;
+			}
+		}
+	}
+
+	private void stopUpdateSearch() {
+		Log.d(TAG, "stopUpdateSearch");
+		cancelUpdateSearch();
+		closeUpdateSearchDialog();
+	}
+
+	private void startUpdateSearch(){
+		openUpdateSearchDialog();
+		waitForUpdateSearch();
+	}
+
+	private void resolveUpdateCtl(int cmd, int param1, String str){
+		Log.d(TAG, "UpdateCtl cmd["+cmd+"] ("+param1+", "+str+")");
+		switch(cmd){
+			case 0:
+				Log.d(TAG, "UpdateCtl cmd 0: set client version ");
+				openUpdater(str);
+				break;
+
+			case 1:
+				Log.d(TAG, "UpdateCtl cmd 1: restart update monitor ");
+
+				stopUpdateDownload();
+				stopUpdateSearch();
+
+				/*restart update monitor*/
+				if(Updater!=null) {
+					Updater.stopMonitor();
+					Updater.startMonitor();
+				}
+				startUpdateSearch();
+
+				break;
+			default:
+				break;
+		}
+	}
+
 }
 

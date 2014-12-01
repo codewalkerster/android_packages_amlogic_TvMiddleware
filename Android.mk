@@ -47,10 +47,10 @@ LOCAL_SRC_FILES := \
 	src/com/amlogic/tvservice/TVDevice.java \
 	src/com/amlogic/tvservice/TVService.java \
 	src/com/amlogic/tvservice/TVTime.java \
-	src/com/amlogic/tvservice/TVTime.java \
 	src/com/amlogic/tvservice/TVRecorder.java \
 	src/com/amlogic/tvservice/TVBookManager.java \
-    src/com/amlogic/tvservice/TVServiceReceiver.java
+    src/com/amlogic/tvservice/TVServiceReceiver.java \
+    src/com/amlogic/tvservice/TVUpdater.java
 
 LOCAL_MODULE_CLASS := APPS
 LOCAL_MODULE := TVService
@@ -84,7 +84,7 @@ LOCAL_STATIC_JAVA_LIBRARIES := tvmiddleware
 LOCAL_PROGUARD_ENABLED := disabled
 LOCAL_CERTIFICATE := platform
 LOCAL_PACKAGE_NAME := TVService
-LOCAL_JNI_SHARED_LIBRARIES := libam_adp libam_mw libjnitvmboxdevice libjnitvdatabase libjnitvdbcheck libjnitvscanner libjnitvsubtitle libjnitvepgscanner libzvbi
+LOCAL_JNI_SHARED_LIBRARIES := libam_adp libam_mw libjnitvmboxdevice libjnitvdatabase libjnitvdbcheck libjnitvscanner libjnitvsubtitle libjnitvepgscanner libzvbi libjnitvupdater
 
 LOCAL_MODULE :=
 LOCAL_MODULE_CLASS :=

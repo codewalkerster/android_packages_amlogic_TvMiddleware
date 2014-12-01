@@ -170,5 +170,8 @@ interface ITVService{
 	void importDatabase(String inputXmlPath);
 
 	void exportDatabase(String outputXmlPath);
+
+	void controlUpdate(int cmd, int param, String str);
+
 }
 

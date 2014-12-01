@@ -133,3 +133,25 @@ LOCAL_PRELINK_MODULE := false
 
 include $(BUILD_SHARED_LIBRARY)
 
+#######################################################################
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    := libjnitvupdater
+LOCAL_MODULE_TAGS := optional
+LOCAL_SRC_FILES := TVUpdater.cpp
+LOCAL_ARM_MODE := arm
+LOCAL_C_INCLUDES := $(DVB_PATH)/include/am_mw \
+	$(DVB_PATH)/include/am_adp \
+	bionic/libc/include \
+	$(DVB_PATH)/android/ndk/include
+
+LOCAL_SHARED_LIBRARIES += libam_mw libam_adp liblog libcutils
+
+LOCAL_PRELINK_MODULE := false
+
+include $(BUILD_SHARED_LIBRARY)
+
+#######################################################################
+
+

@@ -25,4 +25,19 @@
     <string name="cancel">Cancel</string>
     <string name="auto_start">Auto start after: </string>
     <string name="auto_discard">Auto discard after: </string>
+
+    <string name="update_found">UPDATE FOUND</string>
+    <string name="version_now">Version now</string>
+    <string name="version_new">Version new</string>
+    <string name="start_download">Press OK to download.</string>
+    <string name="follow_system">Please follow the system instruction.</string>
+    <string name="download_ok">Download ok</string>
+    <string name="start_update">Press OK to update.</string>
+    <string name="update_notfound">No UPDATE found.</string>
+    <string name="update_check">Update Check</string>
+    <string name="update_fail">Update Failure.</string>
+    <string name="searching">Searching ...</string>
+    <string name="downloading">Downloading</string>
+    <string name="updating">Updating ...</string>
+
 </resources>
