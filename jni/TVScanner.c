@@ -155,7 +155,8 @@ static jbyteArray get_byte_array(const char *str)
 		bytes[i] = str[i];  
 	}  
 
-	(*env)->SetByteArrayRegion(env, byteArray, 0, strlen(str), bytes);  
+	(*env)->SetByteArrayRegion(env, byteArray, 0, strlen(str), bytes);
+	(*env)->ReleaseByteArrayElements(env, byteArray, bytes, 0);
 	
     if(attached) {
         log_info("callback handler:detach current thread");
