@@ -1035,6 +1035,9 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 		
 		if (needPlay){
+			if (requestProgram.getType() != dtvProgramType)
+				dtvProgramType = requestProgram.getType();
+			
 			TVPlayParams tp = TVPlayParams.playProgramByID(requestProgram.getID());
 			resolvePlayProgram(tp);
 		}

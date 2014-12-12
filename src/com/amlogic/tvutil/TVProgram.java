@@ -1232,6 +1232,63 @@ public class TVProgram{
 	public static TVProgram[] selectAll(Context context, boolean no_skip){
 		return selectByType(context, TYPE_UNKNOWN, no_skip);
 	}
+	
+	/**
+	 *列出指定数量TVProgram
+	 *@param context 当前Context
+	 *@param type 节目类型
+	 *@param skip skip值
+	 *@param limit_count limit_count值
+	 *@return 返回TVProgram数组，null表示没有节目
+	 */
+
+	public static TVProgram[] selectByType(Context context, int type,  int skip,int limit_count){
+		TVProgram p[] = null;
+		boolean where = false;
+		String cmd = "select * from srv_table ";
+
+		if(type == TYPE_DTV){
+			cmd += "where (service_type = "+TYPE_TV+" or service_type = "+TYPE_RADIO+") ";
+			where = true;
+		}else if(type != TYPE_UNKNOWN){
+			cmd += "where service_type = "+type+" ";
+			where = true;
+		}
+
+		if(where){
+			cmd += " and skip = " + skip + " ";
+		}else{
+			cmd += " where skip = " + skip + " ";
+		}
+
+		cmd += " and " + getCurrentSourceString(context);
+
+		if(TVConfigResolver.getConfig(context,"tv:dtv:dvbt:lcn",false)==false)
+			cmd += " order by chan_order";
+		else
+			cmd +=" order by lcn";
+
+		if(limit_count>0){
+			cmd +=" limit " + String.valueOf(limit_count);
+		}
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL,
+				null,
+				cmd,
+				null, null);
+		if(c != null){
+			if(c.moveToFirst()){
+				int id = 0;
+				p = new TVProgram[c.getCount()];
+				do{
+					p[id++] = new TVProgram(context, c);
+				}while(c.moveToNext());
+			}
+			c.close();
+		}
+
+		return p;
+	}
 
 	/**
 	 *列出全部TVProgram
