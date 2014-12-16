@@ -216,7 +216,7 @@ abstract public class TVDeviceImpl extends TVDevice{
 		native_switch_video_blackout(val);
 	}
 
-	protected void finalize() throws Throwable {
+	public void dispose(){
 		if(!destroy){
 			destroy = false;
 			native_device_destroy();
