@@ -1577,5 +1577,10 @@ abstract public class TVActivity extends Activity
 	public void FeConfigAndDmxConfig(){
 		client.resetFeConfigAndDmxConfig();
 	}
+
+	public void controlUpdate(int cmd, int param, String str){
+		client.controlUpdate(cmd, param, str);
+	}
+
 }
 

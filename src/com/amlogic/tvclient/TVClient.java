@@ -1059,5 +1059,13 @@ abstract public class TVClient
 		}
 	}
 	
+	public void controlUpdate(int cmd, int param, String str){
+		if(service != null) {
+			try {
+				service.controlUpdate(cmd, param, str);
+			} catch(RemoteException e) {
+			}
+		}
+	}
 }
 
