@@ -2882,9 +2882,10 @@ public class TVService extends Service implements TVConfig.Update{
 
 	/*Updater*/
 
-    public static final File CHCHE_PARTITION_DIRECOTRY = Environment.getDownloadCacheDirectory();
-    public static final String DEFAULT_PACKAGE_NAME = "update.zip";
-	private File UpdDownloadFile = new File(CHCHE_PARTITION_DIRECOTRY,DEFAULT_PACKAGE_NAME);
+	public static final File CHCHE_PARTITION_DIRECTORY = Environment.getDownloadCacheDirectory();
+	public static final File NAND_STORAGE_DIRECTORY = new File("/storage/emulated/legacy/");//Environment.getExternalStorageDirectory();
+	public static final String DEFAULT_PACKAGE_NAME = "update.zip";
+	private File UpdDownloadFile = new File(CHCHE_PARTITION_DIRECTORY,DEFAULT_PACKAGE_NAME);
 	private int UpdDownloadTimeout = 10*60*1000;
 	private int UpdClientVersionTimeout = 60*1000;
 	private TVUpdater.Event UpdEvent=null;
@@ -2966,11 +2967,9 @@ public class TVService extends Service implements TVConfig.Update{
 		public ZipUtils(){
 		}
 
-		public void upZipFile(File zipFile, String folderPath) throws ZipException, IOException {
-			File desDir = new File(folderPath);
-			if (!desDir.exists()) {
-				desDir.mkdirs();
-			}
+		public void unZipFile(File zipFile, String folderPath) throws ZipException, IOException {
+			Log.d("XU", folderPath);
+
 			ZipFile zf = new ZipFile(zipFile);
 			for (Enumeration<?> entries = zf.entries(); entries.hasMoreElements();) {
 				ZipEntry entry = ((ZipEntry)entries.nextElement());
@@ -2982,8 +2981,10 @@ public class TVService extends Service implements TVConfig.Update{
 					File fileParentDir = desFile.getParentFile();
 					if (!fileParentDir.exists()) {
 						fileParentDir.mkdirs();
+						Log.d("XU", "mkdirs>"+fileParentDir.getPath());
 					}
 					desFile.createNewFile();
+					Log.d("XU", "createfile>"+desFile.getPath());
 				}
 				OutputStream out = new FileOutputStream(desFile);
 				byte buffer[] = new byte[BUFF_SIZE];
@@ -3025,8 +3026,8 @@ public class TVService extends Service implements TVConfig.Update{
 	}
 
 	public class DVBApkUpdate {
-		//private final File unzipPath = new File(CHCHE_PARTITION_DIRECOTRY, "dvbupdate");
-		private final File unzipPath = new File("/storage/sdcard0/"+"dvbupdate");
+		//private final File unzipPath = new File(CHCHE_PARTITION_DIRECTORY, "dvbupdate");
+		private final File unzipPath = new File(NAND_STORAGE_DIRECTORY, "dvbupdate");
 
 		private File updateFile;
 		private ArrayList<String> apks;
@@ -3076,11 +3077,8 @@ public class TVService extends Service implements TVConfig.Update{
 
 			clean();
 
-			if(!unzipPath.mkdir())
-				throw new Exception("Can not create temp dir!");
-			
 			try {
-				zip.upZipFile(updateFile, unzipPath.getPath());
+				zip.unZipFile(updateFile, unzipPath.getPath());
 			}catch(ZipException e){
 				throw new Exception("zip:zip:"+e.getMessage());
 			}catch(IOException e){
@@ -3098,23 +3096,26 @@ public class TVService extends Service implements TVConfig.Update{
 			return true;
 		}
 
-		private void deleteAllFilesOfDir(File path) {
-			if (!path.exists())
-				return;
-			if (path.isFile()) {
-				path.delete();
-				return;
+		private int SysCmd(String cmd) {
+			Process proc=null;
+			int ret = -1;
+			try {
+				proc = Runtime.getRuntime().exec(cmd);
+				ret = proc.waitFor();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}finally{
+				proc.destroy();
 			}
-			File[] files = path.listFiles();
-			for (int i = 0; i < files.length; i++) {
-				deleteAllFilesOfDir(files[i]);
-			}
-			path.delete();
+			return ret;
 		}
 
 		public void clean(){
-			if(unzipPath.exists())
-				deleteAllFilesOfDir(unzipPath);
+			if(unzipPath.exists()) {
+				File to = new File(unzipPath.getAbsolutePath() + System.currentTimeMillis());
+				unzipPath.renameTo(to);
+				SysCmd("rm -r "+to.getPath());
+			}
 		}
 	}
 
