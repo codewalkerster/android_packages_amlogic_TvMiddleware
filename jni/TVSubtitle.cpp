@@ -87,10 +87,10 @@ extern "C" {
 
     static void draw_begin_cb(AM_TT2_Handle_t handle)
     {
-        TVSubtitleData *sub = (TVSubtitleData*)AM_TT2_GetUserData(handle);
-        clear_bitmap(sub);		
+	 TVSubtitleData *sub = (TVSubtitleData*)AM_TT2_GetUserData(handle);
 
-        pthread_mutex_lock(&sub->lock);
+	 pthread_mutex_lock(&sub->lock);
+	 clear_bitmap(sub);
     }
 
     static void draw_end_cb(AM_TT2_Handle_t handle)
