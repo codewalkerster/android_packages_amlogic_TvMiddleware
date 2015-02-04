@@ -2776,9 +2776,14 @@ public class TVService extends Service implements TVConfig.Update{
 		dataSyncHandler.postDelayed(dataSync, 1000);
         registerServiceBroadcast();
 
-		if(UpdDownloadFile.exists())
-			UpdDownloadFile.delete();
-		waitForClientVersion();
+		try{
+			if(config.getBoolean("tv:dtv:update_enable")){
+				if(UpdDownloadFile.exists())
+					UpdDownloadFile.delete();
+				waitForClientVersion();
+			}
+		}catch(Exception e){
+		}
 	}
 	
 	public void onUpdate(String name, TVConfigValue value){
@@ -2805,9 +2810,14 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 		super.onDestroy();
 
-		Updater.stopMonitor();
-		stopUpdateDownload();
-		stopUpdateSearch();
+		try{
+			if(config.getBoolean("tv:dtv:update_enable")){
+				Updater.stopMonitor();
+				stopUpdateDownload();
+				stopUpdateSearch();
+			}
+		}catch(Exception e){
+		}
 	}
     
     ServiceReceiver myServiceReceiver = null;
@@ -3373,6 +3383,17 @@ public class TVService extends Service implements TVConfig.Update{
 
 	private void resolveUpdateCtl(int cmd, int param1, String str){
 		Log.d(TAG, "UpdateCtl cmd["+cmd+"] ("+param1+", "+str+")");
+
+		try{
+			if(!config.getBoolean("tv:dtv:update_enable")){
+				Log.d(TAG, "update disabled [tv:dtv:update_enable=false]");
+				return;
+			}
+		}catch(Exception e){
+			Log.d(TAG, "set [tv:dtv:update_enable=true] to enable update function");
+			return;
+		}
+
 		switch(cmd){
 			case 0:
 				Log.d(TAG, "UpdateCtl cmd 0: set client version ");
