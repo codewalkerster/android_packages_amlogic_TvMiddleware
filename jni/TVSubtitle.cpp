@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <jni.h>
 #include <android/log.h>
+#include <cutils/properties.h>
+
 
 extern "C" {
 
@@ -367,6 +369,21 @@ error:
        return data->sub_h;
     }
 
+    unsigned long getSDKVersion(){
+        char prop_value[PROPERTY_VALUE_MAX];
+        const char *strDelimit = ".";
+        unsigned long version=0;
+        
+        memset(prop_value, '\0', PROPERTY_VALUE_MAX);
+        property_get("ro.build.version.sdk",prop_value,"SDK_VERSION_ERR");
+        LOGE("VERSION_NUM %s", prop_value);
+        if (strcmp(prop_value, "\0") != 0) {
+            version = strtol(prop_value, NULL, 10);
+            LOGE("VERSION_NUM --- %ld", version);
+        }
+        return version;
+    }	
+
     static jint sub_init(JNIEnv *env, jobject obj)
     {
         TVSubtitleData *data;
@@ -385,16 +402,16 @@ error:
 		bmp_clazz = env->FindClass("android/graphics/Bitmap");
 			
         bmp = env->GetStaticObjectField(env->FindClass("com/amlogic/tvsubtitle/TVSubtitleView"), gBitmapID);
-
-	//fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
-	 fid = 0;
-	 if(fid==0){
-		fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "J");
+	 long level = getSDKVersion();
+	 if(level<21){
+	 	fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
+		hbmp = env->GetIntField(bmp, fid);
+	 }
+	 else{
+	  	fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "J");
 		hbmp = env->GetLongField(bmp, fid);
 	 }
-	 else
-	 	hbmp = env->GetIntField(bmp, fid);
-
+	 
         data->bitmap = (SkBitmap*)hbmp;
 
         data->buffer = get_bitmap(data, &data->bmp_w, &data->bmp_h, &data->bmp_pitch);
