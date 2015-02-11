@@ -2805,7 +2805,8 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 		super.onDestroy();
 
-		Updater.stopMonitor();
+		if(Updater!=null)
+		    Updater.stopMonitor();
 		stopUpdateDownload();
 		stopUpdateSearch();
 	}

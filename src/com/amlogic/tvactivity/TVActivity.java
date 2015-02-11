@@ -584,8 +584,8 @@ abstract public class TVActivity extends Activity
 			externalVideoView = false;
             root.addView(videoView, 0);
             videoView.getHolder().addCallback(surfaceHolderCallback);
-	    //videoView.getHolder().setFormat(PixelFormat.RGBA_8888);
-	    videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE_REAL);
+	    videoView.getHolder().setFormat(PixelFormat.RGBA_8888);
+	    //videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE_REAL);
             updateVideoWindow();
         }
 

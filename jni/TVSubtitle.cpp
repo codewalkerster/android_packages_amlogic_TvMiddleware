@@ -383,12 +383,18 @@ error:
         data->obj = env->NewGlobalRef(obj);
 
 		bmp_clazz = env->FindClass("android/graphics/Bitmap");
-
+			
         bmp = env->GetStaticObjectField(env->FindClass("com/amlogic/tvsubtitle/TVSubtitleView"), gBitmapID);
 
-        fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
+	//fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "I");
+	 fid = 0;
+	 if(fid==0){
+		fid  = env->GetFieldID(bmp_clazz, "mNativeBitmap", "J");
+		hbmp = env->GetLongField(bmp, fid);
+	 }
+	 else
+	 	hbmp = env->GetIntField(bmp, fid);
 
-        hbmp = env->GetIntField(bmp, fid);
         data->bitmap = (SkBitmap*)hbmp;
 
         data->buffer = get_bitmap(data, &data->bmp_w, &data->bmp_h, &data->bmp_pitch);

@@ -174,7 +174,8 @@ abstract public class TVClient
 			}
 		};
 
-        context.bindService(new Intent(SERVICE_NAME), conn, Context.BIND_AUTO_CREATE);
+	Intent intent = new Intent("com.amlogic.tvservice.TVService").setPackage("com.amlogic.tvservice");
+        context.bindService(intent, conn, Context.BIND_AUTO_CREATE);
     }
 
     /**
