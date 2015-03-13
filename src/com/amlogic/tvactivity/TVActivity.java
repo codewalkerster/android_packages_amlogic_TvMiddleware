@@ -586,7 +586,8 @@ abstract public class TVActivity extends Activity
             videoView.getHolder().addCallback(surfaceHolderCallback);
 	     //Log.d(TAG,"Build.VERSION.SDK="+Integer.valueOf(android.os.Build.VERSION.SDK));
 		if( Integer.valueOf(android.os.Build.VERSION.SDK)<21)
-			videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE_REAL);
+			//videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE_REAL);
+			videoView.getHolder().setFormat(0x102);
 		else
 			videoView.getHolder().setFormat(PixelFormat.RGBA_8888);
             updateVideoWindow();
