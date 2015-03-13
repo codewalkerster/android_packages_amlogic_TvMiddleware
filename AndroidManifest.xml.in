@@ -4,9 +4,9 @@
 	package="com.amlogic.tvservice"
         android:versionCode="1"
         android:versionName="1.0" 
-	android:sharedUserId="android.uid.system">
+	android:sharedUserId="android.uid.media">
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+        <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 	<application android:process="com.amlogic.tvservice" android:label="TVService">
         
          <receiver android:name=".TVServiceReceiver"> 
