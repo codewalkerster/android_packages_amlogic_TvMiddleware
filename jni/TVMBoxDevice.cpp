@@ -36,9 +36,9 @@ typedef struct {
 #define FEND_DEF_MODE  -1
 #define AV_DEV_NO      0
 #define DMX_DEV_NO     0
-#define DVR_DEV_NO     2
+#define DVR_DEV_NO     1
 #define ASYNC_FIFO_NO  0
-#define PLAYBACK_DMX_DEV_NO 1
+#define PLAYBACK_DMX_DEV_NO 0
 
 #define EVENT_SET_INPUT_SOURCE_OK     0
 #define EVENT_SET_INPUT_SOURCE_FAILED 1

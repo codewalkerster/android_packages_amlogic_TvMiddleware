@@ -295,7 +295,7 @@ abstract public class TVActivity extends Activity
 
 		TVSubtitleView.DVBSubParams subp;
 		TVSubtitleView.DTVTTParams ttp;
-		int dmx_id = (getPlaybackParams() != null) ? 1 : 0;
+		int dmx_id = 0;//(getPlaybackParams() != null) ? 1 : 0;
 
 		if(pm == SUBTITLE_SUB){
 			subp = new TVSubtitleView.DVBSubParams(dmx_id, pid, id1, id2);
