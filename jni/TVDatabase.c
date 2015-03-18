@@ -24,6 +24,7 @@ static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jo
 
 		native_handle_id = (*env)->GetFieldID(env, objclass, "mNativeHandle", "I");
 		if(native_handle_id == 0){
+			(*env)->ExceptionClear(env);
 			handle = NULL;
 		}else{
 			handle = (sqlite3*) (*env)->GetIntField(env, db, native_handle_id);

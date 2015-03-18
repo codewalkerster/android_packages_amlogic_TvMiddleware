@@ -88,6 +88,8 @@ LOCAL_JNI_SHARED_LIBRARIES := libam_adp libam_mw libjnitvmboxdevice libjnitvdata
 
 LOCAL_MODULE :=
 LOCAL_MODULE_CLASS :=
+LOCAL_MODULE_TAGS := samples
+
 include $(BUILD_PACKAGE)
 
 
