@@ -626,8 +626,8 @@ public class TVService extends Service implements TVConfig.Update{
 					break;
 			}
 
-			//Message msg = handler.obtainMessage(MSG_EPG_EVENT, event);
-			//handler.sendMessage(msg);
+			Message msg = handler.obtainMessage(MSG_EPG_EVENT, event);
+			handler.sendMessage(msg);
 		}
 	};
 	
