@@ -60,7 +60,7 @@ static JavaVM   *gJavaVM = NULL;
 static jclass    gEventClass;
 static jclass    gChanParamsClass;
 static jclass    gRecParamsClass;
-static jclass    gPlaybackParamsClass; 
+static jclass    gPlaybackParamsClass;
 static jclass    gVideoClass;
 static jclass    gAudioClass;
 static jclass    gSubtitleClass;
@@ -126,7 +126,7 @@ static jfieldID  gTeletextMagNoID;
 static jfieldID  gTeletextPageNoID;
 static jfieldID  gTeletextLangID;
 
-	
+
 static TVDevice* get_dev(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev;
@@ -148,7 +148,7 @@ static void on_event(jobject obj, jobject event)
 	JNIEnv *env;
 	int ret;
 	int attached = 0;
-	
+
 	ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
 	if(ret<0){
 		ret = gJavaVM->AttachCurrentThread(&env, NULL);
@@ -177,7 +177,7 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 
 	freq = env->GetIntField(chan, gChanParamsFreqID);
 
-	
+
 
 	switch(mode){
 		case FE_OFDM:
@@ -196,7 +196,7 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 			break;
 		case FE_ATSC:
 			para->atsc.para.frequency = freq;
-			break;	
+			break;
 		case FE_QPSK:
 			sym = env->GetIntField(chan, gChanParamsSymID);
 			polar = env->GetIntField(chan, gChanParamsSatPolarID);
@@ -208,7 +208,7 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 			bw = env->GetIntField(chan, gChanParamsBWID);
 			para->dtmb.para.frequency = freq;
 			para->dtmb.para.u.ofdm.bandwidth = (fe_bandwidth_t)bw;
-			break;	
+			break;
 		case FE_ISDBT:
 			bw = env->GetIntField(chan, gChanParamsBWID);
 			para->isdbt.para.frequency = freq;
@@ -235,7 +235,7 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 			break;
 		case FE_QPSK:
 			env->SetIntField(obj, gChanParamsSymID, para->u.qpsk.symbol_rate);
-			break;	
+			break;
 		case FE_DTMB:
 			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
 			break;
@@ -274,8 +274,8 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SEC_DVBSatel
     seq_repeat = env->GetFieldID(objclass, "diseqc_sequence_repeat", "I");
     sat_lo = env->GetFieldID(objclass, "sat_longitude", "D");
     ub = env->GetFieldID(objclass, "user_band", "I");
-    ub_freq = env->GetFieldID(objclass, "ub_freq", "I");	    
-    
+    ub_freq = env->GetFieldID(objclass, "ub_freq", "I");
+
     sat_para->m_lnbs.m_lof_hi = env->GetIntField(para, lof_hi);
     sat_para->m_lnbs.m_lof_lo = env->GetIntField(para, lof_lo);
     sat_para->m_lnbs.m_lof_threshold = env->GetIntField(para, lof_threshold);
@@ -292,10 +292,10 @@ static int get_sat_para(JNIEnv *env, jobject thiz, jobject para, AM_SEC_DVBSatel
     sat_para->m_lnbs.m_diseqc_parameters.m_command_order = env->GetIntField(para, cmd_order);
     sat_para->m_lnbs.m_diseqc_parameters.m_use_fast = env->GetIntField(para, fast_diseqc);
     sat_para->m_lnbs.m_diseqc_parameters.m_seq_repeat = env->GetIntField(para, seq_repeat);
-    sat_para->m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_sat_longitude = env->GetDoubleField(para, sat_lo);    
+    sat_para->m_lnbs.m_rotor_parameters.m_gotoxx_parameters.m_sat_longitude = env->GetDoubleField(para, sat_lo);
     sat_para->m_lnbs.LNBNum = sat_para->m_lnbs.m_diseqc_parameters.m_toneburst_param==B ? 2 : 1;
     sat_para->m_lnbs.SatCR_idx = env->GetIntField(para, ub);
-    sat_para->m_lnbs.SatCRvco = env->GetIntField(para, ub_freq);	         
+    sat_para->m_lnbs.SatCRvco = env->GetIntField(para, ub_freq);
 
     return 0;
 }
@@ -319,7 +319,7 @@ static void rec_to_createpara(JNIEnv *env, jobject rec, AM_REC_CreatePara_t *par
 		strncpy(para->store_dir, strpath, sizeof(para->store_dir));
 		env->ReleaseStringUTFChars(storage, strpath);
 	}
-	
+
 	para->fend_dev      = FEND_DEV_NO;
 	para->dvr_dev        = DVR_DEV_NO;
 	para->async_fifo_id = ASYNC_FIFO_NO;
@@ -330,7 +330,7 @@ static void rec_to_media_info(JNIEnv *env, jobject rec, AM_REC_MediaInfo_t *para
 	int i;
 	jstring strlang;
 	const char *lang;
-	
+
 	memset(para, 0, sizeof(AM_REC_MediaInfo_t));
 
 	strlang = (jstring)env->GetObjectField(rec, gRecParamsProgramNameID);
@@ -339,7 +339,7 @@ static void rec_to_media_info(JNIEnv *env, jobject rec, AM_REC_MediaInfo_t *para
 		snprintf(para->program_name, sizeof(para->program_name), "%s", lang);
 		env->ReleaseStringUTFChars(strlang, lang);
 	}
-	
+
 	jobject video = env->GetObjectField(rec, gRecParamsVideoID);
 	if (video != NULL){
 		para->vid_pid = env->GetIntField(video, gVideoPidID);
@@ -439,12 +439,12 @@ static void rec_to_recordpara(JNIEnv *env, jobject rec, AM_REC_RecPara_t *para)
 	jintArray otherpid_array;
 	jstring strpath;
 	const char *path;
-	
+
 	memset(para, 0, sizeof(AM_REC_RecPara_t));
 	para->is_timeshift  = env->GetBooleanField(rec, gRecParamsTimeshiftID);
 	para->program.i_pid = env->GetIntField(rec, gRecParamsPmtPidID);
 	para->program.i_number = env->GetIntField(rec, gRecParamsPmtProgramNumberID);
-	
+
 	rec_to_media_info(env, rec, &para->media_info);
 
 	LOGI("Program '%s': PMT pid 0x%x, number 0x%x", para->media_info.program_name, para->program.i_pid, para->program.i_number);
@@ -464,7 +464,7 @@ static void rec_to_recordpara(JNIEnv *env, jobject rec, AM_REC_RecPara_t *para)
 		para->suffix_name[AM_REC_SUFFIX_MAX - 1] = 0;
 		env->ReleaseStringUTFChars(strpath, path);
 	}
-	
+
 	para->total_time = (int)(env->GetLongField(rec, gRecParamsTotalTimeID)/1000);
 }
 
@@ -508,21 +508,21 @@ static jobject tsinfo_to_playback(JNIEnv *env, jobject object, AM_AV_TimeshiftIn
 static jobject mediainfo_to_object(JNIEnv *env, jobject object, AM_AV_TimeshiftMediaInfo_t *info)
 {
 	int i;
-	
+
 	jobject obj = env->NewObject(gRecParamsClass, gRecParamsInitID);
 
 	jobject prgram = env->NewObject(gProgramClass, gProgramInitID);
 	jobject video = env->NewObject(gVideoClass, gVideoInitID, prgram, info->vid_pid, info->vid_fmt);
-	
+
 	jobjectArray audios = NULL;
 	if (info->aud_cnt > 0){
 		jobject audio;
 		audios = env->NewObjectArray(info->aud_cnt, gAudioClass, NULL);
 		for (i=0; i<info->aud_cnt; i++){
-			audio = env->NewObject(gAudioClass, gAudioInitID, prgram, info->audios[i].pid, 
+			audio = env->NewObject(gAudioClass, gAudioInitID, prgram, info->audios[i].pid,
 				env->NewStringUTF(info->audios[i].lang), info->audios[i].fmt);
 			env->SetObjectArrayElement(audios, i, audio);
-		} 
+		}
 	}
 
 	jobjectArray subtitles = NULL;
@@ -530,14 +530,14 @@ static jobject mediainfo_to_object(JNIEnv *env, jobject object, AM_AV_TimeshiftM
 		jobject subtitle;
 		subtitles = env->NewObjectArray(info->sub_cnt, gSubtitleClass, NULL);
 		for (i=0; i<info->sub_cnt; i++){
-			subtitle = env->NewObject(gSubtitleClass, gSubtitleInitID, prgram, info->subtitles[i].pid, 
+			subtitle = env->NewObject(gSubtitleClass, gSubtitleInitID, prgram, info->subtitles[i].pid,
 				env->NewStringUTF(info->subtitles[i].lang), info->subtitles[i].type, 0, 0);
 			env->SetIntField(subtitle, gSubtitleCompPageID, info->subtitles[i].composition_page);
 			env->SetIntField(subtitle, gSubtitleAnciPageID, info->subtitles[i].ancillary_page);
 			env->SetIntField(subtitle, gSubtitleMagNoID,    info->subtitles[i].magzine_no);
 			env->SetIntField(subtitle, gSubtitlePageNoID,   info->subtitles[i].page_no);
 			env->SetObjectArrayElement(subtitles, i, subtitle);
-		} 
+		}
 	}
 
 	jobjectArray teletexts = NULL;
@@ -545,11 +545,11 @@ static jobject mediainfo_to_object(JNIEnv *env, jobject object, AM_AV_TimeshiftM
 		jobject teletext;
 		teletexts = env->NewObjectArray(info->ttx_cnt, gTeletextClass, NULL);
 		for (i=0; i<info->ttx_cnt; i++){
-			teletext = env->NewObject(gTeletextClass, gTeletextInitID, prgram, 
-				info->teletexts[i].pid, env->NewStringUTF(info->teletexts[i].lang), 
+			teletext = env->NewObject(gTeletextClass, gTeletextInitID, prgram,
+				info->teletexts[i].pid, env->NewStringUTF(info->teletexts[i].lang),
 				info->teletexts[i].magzine_no, info->teletexts[i].page_no);
 			env->SetObjectArrayElement(teletexts, i, teletext);
-		} 
+		}
 	}
 
 	env->SetObjectField(obj, gRecParamsProgramNameID, env->NewStringUTF(info->program_name));
@@ -569,7 +569,7 @@ static int getRecordError(int error)
 	const int REC_ERR_ACCESS_FILE = 3; // Cannot access record file
 	const int REC_ERR_SYSTEM      = 4; // For other system reasons
 	int ret;
-	
+
 	switch (error){
 		case AM_SUCCESS:
 			ret = REC_ERR_NONE;
@@ -587,7 +587,7 @@ static int getRecordError(int error)
 			ret = REC_ERR_SYSTEM;
 			break;
 	}
-	
+
 	return ret;
 }
 
@@ -597,7 +597,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 	uint8_t *buf = buffer[0];
 	uint8_t *pkt_buf = buffer[1];
 	int pos = 0, info_len, i, fd, name_len, data_len;
-	
+
 #define READ_INT(_i)\
 	AM_MACRO_BEGIN\
 		if ((info_len-pos) >= 4){\
@@ -613,7 +613,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 		LOGE("Cannot open file '%s'", file_path);
 		return -1;
 	}
-	
+
 	info_len = read(fd, pkt_buf, sizeof(buffer[1]));
 
 	data_len = 0;
@@ -627,7 +627,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 	info_len = data_len;
 
 	READ_INT(info->duration);
-		
+
 	name_len = sizeof(info->program_name);
 	if ((info_len-pos) >= name_len){
 		memcpy(info->program_name, buf+pos, name_len);
@@ -638,7 +638,7 @@ static int read_media_info_from_file(const char *file_path, AM_AV_TimeshiftMedia
 	}
 	READ_INT(info->vid_pid);
 	READ_INT(info->vid_fmt);
-	
+
 	READ_INT(info->aud_cnt);
 	LOGI("audio count %d", info->aud_cnt);
 	for (i=0; i<info->aud_cnt; i++){
@@ -686,7 +686,7 @@ static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 	JNIEnv *env;
 	int ret;
 	int attached = 0;
-	
+
 	ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
 	if(ret<0){
 		ret = gJavaVM->AttachCurrentThread(&env, NULL);
@@ -702,7 +702,7 @@ static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 
 	env->SetIntField(event, gEventFEStatusID, evt->status);
 	env->SetObjectField(event, gEventFEParamsID, chan);
-	
+
 	env->CallVoidMethod(dev->dev_obj, gOnEventID, event);
 
 	if(attached){
@@ -713,12 +713,12 @@ static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 {
 	TVDevice *dev;
-	
+
 	AM_REC_GetUserData(dev_no, (void**)&dev);
-	
+
 	if (! dev)
 		return;
-	
+
 	if (event_type == AM_REC_EVT_RECORD_END){
 		AM_REC_RecEndPara_t *endpara = (AM_REC_RecEndPara_t*)param;
 		jobject event;
@@ -726,7 +726,7 @@ static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 		JNIEnv *env;
 		int ret;
 		int attached = 0;
-	
+
 		ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
 		if(ret<0){
 			ret = gJavaVM->AttachCurrentThread(&env, NULL);
@@ -736,13 +736,13 @@ static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 			}
 			attached = 1;
 		}
-		
+
 		event = create_event(env, dev->dev_obj, EVENT_RECORD_END);
 		recpara  = recendpara_to_para(env, dev->dev_obj, endpara);
 
 		env->SetIntField(event, gEventRecEndCodeID, getRecordError(endpara->error_code));
 		env->SetObjectField(event, gEventRecParamsID, recpara);
-	
+
 		env->CallVoidMethod(dev->dev_obj, gOnEventID, event);
 
 		if(attached){
@@ -758,10 +758,10 @@ static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 	JNIEnv *env;
 	int ret, evttype = -1;
 	int attached = 0;
-		
+
 	if (! dev)
 		return;
-	
+
 	if (event_type == AM_AV_EVT_PLAYER_UPDATE_INFO){
 		AM_AV_TimeshiftInfo_t *info = (AM_AV_TimeshiftInfo_t*)param;
 
@@ -787,7 +787,7 @@ static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 
 	if (evttype < 0)
 		return;
-	
+
 	ret = gJavaVM->GetEnv((void**) &env, JNI_VERSION_1_4);
 	if(ret<0){
 		ret = gJavaVM->AttachCurrentThread(&env, NULL);
@@ -797,7 +797,7 @@ static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
 		}
 		attached = 1;
 	}
-	
+
 	event = create_event(env, dev->dev_obj, evttype);
 
 	if (evttype == EVENT_PLAYBACK_START){
@@ -838,7 +838,7 @@ static void dev_init(JNIEnv *env, jobject obj)
 	AM_EVT_Subscribe(0, AM_AV_EVT_AV_DATA_RESUME, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Subscribe(0, AM_AV_EVT_AUDIO_AC3_NO_LICENCE, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Subscribe(0, AM_AV_EVT_AUDIO_AC3_LICENCE_RESUME, dev_av_evt_cb, (void*)dev);
-	
+
 }
 
 static void dev_destroy(JNIEnv *env, jobject obj)
@@ -866,8 +866,8 @@ static void dev_destroy(JNIEnv *env, jobject obj)
 
 	AM_EVT_Unsubscribe(0, AM_AV_EVT_AUDIO_AC3_NO_LICENCE, dev_av_evt_cb, (void*)dev);
 	AM_EVT_Unsubscribe(0, AM_AV_EVT_AUDIO_AC3_LICENCE_RESUME, dev_av_evt_cb, (void*)dev);
-	
-	
+
+
 	free(dev);
 }
 
@@ -875,7 +875,7 @@ unsigned long getSDKVersion(){
     char prop_value[PROPERTY_VALUE_MAX];
     const char *strDelimit = ".";
 	unsigned long version=0;
-   
+
     memset(prop_value, '\0', PROPERTY_VALUE_MAX);
     property_get("ro.build.version.sdk",prop_value,"SDK_VERSION_ERR");
 	LOGE("VERSION_NUM %s", prop_value);
@@ -928,56 +928,56 @@ static void dev_set_input_source(JNIEnv *env, jobject obj, jint src)
 	{
 		if(!di)
 		{
-			
-				if(!strncmp(platform, "meson6", 6)){		
+
+				if(!strncmp(platform, "meson6", 6)){
 					AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
 					LOGE("AM_AV_SetVPathPara enter disable deinterlace\n");
 				}
-				
-			
+
+
 		}
 		else
 		{
-			
+
 				if(!strncmp(platform, "meson6", 6)){
 					AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_DISABLE, AM_AV_DEINTERLACE_ENABLE, AM_AV_PPMGR_DISABLE);
 					LOGE("AM_AV_SetVPathPara enter enable deinterlace\n");
 				}
-				
+
 		}
-		
+
 		/*
 		char platform[PROPERTY_VALUE_MAX]= {'\0'};
 		property_get("ro.board.platform",platform,"meson6");
-		if(!strncmp(platform, "meson6", 6)){		
+		if(!strncmp(platform, "meson6", 6)){
 			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
 		}
-		else if(!strncmp(platform, "meson8", 6)){	
+		else if(!strncmp(platform, "meson8", 6)){
 			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_DMX0);
 		}
-		else 
+		else
 			AM_AV_SetTSSource(AV_DEV_NO, AM_AV_TS_SRC_TS2);
 		*/
-		
+
 		AM_AV_ClearVideoBuffer(AV_DEV_NO);
 	}
 	else
 	{
 		//if(getSDKVersion()<17)
-		{	
+		{
 			if(!strncmp(platform, "meson6", 6)){
 				AM_AV_SetVPathPara(AV_DEV_NO, AM_AV_FREE_SCALE_ENABLE, AM_AV_DEINTERLACE_DISABLE, AM_AV_PPMGR_ENABLE);
 				LOGE("AM_AV_SetVPathPara exit\n");
-			}	
+			}
 		}
 	}
-	
+
 }
 
 unsigned long getFreescaleOutputPara(char* cmd){
     char prop_value[PROPERTY_VALUE_MAX];
     unsigned long value=0;
-   
+
     memset(prop_value, '\0', PROPERTY_VALUE_MAX);
     property_get(cmd,prop_value,"0");
     if (strcmp(prop_value, "\0") != 0) {
@@ -994,7 +994,7 @@ static jint vidoview_w=0;
 static jint vidoview_h=0;
 static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint w, jint h)
 {
-#if 0 	
+#if 0
 	LOGE("--dev_set_video_window--%d ---%d---%d---%d\n",x,y,w,h);
 	char buf[64];
 	char outputmode[PROPERTY_VALUE_MAX]= {'\0'};
@@ -1013,7 +1013,7 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 	AM_FileRead("sys/class/graphics/fb0/free_scale", free_scale_enable, sizeof(free_scale_enable));
 	if(!strncmp(free_scale_enable, "free_scale_enable:[0x1]", 23)) {
 		free_scale_state = true;
-	}		
+	}
 
 	property_get("ubootenv.var.outputmode",outputmode,NULL);
 	char verstr[PROPERTY_VALUE_MAX];
@@ -1024,7 +1024,7 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 	property_get("ro.board.platform",platform,"meson6");
 
 	if(strstr(outputmode,"720")!=NULL){
-		if(free_scale_state){			
+		if(free_scale_state){
 			outputheight =  getFreescaleOutputPara("ubootenv.var.720poutputheight");
 			outputwidth =  getFreescaleOutputPara("ubootenv.var.720poutputwidth");
 			outputx =  getFreescaleOutputPara("ubootenv.var.720poutputx");
@@ -1047,17 +1047,17 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 				w_t=outputwidth;
 				h_t=outputheight;
 			}
-			
+
 		}
 		else{
 			if(!strncmp(platform, "meson6", 6)){
 				if(sscanf(verstr, "%d", &version)==1){
 		                       if(version < 19){
-		  
+
 		                       }
 					 else{   //above 4.2
-						
-					 }  		   
+
+					 }
 		               }
 			}
 			else{   //meson8
@@ -1081,21 +1081,21 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 			outputx =  getFreescaleOutputPara("ubootenv.var.1080ioutputx");
 			outputy =  getFreescaleOutputPara("ubootenv.var.1080ioutputy");
 		}
-		
-		
+
+
 		if(free_scale_state){
 			if(outputheight==0&&outputwidth==0){
 				outputheight = 1080-1;
 				outputwidth = 1920-1;
 			}
-			
+
 			x_t=(long)x*outputwidth/1920+outputx;
 			y_t=(long)y*outputheight/1080+outputy;
 
 			w_t=(long)w*outputwidth/1920;
 			h_t=(long)h*outputheight/1080;
 
-			
+
 			if(x==0&&y==0&&w==0&&h==0){
 				x_t=outputx;
 				y_t=outputy;
@@ -1114,8 +1114,8 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 		                               h_t=h*1080/720;
 		                       }
 					 else{   //above 4.2
-						
-					 }  		   
+
+					 }
 		               }
 			}
 			else{   //meson8
@@ -1139,13 +1139,13 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 			outputx =  getFreescaleOutputPara("ubootenv.var.576ioutputx");
 			outputy =  getFreescaleOutputPara("ubootenv.var.576ioutputy");
 		}
-	
+
 		if(free_scale_state){
 			if(outputheight==0&&outputwidth==0){
 				outputheight = 576-1;
 				outputwidth = 720-1;
 			}
-			
+
 			x_t=(x*outputwidth/1280)+outputx;
 			y_t=(y*outputheight/720)+outputy;
 			w_t=w*outputwidth/1280;
@@ -1169,8 +1169,8 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 						h_t=h*576/720;
 		                       }
 					 else{   //above 4.2
-						
-					 }  		   
+
+					 }
 		               }
 			}
 			else{   //meson8
@@ -1194,13 +1194,13 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 			outputx =  getFreescaleOutputPara("ubootenv.var.480ioutputx");
 			outputy =  getFreescaleOutputPara("ubootenv.var.480ioutputy");
 		}
-		
+
 		if(free_scale_state){
 			if(outputheight==0&&outputwidth==0){
 				outputheight = 480-1;
 				outputwidth = 720-1;
 			}
-			
+
 			x_t=(x*outputwidth/1280)+outputx;
 			y_t=(y*outputheight/720)+outputy;
 			w_t=w*outputwidth/1280;
@@ -1224,8 +1224,8 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 						h_t=h*480/720;
 		                       }
 					 else{   //above 4.2
-						
-					 }  		   
+
+					 }
 		               }
 			}
 			else{   //meson8
@@ -1235,22 +1235,22 @@ static void dev_set_video_window(JNIEnv *env, jobject obj, jint x, jint y, jint 
 				h_t=h*480/720;
 			}
 		}
-		
+
 	}
-	
+
 	LOGE("-------------video_window--%d ---%d---%d---%d\n",x_t,y_t,w_t+x_t,h_t+y_t);
 	snprintf(buf, sizeof(buf), "%d %d %d %d", x_t, y_t, w_t+x_t, h_t+y_t);
 	vidoview_x=x;
 	vidoview_y=y;
 	vidoview_w=w;
-	vidoview_h=h;	
+	vidoview_h=h;
 
 	LOGI("------%d---%d---%d---%d",x,y,w,h);
-	
+
 	AM_FileEcho("/sys/class/video/axis", buf);
 #endif
 	amvideo_utils_set_virtual_position(x,y,w,h,0);
-	
+
 }
 
 static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
@@ -1287,10 +1287,10 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 
         if (fpara.m_type == FE_QPSK) {
             jobject sp = env->GetObjectField(params, gChanParamsSatParaID);
-            memset(&sec, 0, sizeof(sec));            
-            get_sat_para(env, obj, sp, &sec);   
+            memset(&sec, 0, sizeof(sec));
+            get_sat_para(env, obj, sp, &sec);
 
-            AM_SEC_SetSetting(FEND_DEV_NO, &sec);           
+            AM_SEC_SetSetting(FEND_DEV_NO, &sec);
         }
 
 	dev->fend_mode = fpara.m_type;
@@ -1314,22 +1314,56 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 
 		dev->ts_src = src;
 	}
+
+	/*
+	 * $Bug 105518, fixed other process modify dmx_source or dvr_source
+	 */
+	char ts_src[16];
+	char dmx_src[16];
+	char dvr_src[16];
+	char dmx_src_path[64];
+	char dvr_src_path[64];
+
+
+	memset(ts_src, 0, sizeof(ts_src));
+	memset(dmx_src, 0, sizeof(dmx_src));
+	memset(dvr_src, 0, sizeof(dvr_src));
+	memset(dmx_src_path, 0, sizeof(dmx_src_path));
+	memset(dvr_src_path, 0, sizeof(dvr_src_path));
+
+	sprintf(ts_src, "ts%d", src);
+	sprintf(dmx_src_path, "/sys/class/stb/demux%d_source", DMX_DEV_NO);
+	sprintf(dvr_src_path, "/sys/class/stb/demux%d_source", DVR_DEV_NO);
+	LOGE("@dmx_src_path: %s  dvr_src_path: %s ", dmx_src_path, dvr_src_path);
+
+	AM_FileRead(dmx_src_path, dmx_src, sizeof(dmx_src));
+	AM_FileRead(dvr_src_path, dvr_src, sizeof(dvr_src));
+	LOGE("@read dmx_src: %s  @read dvr_src: %s", dmx_src, dvr_src);
+
+	if(strncmp(ts_src, dmx_src, 3)) {
+		LOGE("dmx_source was modified, fix it");
+		AM_DMX_SetSource(DMX_DEV_NO, src);
+	}
+	if(strncmp(ts_src, dvr_src, 3)) {
+		LOGE("dvr_source was modified, fix it");
+		AM_DMX_SetSource(DVR_DEV_NO, src);
+	}
 }
 
 
 static jint dev_set_frontend_prop(JNIEnv *env, jobject obj, jint cmd, jint val){
 	 struct dtv_properties props;
 	 struct dtv_property prop;
-	
+
 	 memset(&props, 0, sizeof(props));
 	 memset(&prop, 0, sizeof(prop));
 
 	 prop.cmd = cmd;
 	 prop.u.data = val;
-	 
+
 	props.num = 1;
 	props.props = &prop;
-	
+
 	return AM_FEND_SetProp(FEND_DEV_NO, &props);
 }
 
@@ -1342,7 +1376,7 @@ static jobject dev_get_frontend(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return NULL;
-	
+
 	AM_FEND_GetPara(FEND_DEV_NO, &fpara);
 
 	params = fpara_to_chan(env, dev->fend_mode, &fpara);
@@ -1356,9 +1390,9 @@ static jint dev_get_frontend_status(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return 0;
-	
+
 	AM_FEND_GetStatus(FEND_DEV_NO, &status);
-	
+
 	return (jint)status;
 }
 
@@ -1368,7 +1402,7 @@ static jint dev_get_frontend_signal_strength(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return 0;
-	
+
 	AM_FEND_GetStrength(FEND_DEV_NO, &strength);
 	return strength;
 }
@@ -1379,7 +1413,7 @@ static jint dev_get_frontend_snr(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return 0;
-	
+
 	AM_FEND_GetSNR(FEND_DEV_NO, &snr);
 	return snr;
 }
@@ -1390,7 +1424,7 @@ static jint dev_get_frontend_ber(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return 0;
-	
+
 	AM_FEND_GetBER(FEND_DEV_NO, &ber);
 	return ber;
 }
@@ -1400,7 +1434,7 @@ static void dev_free_frontend(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
-	
+
 	LOGI("free frontend");
 	AM_FEND_Close(FEND_DEV_NO);
 	AM_SEC_Cache_Reset(FEND_DEV_NO);
@@ -1455,13 +1489,13 @@ static void dev_ad_start(JNIEnv *env, jobject obj, jint apid, jint afmt){
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
-	
+
 	AM_AD_Para_t ad_para;
 	ad_para.dmx_id = AV_DEV_NO;
 	ad_para.pid = apid;
-	
+
 	AM_AD_Handle_t ad_handle = (AM_AD_Handle_t)dev->ad_date;
-	
+
 	ret = AM_AD_Create(&ad_handle, &ad_para);
 	if (ret != AM_SUCCESS)
 		goto error;
@@ -1488,13 +1522,13 @@ static void dev_ad_stop(JNIEnv *env, jobject obj){
 		return;
 
 	AM_AD_Handle_t ad_handle = (AM_AD_Handle_t)&dev->ad_date;
-		
+
 
 	if(ad_handle!=NULL){
 		AM_AD_Stop(ad_handle);
 		AM_AD_Destroy(ad_handle);
 	}
-	
+
 	return ;
 	*/
 }
@@ -1516,16 +1550,16 @@ static void dev_start_recording(JNIEnv *env, jobject obj, jobject params)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
-		
+
 	rec_to_createpara(env, params, &cpara);
 	if (AM_REC_Create(&cpara, &hrec) != AM_SUCCESS){
 		LOGE("Rec create failed");
 		return;
 	}
-	
+
 	AM_EVT_Subscribe(hrec, AM_REC_EVT_RECORD_END, dev_rec_evt_cb, NULL);
 	AM_REC_SetUserData(hrec, (void*)dev);
-	
+
 	rec_to_recordpara(env, params, &rpara);
 
 	/* start playback first */
@@ -1534,20 +1568,20 @@ static void dev_start_recording(JNIEnv *env, jobject obj, jobject params)
 		dev->timeshift_para.media_info = rpara.media_info;
 		dev->timeshift_para.media_info.duration = duration;
 		dev->timeshift_para.mode = AM_AV_TIMESHIFT_MODE_TIMESHIFTING;
-		
+
 		if (AM_AV_StartTimeshift(AV_DEV_NO, &dev->timeshift_para) != AM_SUCCESS){
 			LOGE("Device start timeshifting failed");
 			AM_REC_Destroy(hrec);
 			return;
 		}
 	}
-		
+
 	if (AM_REC_StartRecord(hrec, &rpara) != AM_SUCCESS){
 		LOGE("Start record failed");
 		AM_REC_Destroy(hrec);
 		return;
 	}
-	
+
 	dev->rec_handle = hrec;
 }
 
@@ -1571,10 +1605,10 @@ static jobject dev_get_recording_params(JNIEnv *env, jobject obj)
 	if (dev->rec_handle != 0){
 		AM_REC_RecInfo_t info;
 		AM_REC_GetRecordInfo(dev->rec_handle, &info);
-		
+
 		return recinfo_to_para(env, obj, &info);
 	}
-	
+
 	return NULL;
 }
 
@@ -1605,7 +1639,7 @@ static void dev_start_playback(JNIEnv *env, jobject obj, jobject params)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
-		
+
 	playback_to_tspara(env, params, &para);
 
 	if (read_media_info_from_file(para.file_path, &para.media_info) < 0)
@@ -1636,11 +1670,11 @@ static jobject dev_get_playback_params(JNIEnv *env, jobject obj)
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return NULL;
-	
+
 	if (AM_AV_GetTimeshiftInfo(AV_DEV_NO, &info) == AM_SUCCESS){
 		return tsinfo_to_playback(env, obj, &info);
 	}
-	
+
 	return NULL;
 }
 
@@ -1716,8 +1750,8 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 
 		if((secType == TYPE_SEC_POSITIONEREAST) || (secType == TYPE_SEC_POSITIONERWEST)){
 			sec.m_lnbs.m_rotor_parameters.m_rotor_move_unit = secPositionerMoveUnit;
-		}		
-		
+		}
+
 	}
 	else if((secType == TYPE_SEC_POSITIONERSTOP)
 			|| (secType == TYPE_SEC_POSITIONERDISABLELIMIT)
@@ -1725,13 +1759,13 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 			|| (secType == TYPE_SEC_POSITIONERWESTLIMIT)){
 		memset(&fpara, 0, sizeof(AM_FENDCTRL_DVBFrontendParameters_t));
 		/*not change sec setting, exclude sec_cmd*/
-		AM_SEC_GetSetting(FEND_DEV_NO, &sec);	
+		AM_SEC_GetSetting(FEND_DEV_NO, &sec);
 	}
 
 	sec.sec_cmd = (AM_SEC_Cmd_t)secType;
 
-	AM_SEC_SetSetting(FEND_DEV_NO, &sec);	
-	
+	AM_SEC_SetSetting(FEND_DEV_NO, &sec);
+
 	dev->fend_mode = fpara.m_type;
 
 	AM_SEC_ExecSecCmd(FEND_DEV_NO, &fpara);
@@ -1753,9 +1787,43 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 
 		dev->ts_src = src;
 	}
+
+	/*
+	 * $Bug 105518, fixed other process modify dmx_source or dvr_source
+	 */
+	char ts_src[16];
+	char dmx_src[16];
+	char dvr_src[16];
+	char dmx_src_path[64];
+	char dvr_src_path[64];
+
+
+	memset(ts_src, 0, sizeof(ts_src));
+	memset(dmx_src, 0, sizeof(dmx_src));
+	memset(dvr_src, 0, sizeof(dvr_src));
+	memset(dmx_src_path, 0, sizeof(dmx_src_path));
+	memset(dvr_src_path, 0, sizeof(dvr_src_path));
+
+	sprintf(ts_src, "ts%d", src);
+	sprintf(dmx_src_path, "/sys/class/stb/demux%d_source", DMX_DEV_NO);
+	sprintf(dvr_src_path, "/sys/class/stb/demux%d_source", DVR_DEV_NO);
+	LOGE("@dmx_src_path: %s  dvr_src_path: %s ", dmx_src_path, dvr_src_path);
+
+	AM_FileRead(dmx_src_path, dmx_src, sizeof(dmx_src));
+	AM_FileRead(dvr_src_path, dvr_src, sizeof(dvr_src));
+	LOGE("@read dmx_src: %s  @read dvr_src: %s", dmx_src, dvr_src);
+
+	if(strncmp(ts_src, dmx_src, 3)) {
+		LOGE("dmx_source was modified, fix it");
+		AM_DMX_SetSource(DMX_DEV_NO, src);
+	}
+	if(strncmp(ts_src, dvr_src, 3)) {
+		LOGE("dvr_source was modified, fix it");
+		AM_DMX_SetSource(DVR_DEV_NO, src);
+	}
 }
 
-	
+
 static void dev_switch_video_blackout(JNIEnv *env, jobject obj, jint v)
 {
 	if(v==0)
@@ -1770,7 +1838,7 @@ static JNINativeMethod gMethods[] = {
 	{"native_device_destroy", "()V", (void*)dev_destroy},
 	{"native_set_input_source", "(I)V", (void*)dev_set_input_source},
 	{"native_set_video_window", "(IIII)V", (void*)dev_set_video_window},
-	{"native_set_frontend", "(Lcom/amlogic/tvutil/TVChannelParams;)V", (void*)dev_set_frontend},	
+	{"native_set_frontend", "(Lcom/amlogic/tvutil/TVChannelParams;)V", (void*)dev_set_frontend},
 	{"native_set_frontend_prop", "(II)V", (void*)dev_set_frontend_prop},
 	{"native_get_frontend", "()Lcom/amlogic/tvutil/TVChannelParams;", (void*)dev_get_frontend},
 	{"native_get_frontend_status", "()I", (void*)dev_get_frontend_status},
@@ -1906,7 +1974,7 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	gProgramClass       = env->FindClass("com/amlogic/tvutil/TVProgram");
 	gProgramClass       = (jclass)env->NewGlobalRef((jobject)gProgramClass);
 	gProgramInitID      = env->GetMethodID(gProgramClass, "<init>", "()V");
-	
+
 	LOGI("load jnitvmboxdevice ok");
 	return JNI_VERSION_1_4;
 }
