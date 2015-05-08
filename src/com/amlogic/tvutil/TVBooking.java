@@ -12,12 +12,12 @@ import com.amlogic.tvdataprovider.TVDataProvider;
  */
 public class TVBooking{
 	private static final String TAG="TVBooking";
-	
+
 	/**预约播放*/
-	public static final int FL_PLAY   = 0x1; 
+	public static final int FL_PLAY   = 0x1;
 	/**预约录像*/
 	public static final int FL_RECORD = 0x2;
-	
+
 	/**预约状态: 等待开始，尚未临近开始时间*/
 	public static final int ST_WAIT_START = 0;
 	/**预约状态: 开始时间已到，但被用户取消*/
@@ -26,7 +26,7 @@ public class TVBooking{
 	public static final int ST_STARTED   = 2;
 	/**预约状态: 预约指定的操作已经结束*/
 	public static final int ST_END       = 3;
-	
+
 	/**预约重复类型：不重复，仅此一次*/
 	public static final int RP_NONE   = 0;
 	/**预约重复类型：每天同一时间重复一次*/
@@ -38,7 +38,7 @@ public class TVBooking{
 	public static final int ERR_PARAM      = -1;
 	/**预约错误码: 预约时间段冲突*/
 	public static final int ERR_CONFLICT   = -2;
-	
+
 	private int id;
 	private int status;
 	private int flag;
@@ -56,8 +56,8 @@ public class TVBooking{
 	private TVProgram.Audio audios[];
 	private TVProgram.Subtitle subtitles[];
 	private TVProgram.Teletext teletexts[];
-	
-	
+
+
 	public TVBooking(Context context, Cursor c){
 		int col;
 		int pid, fmt, i;
@@ -90,19 +90,19 @@ public class TVBooking{
 		this.recStoragePath = c.getString(col);
 		col = c.getColumnIndex("repeat");
 		this.repeat = c.getInt(col);
-		
+
 		p = program;
 		if (p == null) {
 			p = new TVProgram();
 		}
-		
+
 		/**Video*/
 		col = c.getColumnIndex("vid_pid");
 		pid = c.getInt(col);
 		col = c.getColumnIndex("vid_fmt");
 		fmt = c.getInt(col);
 		this.video = p.new Video(pid, fmt);
-		
+
 		/**Audios*/
 		col = c.getColumnIndex("aud_pids");
 		tmpStr = c.getString(col);
@@ -117,14 +117,14 @@ public class TVBooking{
 			this.audios = new TVProgram.Audio[apids.length];
 			for (i=0; i<apids.length; i++) {
 				audios[i] = p.new Audio(
-					Integer.parseInt(apids[i]), 
-					alangs[i], 
+					Integer.parseInt(apids[i]),
+					alangs[i],
 					Integer.parseInt(afmts[i]));
 			}
 		} else {
 			this.audios = null;
 		}
-		
+
 		/**Subtitles*/
 		ArrayList subList = new ArrayList();
 		col = c.getColumnIndex("sub_pids");
@@ -152,7 +152,7 @@ public class TVBooking{
 					Integer.parseInt(sapgids[i])));
 			}
 		}
-		
+
 		/**Teletexts*/
 		ArrayList ttxList = new ArrayList();
 		col = c.getColumnIndex("ttx_pids");
@@ -179,7 +179,7 @@ public class TVBooking{
 		this.subtitles = (TVProgram.Subtitle[])subList.toArray(new TVProgram.Subtitle[0]);
 		this.teletexts = (TVProgram.Teletext[])ttxList.toArray(new TVProgram.Teletext[0]);
 	}
-	
+
 	public TVBooking(TVProgram program, long start, long duration){
 		this.id = -1;
 		this.flag = FL_PLAY | FL_RECORD;
@@ -193,19 +193,19 @@ public class TVBooking{
 		this.subtitles = program.getAllSubtitle();
 		this.teletexts = program.getAllTeletext();
 	}
-	
+
 	public static String sqliteEscape(String keyWord){
 		keyWord = keyWord.replace("'", "''");
 		return keyWord;
 	}
-	
+
 	/**
-	 *预约时间段冲突异常 
+	 *预约时间段冲突异常
 	 */
 	public static class TVBookingConflictException extends Exception{
-		
+
 	}
-	
+
 	/**
 	 *根据记录ID查找指定TVBooking
 	 *@param context 当前Context
@@ -215,7 +215,7 @@ public class TVBooking{
 	public static TVBooking selectByID(Context context, int id){
 		TVBooking p = null;
 
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
 			"select * from booking_table where db_id = " + id, null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -226,7 +226,7 @@ public class TVBooking{
 
 		return p;
 	}
-	
+
 	/**
 	 *根据预约状态查找指定的预约记录
 	 *@param context 当前Context
@@ -235,9 +235,9 @@ public class TVBooking{
 	 */
 	public static TVBooking[] selectByStatus(Context context, int st){
 		TVBooking bookings[] = null;
-		
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where status="+st+" order by start", 
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
+			"select * from booking_table where status="+st+" order by start",
 			null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -249,7 +249,7 @@ public class TVBooking{
 			}
 			c.close();
 		}
-		
+
 		return bookings;
 	}
 
@@ -261,9 +261,9 @@ public class TVBooking{
 	 */
 	public static TVBooking[] selectRecordBookingsByStatus(Context context, int st){
 		TVBooking bookings[] = null;
-		
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where (flag & "+FL_RECORD+") != 0 and status="+st+" order by start", 
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
+			"select * from booking_table where (flag & "+FL_RECORD+") != 0 and status="+st+" order by start",
 			null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -275,10 +275,10 @@ public class TVBooking{
 			}
 			c.close();
 		}
-		
+
 		return bookings;
 	}
-	
+
 	/**
 	 *根据预约状态查找指定的预约播放
 	 *@param context 当前Context
@@ -287,9 +287,9 @@ public class TVBooking{
 	 */
 	public static TVBooking[] selectPlayBookingsByStatus(Context context, int st){
 		TVBooking bookings[] = null;
-		
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
-			"select * from booking_table where (flag & "+FL_PLAY+") != 0 and status="+st+" order by start", 
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
+			"select * from booking_table where (flag & "+FL_PLAY+") != 0 and status="+st+" order by start",
 			null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -301,10 +301,10 @@ public class TVBooking{
 			}
 			c.close();
 		}
-		
+
 		return bookings;
 	}
-	
+
 	/**
 	 *查找所有预约播放
 	 *@param context 当前Context
@@ -312,8 +312,8 @@ public class TVBooking{
 	 */
 	public static TVBooking[] selectAllPlayBookings(Context context){
 		TVBooking bookings[] = null;
-		
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
 			"select * from booking_table where (flag & "+FL_PLAY+") != 0 order by start" , null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -325,10 +325,10 @@ public class TVBooking{
 			}
 			c.close();
 		}
-		
+
 		return bookings;
 	}
-	
+
 	/**
 	 *查找所有预约录像
 	 *@param context 当前Context
@@ -336,8 +336,8 @@ public class TVBooking{
 	 */
 	public static TVBooking[] selectAllRecordBookings(Context context){
 		TVBooking bookings[] = null;
-		
-		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null, 
+
+		Cursor c = context.getContentResolver().query(TVDataProvider.RD_URL, null,
 			"select * from booking_table where (flag & "+FL_RECORD+") != 0 order by start" , null, null);
 		if(c != null){
 			if(c.moveToFirst()){
@@ -349,7 +349,7 @@ public class TVBooking{
 			}
 			c.close();
 		}
-		
+
 		return bookings;
 	}
 
@@ -368,9 +368,9 @@ public class TVBooking{
 		if (program == null || start < 0 ||
 			(flag & (FL_PLAY|FL_RECORD)) == 0) {
 			Log.d(TAG, "Invalid param for booking program");
-			return;	
+			return;
 		}
-		
+
 		int status = ST_WAIT_START;
 		if (! allowConflict){
 			/*check conflict*/
@@ -392,7 +392,7 @@ public class TVBooking{
 				c.close();
 			}
 		}
-		
+
 		/*book this program*/
 		String cmd = "insert into booking_table(db_srv_id, db_evt_id, srv_name, evt_name,";
 		cmd += "start,duration,flag,status,file_name,vid_pid,vid_fmt,aud_pids,aud_fmts,aud_languages,";
@@ -415,7 +415,7 @@ public class TVBooking{
 			}
 		}
 		cmd += ",'"+apids+"','"+afmts+"','"+alangs+"'";
-		
+
 		TVProgram.Subtitle subs[] = program.getAllSubtitle();
 		String spids="", stypes="", scpgids="", sapgids="", slangs="";
 		if (subs != null && subs.length > 0) {
@@ -433,7 +433,7 @@ public class TVBooking{
 			}
 		}
 		cmd += ",'"+spids+"','"+stypes+"','"+scpgids+"','"+sapgids+"','"+slangs+"'";
-		
+
 		TVProgram.Teletext ttxs[] = program.getAllTeletext();
 		String tpids="", ttypes="", tmagnums="", tpgnums="", tlangs="";
 		if (ttxs != null && ttxs.length > 0) {
@@ -450,10 +450,10 @@ public class TVBooking{
 		}
 		cmd += ",'"+tpids+"','"+ttypes+"','"+tmagnums+"','"+tpgnums+"','"+tlangs+"'";
 		cmd += ",'',''," + repeat + ")";
-                
+
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
+
 	/**
 	 *预约一个Event
 	 *@param context 当前Context
@@ -468,14 +468,14 @@ public class TVBooking{
 			Log.d(TAG, "Invalid param for booking event");
 			return;
 		}
-		
+
 		/* book its program */
-		bookProgram(context, 
-			event.getProgram(), 
-			flag, event.getStartTime(), 
+		bookProgram(context,
+			event.getProgram(),
+			flag, event.getStartTime(),
 			event.getEndTime()-event.getStartTime(),
 			repeat, allowConflict);
-		
+
 		/* update the event info */
 		int start = (int)(event.getStartTime()/1000);
 		int duration = (int)((event.getEndTime()-event.getStartTime())/1000);
@@ -483,41 +483,41 @@ public class TVBooking{
 		cmd += "',db_evt_id="+event.getID()+" where db_srv_id="+event.getProgram().getID();
 		cmd += " and start="+start+" and duration="+duration;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
-		
+
 		cmd = "update evt_table set sub_flag="+flag+" where db_id="+event.getID();
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
-	
+
+
 	/**
 	 *判断某个给定时间上该预约是否已经开始
-	 *@param timeInMs 
+	 *@param timeInMs
 	 *@return true为已经开始，false为未开始
 	 */
 	public boolean isTimeStart(long timeInMs){
 		long tmpStart=start, tmpTime=timeInMs;
 		final long MS_PER_DAY = (24 * 3600 * 1000);
 		final long MS_PER_WEEK = MS_PER_DAY * 7;
-		
-		if (repeat == RP_DAILY){
+
+		/*if (repeat == RP_DAILY){
 			tmpStart %= MS_PER_DAY;
 			tmpTime  %= MS_PER_DAY;
 		}else if (repeat == RP_WEEKLY){
 			tmpStart %= MS_PER_WEEK;
 			tmpTime  %= MS_PER_WEEK;
-		}
-		
+		}*/
+		Log.d(TAG, "tmpTime:"+tmpTime/1000+", tmpStart:"+tmpStart/1000+", diff:"+(tmpTime - tmpStart));
 		long ret = tmpTime - tmpStart;
 		if (ret <= 0){
 			return false;
 		}
-		
+
 		return true;
 	}
-	
+
 	/**
 	 *判断某个给定时间上该预约是否已经结束
-	 *@param timeInMs 
+	 *@param timeInMs
 	 *@return true为已经结束，false为未结束
 	 */
 	public boolean isTimeEnd(long timeInMs){
@@ -525,10 +525,10 @@ public class TVBooking{
 			/* infinite end time */
 			return false;
 		}
-		
+
 		return isTimeStart(timeInMs - duration);
 	}
-	
+
 	/**
 	 *获取预约标志
 	 *@return 预约标志 可以为FL_RECORD|FL_PLAY
@@ -536,7 +536,7 @@ public class TVBooking{
 	public int getFlag(){
 		return this.flag;
 	}
-	
+
 	/**
 	 *获取唯一ID
 	 *@return ID
@@ -544,7 +544,7 @@ public class TVBooking{
 	public int getID(){
 		return this.id;
 	}
-	
+
 	/**
 	 *获取录像文件路径，该路径不包含存储器路径
 	 *@return 录像文件路径
@@ -552,7 +552,7 @@ public class TVBooking{
 	public String getRecordFilePath(){
 		return this.recFilePath;
 	}
-	
+
 	/**
 	 *获取录像存储器路径
 	 *@return 录像存储器路径
@@ -560,7 +560,7 @@ public class TVBooking{
 	public String getRecordStoragePath(){
 		return this.recStoragePath;
 	}
-	
+
 	/**
 	 *获取预约开始时间
 	 *@return 预约开始时间, ms
@@ -568,7 +568,7 @@ public class TVBooking{
 	public long getStart(){
 		return this.start;
 	}
-	
+
 	/**
 	 *获取预约持续时间
 	 *@return 预约持续时间, ms
@@ -576,7 +576,7 @@ public class TVBooking{
 	public long getDuration(){
 		return this.duration;
 	}
-	
+
 	/**
 	 *获取预约状态
 	 *@return 预约状态
@@ -584,7 +584,7 @@ public class TVBooking{
 	public int getStatus(){
 		return this.status;
 	}
-	
+
 	/**
 	 *获取预约重复类型
 	 *@return 预约重复类型
@@ -592,7 +592,7 @@ public class TVBooking{
 	public int getRepeat(){
 		return this.repeat;
 	}
-	
+
 	/**
 	 *获取预约的Program
 	 *@return Program对象
@@ -600,7 +600,7 @@ public class TVBooking{
 	public TVProgram getProgram(){
 		return this.program;
 	}
-	
+
 	/**
 	 *获取预约Program名称
 	 *@return 预约Program名称
@@ -608,7 +608,7 @@ public class TVBooking{
 	public String getProgramName(){
 		return this.programName;
 	}
-	
+
 	/**
 	 *获取预约的Event
 	 *@return Event对象
@@ -624,7 +624,7 @@ public class TVBooking{
 	public String getEventName(){
 		return this.eventName;
 	}
-	
+
 	/**
 	 *获取预约频道的视频
 	 *@return 视频对象
@@ -632,7 +632,7 @@ public class TVBooking{
 	public TVProgram.Video getVideo(){
 		return this.video;
 	}
-	
+
 	/**
 	 *获取预约频道的所有音频
 	 *@return 音频对象
@@ -640,7 +640,7 @@ public class TVBooking{
 	public TVProgram.Audio[] getAllAudio(){
 		return this.audios;
 	}
-	
+
 	/**
 	 *获取预约频道的所有字幕
 	 *@return 字幕对象
@@ -648,7 +648,7 @@ public class TVBooking{
 	public TVProgram.Subtitle[] getAllSubtitle(){
 		return this.subtitles;
 	}
-	
+
 	/**
 	 *获取预约频道的所有图文
 	 *@return 图文对象
@@ -656,7 +656,7 @@ public class TVBooking{
 	public TVProgram.Teletext[] getAllTeletext(){
 		return this.teletexts;
 	}
-	
+
 	/**
 	 *更新预约状态
 	 *@param status 预约状态
@@ -671,7 +671,7 @@ public class TVBooking{
 		String cmd = "update booking_table set status="+status+" where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
+
 	/**
 	 *更新预约标志
 	 *@param flag 预约标志
@@ -704,7 +704,7 @@ public class TVBooking{
 		String cmd = "update booking_table set duration="+duration/1000+" where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
+
 	/**
 	 *更新预约开始时间
 	 *@param start 开始时间
@@ -715,7 +715,7 @@ public class TVBooking{
 		String cmd = "update booking_table set start="+start/1000+" where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
+
 	/**
 	 *更新录像文件路径，不包含存储器路径
 	 *@param path 录像文件路径
@@ -726,7 +726,7 @@ public class TVBooking{
 		String cmd = "update booking_table set file_name='"+sqliteEscape(path)+"' where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
+
 	/**
 	 *更新录像存储器路径,用于动态从存储器中读取录像记录
 	 *@param path 录像存储器路径
@@ -737,7 +737,7 @@ public class TVBooking{
 		String cmd = "update booking_table set from_storage='"+sqliteEscape(path)+"' where db_id="+this.id;
 		context.getContentResolver().query(TVDataProvider.WR_URL, null, cmd , null, null);
 	}
-	
+
 	/**
 	 *删除该预约记录
 	 */

@@ -108,13 +108,28 @@ abstract public class TVRecorder{
 		switch(event.type){
 			case TVDevice.Event.EVENT_RECORD_END:
 				Log.d(TAG, "Recorder get record end from device");
-
+				final long MS_PER_DAY = (24 * 3600 * 1000);
+				final long MS_PER_WEEK = MS_PER_DAY * 7;
 				if (recordParams != null &&
 					recordParams.booking != null &&
 					recordParams.booking.getID() >= 0 &&
 					recordParams.booking.getStatus() != TVBooking.ST_END){
-
-					recordParams.booking.updateStatus(TVBooking.ST_END);
+						if(recordParams.booking.getRepeat() == 0){/*RP_NONE*/
+							Log.d(TAG,"pvr repeat mode:once update status to ST_END");
+							recordParams.booking.updateStatus(TVBooking.ST_END);
+						}else if(recordParams.booking.getRepeat() == 1){/*RP_DAILY*/
+							Log.d(TAG,"pvr repeat mode:daily update status to ST_WAIT_START, startTime:"+recordParams.booking.getStart()/1000);
+							recordParams.booking.updateStatus(TVBooking.ST_WAIT_START);
+							long int_start = recordParams.booking.getStart();
+							int_start += MS_PER_DAY;
+							recordParams.booking.updateStartTime(int_start);
+						}else if(recordParams.booking.getRepeat() == 2){/*RP_WEEKLY*/
+							Log.d(TAG,"pvr repeat mode:weekly update status to ST_WAIT_START, startTime"+recordParams.booking.getStart()/1000);
+							recordParams.booking.updateStatus(TVBooking.ST_WAIT_START);
+							long int_start = recordParams.booking.getStart();
+							int_start += MS_PER_WEEK;
+							recordParams.booking.updateStartTime(int_start);
+						}
 				}
 
 				status = ST_IDLE;
