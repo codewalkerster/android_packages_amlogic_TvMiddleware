@@ -23,6 +23,7 @@ import android.os.Handler;
 import com.amlogic.tvutil.ITVCallback;
 import com.amlogic.tvutil.TVMessage;
 import com.amlogic.tvutil.TVConfigValue;
+import com.amlogic.tvdataprovider.TVDatabase;
 import android.content.res.AssetManager; 
 
 /**
@@ -31,6 +32,8 @@ import android.content.res.AssetManager;
 public class TVConfig{
 	private static final String TAG="TVConfig";
 	private static final String CFG_FILE_NAME="tv.cfg";
+	private static final String CFG_BACKUP_FILE_NAME="tv_backup.cfg";
+	private static final String CFG_NEW_FILE_NAME="tv_new.cfg";
 	private static final String CFG_END_FLAG="config:end:flag";
 	private static final String CFG_FILE_DEFAULT_NAME="tv_default.cfg";
 
@@ -268,6 +271,22 @@ public class TVConfig{
 			}catch(Exception e){
 			}
 		}
+
+		try{
+			File cfg = context.getFileStreamPath(CFG_FILE_NAME);
+			File bak = context.getFileStreamPath(CFG_BACKUP_FILE_NAME);
+			cfg.renameTo(bak);
+		}catch(Exception e){
+		}
+
+		try{
+			File cfg = context.getFileStreamPath(CFG_FILE_NAME);
+			File ncfg = context.getFileStreamPath(CFG_NEW_FILE_NAME);
+			ncfg.renameTo(cfg);
+		}catch(Exception e){
+		}
+
+		TVDatabase.sync();
 	}
 
 	private void init(){
@@ -287,6 +306,24 @@ public class TVConfig{
 				if(is != null)
 					is.close();
 			}catch(Exception e){
+			}
+		}
+
+		if(!loaded){
+			is = null;
+			try{
+				Log.d(TAG, "try to load "+CFG_BACKUP_FILE_NAME);
+				is = context.openFileInput(CFG_BACKUP_FILE_NAME);
+				loadConfigFile(is);
+				loaded = true;
+			}catch(Exception e){
+				Log.d(TAG, "load config failed");
+			}finally{
+				try{
+					if(is != null)
+						is.close();
+				}catch(Exception e){
+				}
 			}
 		}
 
