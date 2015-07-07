@@ -1,7 +1,9 @@
 LOCAL_PATH := $(call my-dir)
 
 DVB_PATH := $(wildcard external/dvb)
-
+ifeq ($(DVB_PATH), )
+	DVB_PATH := $(wildcard vendor/amlogic/external/dvb)
+endif
 ifeq ($(DVB_PATH), )
 	DVB_PATH := $(wildcard vendor/amlogic/dvb)
 endif

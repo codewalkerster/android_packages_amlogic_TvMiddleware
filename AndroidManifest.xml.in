@@ -6,7 +6,9 @@
         android:versionName="1.0" 
 	android:sharedUserId="android.uid.system">
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-        <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+	<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+	<uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW" />
 	<application android:process="com.amlogic.tvservice" android:label="TVService">
         
          <receiver android:name=".TVServiceReceiver"> 
