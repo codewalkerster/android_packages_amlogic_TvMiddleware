@@ -66,7 +66,7 @@ abstract public class TVClient
 
     private ITVCallback callback = new ITVCallback.Stub() {
         public void onMessage(TVMessage msg) {
-            Log.d(TAG, "onMessage");
+            Log.d(TAG+"-MSG", "onMessage");
 			Message m = handler.obtainMessage(MSG_MESSAGE, msg);
             handler.sendMessage(m);
         }
@@ -82,7 +82,7 @@ abstract public class TVClient
 
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
-				Log.d(TAG, "handle message "+msg.what);
+				Log.d(TAG+"-MSG", "handle message "+msg.what);
 				switch(msg.what) {
 				case MSG_CONNECTED:
 					IBinder binder = (IBinder)msg.obj;

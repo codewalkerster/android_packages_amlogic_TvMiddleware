@@ -37,6 +37,8 @@ import com.amlogic.tvutil.DTVRecordParams;
 import com.amlogic.tvsubtitle.TVSubtitleView;
 import com.amlogic.tvutil.TvinInfo;
 
+import android.media.MediaPlayer;
+
 /**
  *TV Activity
  *此类包含TVClient和字幕,TV播放等TV基本功能.
@@ -146,10 +148,13 @@ abstract public class TVActivity extends Activity
 		subtitleView = null;
 	}
 
+	videoView = null;
+
 	if(disconnect_flag == false){
 		client.disconnect(this);
 		disconnect_flag = true;
 	}
+
 	super.onDestroy();
     }
 	
@@ -490,35 +495,57 @@ abstract public class TVActivity extends Activity
      */
     abstract public void onMessage(TVMessage msg);
 
+	private MediaPlayer mMediaPlayer = null;
+	private void initPlayer(SurfaceHolder holder) {
+		Log.d(TAG, "[initPlayer]mSurfaceHolder:" + holder);
+		if (holder == null) {
+			return;
+		}
+		releasePlayer();
+
+		mMediaPlayer = new MediaPlayer();
+		if(mMediaPlayer==null)
+			return;
+		try{
+			mMediaPlayer.setDataSource("tvin:test");
+		}catch(Exception e){
+			Log.e(TAG, e.toString());
+		}
+		mMediaPlayer.setDisplay (holder);
+		try{
+			mMediaPlayer.prepare();
+			mMediaPlayer.start();
+		}catch(Exception e){
+			Log.e(TAG, e.toString());
+		}
+		Log.d(TAG, "[initPlayer]:player start");
+	}
+	private void releasePlayer() {
+		Log.d(TAG, "[release]mMediaPlayer:" + mMediaPlayer);
+		if (mMediaPlayer != null) {
+			mMediaPlayer.reset();
+			mMediaPlayer.release();
+			mMediaPlayer = null;
+		}
+	}
+
     SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback() {
         public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
             Log.d(TAG, "surfaceChanged");
 			try{
-            	initSurface(holder);
-		 updateVideoWindow();
+				updateVideoWindow();
 			} catch(Exception e){
 			}
         }
         public void surfaceCreated(SurfaceHolder holder) {
             Log.d(TAG, "surfaceCreated");
-            try {
-                initSurface(holder);
-            } catch(Exception e) {
-            }
+			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21)
+				initPlayer(holder);
         }
         public void surfaceDestroyed(SurfaceHolder holder) {
             Log.d(TAG, "surfaceDestroyed");
-        }
-        private void initSurface(SurfaceHolder h) {
-            Canvas c = null;
-            try {
-                Log.d(TAG, "initSurface");
-                c = h.lockCanvas();
-            }
-            finally {
-                if (c != null)
-                    h.unlockCanvasAndPost(c);
-            }
+			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21)
+				releasePlayer();
         }
     };
 
@@ -559,7 +586,7 @@ abstract public class TVActivity extends Activity
 		int[] loc = new int[2];
 
 		videoView.getLocationOnScreen(loc);
-		//Log.d(TAG,"--"+loc[0]+"---"+loc[1]+"---"+ videoView.getWidth()+"---"+ videoView.getHeight());
+		Log.d(TAG,"videoWindow update: x:"+loc[0]+" y:"+loc[1]+" w:"+ videoView.getWidth()+" h:"+ videoView.getHeight());
 		client.setVideoWindow(loc[0], loc[1], videoView.getWidth(), videoView.getHeight());
 	}
 
@@ -572,52 +599,58 @@ abstract public class TVActivity extends Activity
      *在Activity上创建VideoView和SubtitleView
      */
     public void openVideo(VideoView view, TVSubtitleView subv) {
-        Log.d(TAG, "openVideo");
+        Log.d(TAG, "openVideo view="+view+" subv="+subv);
 		
         ViewGroup root = (ViewGroup)getWindow().getDecorView().findViewById(android.R.id.content);
 
 		if(subv!=null){
 			subtitleView = subv;
 			externalSubtitleView = true;
-			subtitleView.setLayerType(View.LAYER_TYPE_SOFTWARE, null); 
-			initSubtitle();
 		}else if(subtitleView == null) {
             Log.d(TAG, "create subtitle view");
             subtitleView = new TVSubtitleView(this);
             externalSubtitleView = false;
-	     subtitleView.setLayerType(View.LAYER_TYPE_SOFTWARE, null); 	
             root.addView(subtitleView, 0);
-            initSubtitle();
         }
 
 		if(view!=null){
 			videoView = view;
 			externalVideoView = true;
-			updateVideoWindow();
+			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21) {
+				Log.d(TAG, "add callback");
+				videoView.getHolder().addCallback(surfaceHolderCallback);
+			}
         }else if(videoView == null) {
 			Log.d(TAG, "create video view");
             videoView = new VideoView(this);
-			externalVideoView = false;
             root.addView(videoView, 0);
-            videoView.getHolder().addCallback(surfaceHolderCallback);
-	     //Log.d(TAG,"Build.VERSION.SDK="+Integer.valueOf(android.os.Build.VERSION.SDK));
-		if( Integer.valueOf(android.os.Build.VERSION.SDK)<21)
-			//videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE_REAL);
-			videoView.getHolder().setFormat(0x102);
-		else
-			videoView.getHolder().setFormat(PixelFormat.RGBA_8888);
-            updateVideoWindow();
+			externalVideoView = false;
+			videoView.getHolder().addCallback(surfaceHolderCallback);
+			//Log.d(TAG,"Build.VERSION.SDK="+Integer.valueOf(android.os.Build.VERSION.SDK));
+			if( Integer.valueOf(android.os.Build.VERSION.SDK)<21)
+				//videoView.getHolder().setFormat(PixelFormat.VIDEO_HOLE_REAL);
+				videoView.getHolder().setFormat(0x102);
+			else if( Integer.valueOf(android.os.Build.VERSION.SDK) == 21)
+				videoView.getHolder().setFormat(PixelFormat.RGBA_8888);
         }
 
-		if(subtitleViewActive&&subtitleView!=null){
-			subtitleView.setActive(true);
-			if(getBooleanConfig("tv:subtitle:enable"))
-				subtitleView.show();
-		}	
     }
+
+	public void showVideo(){
+		if(subtitleView!=null) {
+			subtitleView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);	   
+			initSubtitle();
+			if(subtitleViewActive){
+				subtitleView.setActive(true);
+				if(getBooleanConfig("tv:subtitle:enable"))
+					subtitleView.show();
+			}
+		}
+	}
 
 	public void openVideo(){
 		openVideo(null, null);
+		showVideo();
 	}
 
 	/**
@@ -626,8 +659,9 @@ abstract public class TVActivity extends Activity
 	 */
     public void setVideoWindow(Rect r){
     	if(videoView != null && !externalVideoView){
+			Log.d(TAG, "setVideoWindow [l:"+r.left+" t:"+r.top+" r:"+r.right+" b:"+r.bottom+"]");
 			videoView.layout(r.left, r.top, r.right, r.bottom);
-            updateVideoWindow();
+            //updateVideoWindow();
 		}
 
 		if(subtitleView != null && !externalSubtitleView){
