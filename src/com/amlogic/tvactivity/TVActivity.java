@@ -56,6 +56,7 @@ abstract public class TVActivity extends Activity
 	private boolean externalVideoView = false;
 	private boolean externalSubtitleView = false;
 	private boolean subtitleViewActive=false;
+	private boolean disconnect_flag = false;
 
     private int currSubtitleMode = SUBTITLE_NONE;
     private int currSubtitlePID = -1;
@@ -92,6 +93,17 @@ abstract public class TVActivity extends Activity
 			
 		}
 		super.onPause();
+		boolean result = isFinishing();
+		Log.d(TAG, "onPause, ifFinishing:"+result);
+		if(result == true) {
+			Log.d(TAG, "activity is finishing,  disconnect service");
+			//setInputSource(TVConst.SourceInput.SOURCE_ATV);
+			if(disconnect_flag == false){
+		  		client.disconnect(this);
+				disconnect_flag = true;
+			}
+		}
+
 	}
 
 	protected void onResume(){
@@ -111,6 +123,7 @@ abstract public class TVActivity extends Activity
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         client.connect(this);
+		disconnect_flag = false;
     }
 
     @Override
@@ -133,7 +146,10 @@ abstract public class TVActivity extends Activity
 		subtitleView = null;
 	}
 
-	client.disconnect(this);
+	if(disconnect_flag == false){
+		client.disconnect(this);
+		disconnect_flag = true;
+	}
 	super.onDestroy();
     }
 	

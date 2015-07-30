@@ -1568,8 +1568,17 @@ public class TVService extends Service implements TVConfig.Update{
 	private void resolveSetInputSource(TVConst.SourceInput src){
 		Log.d(TAG, "try to set input source to "+src.name());
 
-		if((src == reqInputSource) && (src == device.getCurInputSource()))
+		if(reqInputSource != null) {
+			Log.d(TAG, "reqInputSource is:"+reqInputSource);
+		} else {
+			Log.d(TAG, "reqInputSource is null");
+		}
+		if((src == reqInputSource) && (src == device.getCurInputSource())) {
+			Log.d(TAG, "source is same");
 			return;
+		} else {
+			Log.d(TAG, "source is different");
+		}
 
 		reqInputSource = src;
 
