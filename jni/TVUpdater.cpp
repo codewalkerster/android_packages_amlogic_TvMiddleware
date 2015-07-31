@@ -29,7 +29,7 @@ static jfieldID  gDLHandleID;
 
 typedef struct{
 	int dmx_id;
-	int handle;
+	AM_TSUPD_MonHandle_t handle;
 	jobject obj;
 
 	unsigned int oui;
@@ -516,7 +516,7 @@ static int upd_startMonitor(JNIEnv* env, jobject obj, jint dmx_id, jstring sw_ve
 
 	UPDData.obj = env->NewGlobalRef(obj);
 
-	env->SetIntField( obj, gMonHandleID, (jint)&UPDData);
+	env->SetLongField( obj, gMonHandleID, (jlong)&UPDData);
 
 	log_info("monitor start.");
 	return 0;
@@ -527,7 +527,7 @@ static int upd_stopMonitor(JNIEnv* env, jobject obj)
 	AM_ErrorCode_t ret;
 	UPDData_t *data;
 
-	data = (UPDData_t*)env->GetIntField(obj, gMonHandleID);
+	data = (UPDData_t*)env->GetLongField(obj, gMonHandleID);
 
 	if (data==&UPDData) {
 		ret=AM_TSUPD_StopMonitor(data->handle);
@@ -535,7 +535,7 @@ static int upd_stopMonitor(JNIEnv* env, jobject obj)
 		ret=AM_TSUPD_CloseMonitor(data->handle);
 		log_info("TSUPD_CloseMonitor ret[%d]", ret);
 
-		env->SetIntField( obj, gMonHandleID, 0);
+		env->SetLongField( obj, gMonHandleID, 0);
 
 		if (data->obj)
 			env->DeleteGlobalRef(data->obj);
@@ -575,7 +575,7 @@ struct dpt_s{
 #define slot_complete 3
 #define slot_done    4
 
-		unsigned int did;
+		AM_TSUPD_DlHandle_t did;
 
 		sargs_t sargs;
 	}part_slot[MAX_PART_SUPPORT];
@@ -603,7 +603,7 @@ static int dl_part_callback(unsigned char *pdata, unsigned int len, void *user)
 	sargs_t *sargs = (sargs_t*)user;
 
 	if(!len)
-		log_info("DL (%x) timeout\n", (int)user);
+		log_info("DL (%x) timeout\n", (int)(long)user);
 /*	else
 		log_info("DATA[%d](%x): %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
 			len, (int)user,
@@ -625,9 +625,9 @@ static int dl_part_callback(unsigned char *pdata, unsigned int len, void *user)
 	return 0;
 }
 
-int dl_part_start(int dmx, int pid, int tid, int ext, int timeout, void *args)
+AM_TSUPD_DlHandle_t dl_part_start(int dmx, int pid, int tid, int ext, int timeout, void *args)
 {
-	int did;
+	AM_TSUPD_DlHandle_t did;
 	AM_ErrorCode_t err = AM_SUCCESS;
 	AM_TSUPD_OpenDownloaderParam_t openpara;
 	AM_TSUPD_DownloaderParam_t dlpara;
@@ -638,7 +638,7 @@ int dl_part_start(int dmx, int pid, int tid, int ext, int timeout, void *args)
 
 	openpara.dmx = dmx;
 	err = AM_TSUPD_OpenDownloader(&openpara, &did);
-	log_info("open did(%x) err[%x]\n", did, err);
+	log_info("open did(%p) err[%x]\n", did, err);
 	if(err)
 		return 0;
 
@@ -651,7 +651,7 @@ int dl_part_start(int dmx, int pid, int tid, int ext, int timeout, void *args)
 	dlpara.ext = ext;
 	dlpara.timeout = timeout;
 	err = AM_TSUPD_StartDownloader(did, &dlpara);
-	log_info("start downloader(%x) err[%x]\n", did, err);
+	log_info("start downloader(%p) err[%x]\n", did, err);
 	if(err) {
 		AM_TSUPD_CloseDownloader(did);
 		return 0;
@@ -661,16 +661,16 @@ int dl_part_start(int dmx, int pid, int tid, int ext, int timeout, void *args)
 }
 
 
-int dl_part_stop(int did)
+int dl_part_stop(AM_TSUPD_DlHandle_t did)
 {
 	AM_ErrorCode_t err = AM_SUCCESS;
 
 	err = AM_TSUPD_StopDownloader(did);
-	log_info("stop download(%x) err[%x]\n", did, err);
+	log_info("stop download(%p) err[%x]\n", did, err);
 
 
 	err = AM_TSUPD_CloseDownloader(did);
-	log_info("close download(%x) err[%x]\n", did, err);
+	log_info("close download(%p) err[%x]\n", did, err);
 
 	return 0;
 }
@@ -953,7 +953,7 @@ static int upd_startDownloader(JNIEnv* env, jobject obj, jint dmx_id, jint pid, 
 
 	dpt->obj = env->NewGlobalRef(obj);
 
-	env->SetIntField( obj, gDLHandleID, (jint)dpt);
+	env->SetLongField( obj, gDLHandleID, (jlong)dpt);
 
 	download_parts(dpt, dmx_id, pid, tableid, fp, timeout);
 
@@ -966,7 +966,7 @@ static int upd_stopDownloader(JNIEnv* env, jobject obj)
 	AM_ErrorCode_t ret;
 	dpt_t *dpt;
 
-	dpt = (dpt_t*)env->GetIntField(obj, gDLHandleID);
+	dpt = (dpt_t*)env->GetLongField(obj, gDLHandleID);
 
 	if (!dpt) 
 		return -1;
@@ -983,7 +983,7 @@ static int upd_stopDownloader(JNIEnv* env, jobject obj)
 	if (t != pthread_self())
 		pthread_join(t, NULL);
 
-	env->SetIntField( obj, gDLHandleID, 0);
+	env->SetLongField( obj, gDLHandleID, 0);
 
 	if (dpt->obj)
 		env->DeleteGlobalRef(dpt->obj);
@@ -1053,8 +1053,8 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	}
 
 	gOnEventID = env->GetMethodID(clazz, "onEvent", "(Lcom/amlogic/tvservice/TVUpdater$Event;)V");
-	gMonHandleID = env->GetFieldID(clazz, "native_mon_handle", "I");
-	gDLHandleID = env->GetFieldID(clazz, "native_dl_handle", "I");
+	gMonHandleID = env->GetFieldID(clazz, "native_mon_handle", "J");
+	gDLHandleID = env->GetFieldID(clazz, "native_dl_handle", "J");
 
 	gEventClass       = env->FindClass( "com/amlogic/tvservice/TVUpdater$Event");
 	gEventClass       = (jclass)env->NewGlobalRef( (jobject)gEventClass);

@@ -76,8 +76,8 @@ abstract public class TVUpdater{
 		}
 	}
 
-	private int native_mon_handle;
-	private int native_dl_handle;
+	private long native_mon_handle;
+	private long native_dl_handle;
 
 	private native int native_tvupd_start_monitor(int dmx, String sw_ver);
 	private native int native_tvupd_stop_monitor();

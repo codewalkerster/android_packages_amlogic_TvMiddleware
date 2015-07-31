@@ -13,7 +13,7 @@ import android.os.Looper;
 
 abstract public class TVDeviceImpl extends TVDevice{
 
-	private int native_handle;
+	private long native_handle;
 	private boolean destroy;
 
 	private native void native_device_init();

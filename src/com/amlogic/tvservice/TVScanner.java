@@ -30,10 +30,10 @@ abstract public class TVScanner{
 		}
 	}
 	
-	private int hScan;
+	private long hScan;
 	
-	private native int native_tv_scan_start(TVScannerParams scan_para);
-	private native int native_tv_scan_destroy(int hscan, boolean store);
+	private native long native_tv_scan_start(TVScannerParams scan_para);
+	private native int native_tv_scan_destroy(long hscan, boolean store);
 	private native int native_get_frontend_status();
 	private native int native_get_frontend_signal_strength();
 	private native int native_get_frontend_snr();

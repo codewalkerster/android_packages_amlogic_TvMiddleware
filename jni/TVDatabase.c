@@ -22,12 +22,12 @@ static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jo
 		sqlite3 *handle;
 		jclass objclass=(*env)->FindClass(env,"android/database/sqlite/SQLiteDatabase");
 
-		native_handle_id = (*env)->GetFieldID(env, objclass, "mNativeHandle", "I");
+		native_handle_id = (*env)->GetFieldID(env, objclass, "mNativeHandle", "J");
 		if(native_handle_id == 0){
 			(*env)->ExceptionClear(env);
 			handle = NULL;
 		}else{
-			handle = (sqlite3*) (*env)->GetIntField(env, db, native_handle_id);
+			handle = (sqlite3*) (*env)->GetLongField(env, db, native_handle_id);
 		}
 
 		log_info("setup database %p", handle);
@@ -81,7 +81,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
     if (clazz == NULL)
         return -1;
 
-    if (rc = ((*env)->RegisterNatives(env, clazz, methods, numMethods)) < 0)
+    if ((rc = ((*env)->RegisterNatives(env, clazz, methods, numMethods))) < 0)
         return -1;
 
     return 0;

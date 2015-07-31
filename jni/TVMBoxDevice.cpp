@@ -25,7 +25,7 @@ typedef struct {
 	AM_Bool_t dev_open;
 	AM_Bool_t in_timeshifting;
 	int       fend_mode;
-	int       rec_handle;
+	AM_REC_Handle_t       rec_handle;
 	jobject   dev_obj;
 	AM_DMX_Source_t ts_src;
 	AM_AV_TimeshiftPara_t timeshift_para;
@@ -131,7 +131,7 @@ static TVDevice* get_dev(JNIEnv *env, jobject obj)
 {
 	TVDevice *dev;
 
-	dev = (TVDevice*)env->GetIntField(obj, gHandleID);
+	dev = (TVDevice*)env->GetLongField(obj, gHandleID);
 
 	return dev;
 }
@@ -710,11 +710,11 @@ static void fend_cb(int dev_no, struct dvb_frontend_event *evt, void *user_data)
 	}
 }
 
-static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
+static void dev_rec_evt_cb(long dev_no, int event_type, void *param, void *data)
 {
 	TVDevice *dev;
 
-	AM_REC_GetUserData(dev_no, (void**)&dev);
+	AM_REC_GetUserData((AM_REC_Handle_t)dev_no, (void**)&dev);
 
 	if (! dev)
 		return;
@@ -751,7 +751,7 @@ static void dev_rec_evt_cb(int dev_no, int event_type, void *param, void *data)
 	}
 }
 
-static void dev_av_evt_cb(int dev_no, int event_type, void *param, void *data)
+static void dev_av_evt_cb(long dev_no, int event_type, void *param, void *data)
 {
 	TVDevice *dev = (TVDevice*)data;
 	jobject event;
@@ -825,7 +825,7 @@ static void dev_init(JNIEnv *env, jobject obj)
 
 	memset(dev, 0, sizeof(TVDevice));
 
-	env->SetIntField(obj, gHandleID, (jint)dev);
+	env->SetLongField(obj, gHandleID, (jlong)dev);
 
 	dev->dev_obj = env->NewWeakGlobalRef(obj);
 
@@ -1546,7 +1546,7 @@ static void dev_start_recording(JNIEnv *env, jobject obj, jobject params)
 {
 	AM_REC_CreatePara_t cpara;
 	AM_REC_RecPara_t rpara;
-	int hrec;
+	AM_REC_Handle_t hrec;
 	TVDevice *dev = get_dev(env, obj);
 	if(!dev->dev_open)
 		return;
@@ -1557,7 +1557,7 @@ static void dev_start_recording(JNIEnv *env, jobject obj, jobject params)
 		return;
 	}
 
-	AM_EVT_Subscribe(hrec, AM_REC_EVT_RECORD_END, dev_rec_evt_cb, NULL);
+	AM_EVT_Subscribe((long)hrec, AM_REC_EVT_RECORD_END, dev_rec_evt_cb, NULL);
 	AM_REC_SetUserData(hrec, (void*)dev);
 
 	rec_to_recordpara(env, params, &rpara);
@@ -1592,7 +1592,7 @@ static void dev_stop_recording(JNIEnv *env, jobject obj)
 		return;
 	if (dev->rec_handle != 0){
 		AM_REC_Destroy(dev->rec_handle);
-		AM_EVT_Unsubscribe(dev->rec_handle, AM_REC_EVT_RECORD_END, dev_rec_evt_cb, NULL);
+		AM_EVT_Unsubscribe((long)dev->rec_handle, AM_REC_EVT_RECORD_END, dev_rec_evt_cb, NULL);
 		dev->rec_handle = 0;
 	}
 }
@@ -1898,7 +1898,7 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	}
 
 	gOnEventID = env->GetMethodID(clazz, "onEvent", "(Lcom/amlogic/tvservice/TVDevice$Event;)V");
-	gHandleID  = env->GetFieldID(clazz, "native_handle", "I");
+	gHandleID  = env->GetFieldID(clazz, "native_handle", "J");
 	gEventClass       = env->FindClass("com/amlogic/tvservice/TVDevice$Event");
 	gEventClass       = (jclass)env->NewGlobalRef((jobject)gEventClass);
 	gEventInitID      = env->GetMethodID(gEventClass, "<init>", "(Lcom/amlogic/tvservice/TVDevice;I)V");

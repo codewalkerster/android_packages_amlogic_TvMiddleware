@@ -27,8 +27,8 @@ static jfieldID  gHandleID;
 
 typedef struct{
 	int dmx_id;
-    int fend_id;
-	int handle;
+	int fend_id;
+	AM_EPG_Handle_t handle;
 	jobject obj;
 }EPGData;
 
@@ -73,20 +73,20 @@ static void epg_on_event(jobject obj, EPGEventData *evt_data)
     }
 }
 
-static void epg_evt_callback(int dev_no, int event_type, void *param, void *user_data)
+static void epg_evt_callback(long dev_no, int event_type, void *param, void *user_data)
 {
 	EPGData *priv_data;
 	EPGEventData edata;
 	
-	AM_EPG_GetUserData(dev_no, (void**)&priv_data);
+	AM_EPG_GetUserData((AM_EPG_Handle_t)dev_no, (void**)&priv_data);
 	if(!priv_data)
 		return;
 	memset(&edata, 0, sizeof(edata));
 	switch(event_type){
 		case AM_EPG_EVT_NEW_NIT:
-			log_info(".....................AM_EPG_EVT_NEW_NIT.................%d\n",(int)param);
+			log_info(".....................AM_EPG_EVT_NEW_NIT.................%d\n",(int)(long)param);
 			edata.type = EVENT_NIT_END;
-			edata.dvbVersion =(int)param; 
+			edata.dvbVersion =(int)(long)param; 
 			epg_on_event(priv_data->obj, &edata);
 			break;
 		case AM_EPG_EVT_NEW_TDT:
@@ -102,22 +102,22 @@ static void epg_evt_callback(int dev_no, int event_type, void *param, void *user
 			break;
 		case AM_EPG_EVT_UPDATE_EVENTS:
 			edata.type = EVENT_PROGRAM_EVENTS_UPDATE;
-			edata.programID = (int)param;
+			edata.programID = (int)(long)param;
 			epg_on_event(priv_data->obj, &edata);
 			break;
 		case AM_EPG_EVT_UPDATE_PROGRAM_AV:
 			edata.type = EVENT_PROGRAM_AV_UPDATE;
-			edata.programID = (int)param;
+			edata.programID = (int)(long)param;
 			epg_on_event(priv_data->obj, &edata);
 			break;
 		case AM_EPG_EVT_UPDATE_PROGRAM_NAME:
 			edata.type = EVENT_PROGRAM_NAME_UPDATE;
-			edata.programID = (int)param;
+			edata.programID = (int)(long)param;
 			epg_on_event(priv_data->obj, &edata);
 			break;
 		case AM_EPG_EVT_UPDATE_TS:
 			edata.type = EVENT_TS_UPDATE;
-			edata.channelID = (int)param;
+			edata.channelID = (int)(long)param;
 			epg_on_event(priv_data->obj, &edata);
 			break;
 		default:
@@ -162,16 +162,16 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
 	
 	data->obj = (*env)->NewGlobalRef(env,obj);
 
-	(*env)->SetIntField(env, obj, gHandleID, (jint)data);
+	(*env)->SetLongField(env, obj, gHandleID, (long)data);
 
 	/*注册EIT通知事件*/
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_NIT,epg_evt_callback,NULL);
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
-	AM_EVT_Subscribe(data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_NEW_NIT,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
+	AM_EVT_Subscribe((long)data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
 	AM_EPG_SetUserData(data->handle, (void*)data);
 }
 
@@ -179,16 +179,16 @@ static void epg_destroy(JNIEnv* env, jobject obj)
 {
 	EPGData *data;
 
-	data = (EPGData*)(*env)->GetIntField(env, obj, gHandleID);
+	data = (EPGData*)((*env)->GetLongField(env, obj, gHandleID));
 
 	/*反注册EIT通知事件*/
 	if (data) {
-		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
-		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
-		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
-		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
-		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
-		AM_EVT_Unsubscribe(data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_NEW_TDT,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_NEW_STT,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_UPDATE_EVENTS,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_UPDATE_PROGRAM_AV,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
+		AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
 		AM_EPG_Destroy(data->handle);
 		log_info("EPGScanner on demux%d sucessfully destroyed", data->dmx_id);
 		log_info("Closing demux%d ...", data->dmx_id);
@@ -204,7 +204,7 @@ static void epg_change_mode(JNIEnv* env, jobject obj, jint op, jint mode)
 	EPGData *data;
 	AM_ErrorCode_t ret;
 
-	data = (EPGData*)(*env)->GetIntField(env, obj, gHandleID);
+	data = (EPGData*)((*env)->GetLongField(env, obj, gHandleID));
 
 	ret = AM_EPG_ChangeMode(data->handle, op, mode);
 	if(ret != AM_SUCCESS)
@@ -216,7 +216,7 @@ static void epg_monitor_service(JNIEnv* env, jobject obj, jint srv_id)
 	EPGData *data;
 	AM_ErrorCode_t ret;
 
-	data = (EPGData*)(*env)->GetIntField(env, obj, gHandleID);
+	data = (EPGData*)((*env)->GetLongField(env, obj, gHandleID));
 
 	ret = AM_EPG_MonitorService(data->handle, srv_id);
 	if(ret != AM_SUCCESS)
@@ -290,7 +290,7 @@ JNI_OnLoad(JavaVM* vm, void* reserved)
 	}
 
 	gOnEventID = (*env)->GetMethodID(env, clazz, "onEvent", "(Lcom/amlogic/tvservice/TVEpgScanner$Event;)V");
-	gHandleID = (*env)->GetFieldID(env, clazz, "native_handle", "I");
+	gHandleID = (*env)->GetFieldID(env, clazz, "native_handle", "J");
 	gEventClass       = (*env)->FindClass(env, "com/amlogic/tvservice/TVEpgScanner$Event");
 	gEventClass       = (jclass)(*env)->NewGlobalRef(env, (jobject)gEventClass);
 	gEventInitID      = (*env)->GetMethodID(env, gEventClass, "<init>", "(Lcom/amlogic/tvservice/TVEpgScanner;I)V");

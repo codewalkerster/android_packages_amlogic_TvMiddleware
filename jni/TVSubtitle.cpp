@@ -390,7 +390,7 @@ error:
         jclass bmp_clazz;
         jfieldID fid;
         jobject bmp;
-        jint hbmp;
+        jlong hbmp;
 
 		data = &gSubtitleData;
         memset(data, 0, sizeof(TVSubtitleData));

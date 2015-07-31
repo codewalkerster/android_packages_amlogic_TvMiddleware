@@ -55,7 +55,7 @@ abstract public class TVEpgScanner{
 		}
     }
 
-	private int native_handle;
+	private long native_handle;
 	private native void native_epg_create(int fend_id, int dmx_id, int src, String textLangs);
 	private native void native_epg_destroy();
 	private native void native_epg_change_mode(int op, int mode);

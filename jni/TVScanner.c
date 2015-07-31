@@ -54,7 +54,7 @@ static ProgressData* get_progress_data(JNIEnv *env, jobject obj)
 {
     ProgressData *pd = NULL;
 
-    int hScan = (*env)->GetIntField(env, obj, gHandleID);
+    AM_SCAN_Handle_t hScan = (AM_SCAN_Handle_t)((*env)->GetLongField(env, obj, gHandleID));
     AM_SCAN_GetUserData(hScan, (void**)&pd);
     return pd;
 }
@@ -135,7 +135,7 @@ static jbyteArray get_byte_array(const char *str)
 	JNIEnv *env;
     int attached = 0;
     int ret = -1;
-    int i;
+    unsigned int i;
 	
     ret = (*gJavaVm)->GetEnv(gJavaVm, (void**) &env, JNI_VERSION_1_4);
     if(ret <0) {
@@ -203,7 +203,7 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
 
     jobject cp = (*env)->NewObject(env, gChanParamClass, gNewChanParamID, pd->cur_tp.fend_para.m_type);
     (*env)->SetIntField(env,cp,\
-                        (*env)->GetFieldID(env, gChanParamClass, "frequency", "I"), ((struct dvb_frontend_parameters*)&pd->cur_tp.fend_para)->frequency);
+                        (*env)->GetFieldID(env, gChanParamClass, "frequency", "I"), ((struct dvb_frontend_parameters*)(&pd->cur_tp.fend_para))->frequency);
     (*env)->SetIntField(env,cp,\
                         (*env)->GetFieldID(env, gChanParamClass, "symbolRate", "I"), pd->cur_tp.fend_para.cable.para.u.qam.symbol_rate);
     (*env)->SetIntField(env,cp,\
@@ -237,12 +237,12 @@ static void tv_scan_onevent(int evt_type, ProgressData *pd)
 }
 
 /**\brief 搜索事件回调*/
-static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *data)
+static void tv_scan_evt_callback(long dev_no, int event_type, void *param, void *data)
 {
     ProgressData *prog = NULL;
     jobject obj;
 
-    AM_SCAN_GetUserData(dev_no, (void**)&prog);
+    AM_SCAN_GetUserData((AM_SCAN_Handle_t)dev_no, (void**)&prog);
     if (! prog) return;
 
     obj = prog->obj;
@@ -376,7 +376,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
 					log_info("====New tp: %dkS/s %d====", bs_prog->new_tps[i].frequency, 
 					bs_prog->new_tps[i].u.qpsk.symbol_rate);
 
-                                    ((struct dvb_frontend_parameters*)&prog->cur_tp.fend_para)->frequency = bs_prog->new_tps[i].frequency;
+                                    ((struct dvb_frontend_parameters*)(&prog->cur_tp.fend_para))->frequency = bs_prog->new_tps[i].frequency;
                                     prog->cur_tp.fend_para.sat.para.u.qpsk.symbol_rate = bs_prog->new_tps[i].u.qpsk.symbol_rate;
                                     prog->cur_tp.fend_para.sat.polarisation = bs_prog->polar;
                                     tv_scan_onevent(EVENT_BLINDSCAN_NEWCHANNEL, prog);
@@ -393,8 +393,8 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             tv_scan_onevent(EVENT_STORE_BEGIN, prog);
             break;
         case AM_SCAN_PROGRESS_STORE_END:
-	     log_info("====AM_SCAN_PROGRESS_STORE_END====%d----%d",  evt->data,&(evt->data));
-	     prog->progress	 = evt->data;
+	     log_info("====AM_SCAN_PROGRESS_STORE_END====%ld----%p",  (long)evt->data,&(evt->data));
+	     prog->progress	 = (long)evt->data;
             tv_scan_onevent(EVENT_STORE_END, prog);
             break;
         case AM_SCAN_PROGRESS_SCAN_END:
@@ -402,7 +402,7 @@ static void tv_scan_evt_callback(int dev_no, int event_type, void *param, void *
             tv_scan_onevent(EVENT_SCAN_END, prog);
             break;
         case AM_SCAN_PROGRESS_ATV_TUNING:
-            prog->cur_tp.fend_para.analog.para.frequency = (int)evt->data;
+            prog->cur_tp.fend_para.analog.para.frequency = (int)(long)evt->data;
             prog->locked = AM_FALSE;
             tv_scan_onevent(EVENT_SCAN_PROGRESS, prog);
             break;
@@ -758,12 +758,13 @@ static void tv_scan_reconnect_dmx_to_fend(int dmx_no, int fend_no)
 }
 
 /**\brief 开始搜索*/
-static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
+static jlong tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
 {
     AM_SCAN_CreatePara_t para;
     AM_FEND_OpenPara_t fend_para;
     AM_DMX_OpenPara_t dmx_para;
-    int handle = 0,i;
+    AM_SCAN_Handle_t handle = NULL;
+    int i;
     ProgressData *prog = NULL;
 
     /**Alloc progress data*/
@@ -812,13 +813,13 @@ static jint tv_scan_start(JNIEnv *env, jobject obj, jobject scan_para)
     } else {
         AM_SCAN_SetUserData(handle, (void*)prog);
         /*注册搜索事件*/
-        AM_EVT_Subscribe(handle, AM_SCAN_EVT_PROGRESS, tv_scan_evt_callback, NULL);
+        AM_EVT_Subscribe((long)handle, AM_SCAN_EVT_PROGRESS, tv_scan_evt_callback, NULL);
         /*注册信号质量通知事件*/
-        AM_EVT_Subscribe(handle, AM_SCAN_EVT_SIGNAL, tv_scan_evt_callback, NULL);
+        AM_EVT_Subscribe((long)handle, AM_SCAN_EVT_SIGNAL, tv_scan_evt_callback, NULL);
         if (AM_SCAN_Start(handle) != AM_SUCCESS) {
             AM_SCAN_Destroy(handle, AM_FALSE);
-            AM_EVT_Unsubscribe(handle, AM_SCAN_EVT_PROGRESS, tv_scan_evt_callback, NULL);
-            AM_EVT_Unsubscribe(handle, AM_SCAN_EVT_SIGNAL, tv_scan_evt_callback, NULL);
+            AM_EVT_Unsubscribe((long)handle, AM_SCAN_EVT_PROGRESS, tv_scan_evt_callback, NULL);
+            AM_EVT_Unsubscribe((long)handle, AM_SCAN_EVT_SIGNAL, tv_scan_evt_callback, NULL);
             handle = 0;
         }
     }
@@ -836,24 +837,25 @@ create_end:
             free(prog);
         }
     }
-    log_info("return create handle %d", handle);
-    return handle;
+    log_info("return create handle %p", handle);
+    return (jlong)handle;
 }
 
 /**\brief 销毁搜索*/
-static jint tv_scan_destroy(JNIEnv *env, jobject obj, jint hscan, jboolean store)
+static jint tv_scan_destroy(JNIEnv *env, jobject obj, jlong hScan, jboolean store)
 {
     ProgressData *prog = NULL;
     AM_Bool_t bstore = store ? AM_TRUE : AM_FALSE;
     int ret = -1;
+    AM_SCAN_Handle_t hscan = (AM_SCAN_Handle_t)hScan;
 
     if(hscan != 0) {
         AM_SCAN_GetUserData(hscan, (void**)&prog);
 
         ret = AM_SCAN_Destroy(hscan, bstore);
         log_info("Scan destroyed, ret=%d", ret);
-        AM_EVT_Unsubscribe(hscan, AM_SCAN_EVT_PROGRESS, tv_scan_evt_callback, NULL);
-        AM_EVT_Unsubscribe(hscan, AM_SCAN_EVT_SIGNAL, tv_scan_evt_callback, NULL);
+        AM_EVT_Unsubscribe((long)hscan, AM_SCAN_EVT_PROGRESS, tv_scan_evt_callback, NULL);
+        AM_EVT_Unsubscribe((long)hscan, AM_SCAN_EVT_SIGNAL, tv_scan_evt_callback, NULL);
         if (prog) {
             log_info("Closing demux%d ...", prog->dmx_id);
             AM_DMX_Close(prog->dmx_id);
@@ -871,8 +873,8 @@ static jint tv_scan_destroy(JNIEnv *env, jobject obj, jint hscan, jboolean store
 
 static JNINativeMethod tv_scan_methods[] = {
     /* name, signature, funcPtr */
-    {"native_tv_scan_start", "(Lcom/amlogic/tvservice/TVScanner$TVScannerParams;)I", (void*)tv_scan_start},
-    {"native_tv_scan_destroy", "(IZ)I", (void*)tv_scan_destroy},
+    {"native_tv_scan_start", "(Lcom/amlogic/tvservice/TVScanner$TVScannerParams;)J", (void*)tv_scan_start},
+    {"native_tv_scan_destroy", "(JZ)I", (void*)tv_scan_destroy},
     {"native_get_frontend_status", "()I", (void*)tv_scan_get_frontend_status},
     {"native_get_frontend_signal_strength", "()I", (void*)tv_scan_get_frontend_signal_strength},
     {"native_get_frontend_snr", "()I", (void*)tv_scan_get_frontend_snr},
@@ -898,7 +900,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 
     gScannerClass     = clazz;
     gScannerClass     = (jclass)(*env)->NewGlobalRef(env, (jobject)gScannerClass);
-    gHandleID         = (*env)->GetFieldID(env, clazz, "hScan", "I");
+    gHandleID         = (*env)->GetFieldID(env, clazz, "hScan", "J");
     gEventClass       = (*env)->FindClass(env, "com/amlogic/tvservice/TVScanner$Event");
     gEventClass       = (jclass)(*env)->NewGlobalRef(env, (jobject)gEventClass);
     gNewEventID       = (*env)->GetMethodID(env, gEventClass, "<init>", "(Lcom/amlogic/tvservice/TVScanner;I)V");
