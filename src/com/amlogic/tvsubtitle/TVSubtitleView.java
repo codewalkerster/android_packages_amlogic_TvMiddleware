@@ -643,5 +643,10 @@ public class TVSubtitleView extends View {
 		dispose();
 		super.finalize();
 	}  
+
+	public void setVisible(boolean value){
+		Log.d(TAG, "force set visible to:"+value);
+		visible = value;
+	}
 }
 
