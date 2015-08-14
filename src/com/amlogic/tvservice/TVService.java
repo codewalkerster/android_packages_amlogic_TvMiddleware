@@ -1575,6 +1575,7 @@ public class TVService extends Service implements TVConfig.Update{
 		}
 		if((src == reqInputSource) && (src == device.getCurInputSource())) {
 			Log.d(TAG, "source is same");
+			sendMessage(TVMessage.inputSourceChanged(src.ordinal()));
 			return;
 		} else {
 			Log.d(TAG, "source is different");

@@ -742,6 +742,7 @@ abstract public class TVActivity extends Activity
      */
     public void stopPlaying() {
         client.stopPlaying();
+		setPlaying(false);
     }
 
 	/**
@@ -937,6 +938,7 @@ abstract public class TVActivity extends Activity
      */
     public void channelUp() {
         client.channelUp();
+		setPlaying(true);
     }
 
     /**
@@ -944,6 +946,7 @@ abstract public class TVActivity extends Activity
      */
     public void channelDown() {
         client.channelDown();
+		setPlaying(true);
     }
 
     /**
@@ -952,6 +955,7 @@ abstract public class TVActivity extends Activity
      */
     public void playProgram(TVProgramNumber no) {
         client.playProgram(no);
+		setPlaying(true);
     }
     
     /**
@@ -960,6 +964,7 @@ abstract public class TVActivity extends Activity
      */
     public void playProgram(int id) {
         client.playProgram(id);
+		setPlaying(true);
     }
 
     /**
@@ -1288,6 +1293,7 @@ abstract public class TVActivity extends Activity
 	 */
 	public void playValid(){
 		client.playValid();
+		setPlaying(true);
 	}
 
 	/**
@@ -1310,6 +1316,7 @@ abstract public class TVActivity extends Activity
 	*/
     public void replay(){
 		client.replay();
+		setPlaying(true);
     }
     
     /**
@@ -1636,5 +1643,15 @@ abstract public class TVActivity extends Activity
 		client.controlUpdate(cmd, param, str);
 	}
 
+
+	private boolean isPlaying = true;
+
+	public void setPlaying(boolean play){
+		isPlaying = play;
+	}
+
+	public boolean getPlaying(){
+		return isPlaying;
+	}
 }
 
