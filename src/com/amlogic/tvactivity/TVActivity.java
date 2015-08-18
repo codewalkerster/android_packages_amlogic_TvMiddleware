@@ -741,8 +741,10 @@ abstract public class TVActivity extends Activity
      *停止播放节目
      */
     public void stopPlaying() {
-        client.stopPlaying();
+	if(getPlaying()){
+		client.stopPlaying();
 		setPlaying(false);
+	}
     }
 
 	/**
