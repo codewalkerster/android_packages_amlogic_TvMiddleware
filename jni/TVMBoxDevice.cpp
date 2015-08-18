@@ -195,7 +195,9 @@ static void chan_to_fpara(JNIEnv *env, jobject chan, AM_FENDCTRL_DVBFrontendPara
 			para->terrestrial.para.u.qam.symbol_rate = sym;
 			break;
 		case FE_ATSC:
+			mod = env->GetIntField(chan, gChanParamsModID);
 			para->atsc.para.frequency = freq;
+			para->atsc.para.u.vsb.modulation = (fe_modulation_t)mod;
 			break;
 		case FE_QPSK:
 			sym = env->GetIntField(chan, gChanParamsSymID);
@@ -224,6 +226,7 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 	env->SetIntField(obj, gChanParamsModeID, mode);
 	env->SetIntField(obj, gChanParamsFreqID, para->frequency);
 
+
 	switch(mode){
 		case FE_OFDM:
 			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
@@ -242,6 +245,10 @@ static jobject fpara_to_chan(JNIEnv *env, int mode, struct dvb_frontend_paramete
 		case FE_ISDBT:
 			env->SetIntField(obj, gChanParamsBWID, para->u.ofdm.bandwidth);
 			break;
+		case FE_ATSC:
+			env->SetIntField(obj, gChanParamsModID, para->u.vsb.modulation);
+			break;
+			
 	}
 
 	return obj;
@@ -1260,7 +1267,6 @@ static void dev_set_frontend(JNIEnv *env, jobject obj, jobject params)
 	AM_DMX_Source_t src;
 
 	TVDevice *dev = get_dev(env, obj);
-
 	if(!dev->dev_open){
 		AM_FEND_OpenPara_t fend_para;
 		AM_AV_OpenPara_t av_para;

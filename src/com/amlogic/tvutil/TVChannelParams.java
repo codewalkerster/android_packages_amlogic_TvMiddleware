@@ -240,8 +240,9 @@ public class TVChannelParams  implements Parcelable {
 		frequency = in.readInt();
 		if((mode == MODE_QAM) || (mode == MODE_QPSK))
 			symbolRate = in.readInt();
-		if(mode == MODE_QAM)
+		if((mode == MODE_QAM) || (mode == MODE_ATSC)) {
 			modulation = in.readInt();
+		}
 		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			bandwidth = in.readInt();
 			ofdm_mode = in.readInt(); 
@@ -268,7 +269,7 @@ public class TVChannelParams  implements Parcelable {
 		dest.writeInt(frequency);
 		if((mode == MODE_QAM) || (mode == MODE_QPSK))
 			dest.writeInt(symbolRate);
-		if(mode == MODE_QAM)
+		if((mode == MODE_QAM) || (mode == MODE_ATSC))
 			dest.writeInt(modulation);
 		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			dest.writeInt(bandwidth);
@@ -385,7 +386,6 @@ public class TVChannelParams  implements Parcelable {
 
 		tp.frequency  = frequency;
 		tp.modulation = modulation;
-
 		return tp;
 	}	
 
