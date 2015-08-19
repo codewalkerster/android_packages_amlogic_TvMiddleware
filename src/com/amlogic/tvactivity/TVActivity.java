@@ -495,7 +495,11 @@ abstract public class TVActivity extends Activity
      */
     abstract public void onMessage(TVMessage msg);
 
-	private MediaPlayer mMediaPlayer = null;
+
+	private static MediaPlayer mMediaPlayer = null;
+
+	private MediaPlayer myplayer = null;
+
 	private void initPlayer(SurfaceHolder holder) {
 		Log.d(TAG, "[initPlayer]mSurfaceHolder:" + holder);
 		if (holder == null) {
@@ -506,6 +510,9 @@ abstract public class TVActivity extends Activity
 		mMediaPlayer = new MediaPlayer();
 		if(mMediaPlayer==null)
 			return;
+
+		myplayer = mMediaPlayer;
+
 		try{
 			mMediaPlayer.setDataSource("tvin:test");
 		}catch(Exception e){
@@ -518,15 +525,25 @@ abstract public class TVActivity extends Activity
 		}catch(Exception e){
 			Log.e(TAG, e.toString());
 		}
-		Log.d(TAG, "[initPlayer]:player start");
+		Log.d(TAG, "[initPlayer]:player start:"+mMediaPlayer);
 	}
+
 	private void releasePlayer() {
-		Log.d(TAG, "[release]mMediaPlayer:" + mMediaPlayer);
 		if (mMediaPlayer != null) {
+			Log.d(TAG, "release MediaPlayer:"+mMediaPlayer);
 			mMediaPlayer.reset();
 			mMediaPlayer.release();
 			mMediaPlayer = null;
 		}
+	}
+	private void releaseMyPlayer() {
+		Log.d(TAG, "[releaseMyPlayer]\n\tmyplayer:" + myplayer + "\n\tmMediaPlayer:" + mMediaPlayer);
+		if(myplayer == mMediaPlayer) {
+			releasePlayer();
+		} else {
+			Log.d(TAG, "not mine, ignore release");
+		}
+		myplayer = null;
 	}
 
     SurfaceHolder.Callback surfaceHolderCallback = new SurfaceHolder.Callback() {
@@ -539,13 +556,17 @@ abstract public class TVActivity extends Activity
         }
         public void surfaceCreated(SurfaceHolder holder) {
             Log.d(TAG, "surfaceCreated");
-			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21)
+			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21){
 				initPlayer(holder);
+				onVideoViewFixStart();
+			}
         }
         public void surfaceDestroyed(SurfaceHolder holder) {
             Log.d(TAG, "surfaceDestroyed");
-			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21)
-				releasePlayer();
+			if( Integer.valueOf(android.os.Build.VERSION.SDK)>21){
+				releaseMyPlayer();
+				onVideoViewFixStop();
+			}
         }
     };
 
@@ -1655,5 +1676,9 @@ abstract public class TVActivity extends Activity
 	public boolean getPlaying(){
 		return isPlaying;
 	}
+
+	public void onVideoViewFixStart(){}
+	public void onVideoViewFixStop(){}
+
 }
 
