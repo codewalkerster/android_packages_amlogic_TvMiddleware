@@ -709,6 +709,7 @@ abstract public class TVClient
 			Log.e(TAG, "The config is not a boolean value: " + name);
 		}
 
+		value = null;
 		return b;
 	}
 
@@ -727,6 +728,7 @@ abstract public class TVClient
 			Log.e(TAG, "The config is not an integer value: " + name);
 		}
 
+		value = null;
 		return i;
 	}
 
@@ -745,6 +747,7 @@ abstract public class TVClient
 			Log.e(TAG, "The config is not a string value: " + name);
 		}
 
+		value = null;
 		return s;
 	}
 
