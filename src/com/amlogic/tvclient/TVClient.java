@@ -1071,5 +1071,15 @@ abstract public class TVClient
 			}
 		}
 	}
+
+	public void controlBackground(int id, int cmd, String param){
+		if(service != null) {
+			try {
+				service.controlBackground(id, cmd, param);
+			} catch(RemoteException e) {
+			}
+		}
+	}
+
 }
 

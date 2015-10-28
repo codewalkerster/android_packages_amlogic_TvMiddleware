@@ -1666,6 +1666,14 @@ abstract public class TVActivity extends Activity
 		client.controlUpdate(cmd, param, str);
 	}
 
+	public void pauseEpg(){
+		client.controlBackground(0, 0, null);
+	}
+
+	public void resumeEpg(){
+		client.controlBackground(0, 1, null);
+	}
+
 
 	private boolean isPlaying = true;
 

@@ -173,5 +173,6 @@ interface ITVService{
 
 	void controlUpdate(int cmd, int param, String str);
 
+	void controlBackground(int id, int cmd, String param);
 }
 

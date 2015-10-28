@@ -103,6 +103,8 @@ public class TVService extends Service implements TVConfig.Update{
 	private static final int MSG_LOCK             = 1982;
 	private static final int MSG_UPDATE_EVENT      = 1983;
 	private static final int MSG_UPDATECTRL      = 1984;
+	private static final int MSG_BACKGROUNDCTRL  = 1985;
+
 	
 	/*Restore flags*/
 	private static final int RESTORE_FL_DATABASE  = 0x1;
@@ -459,7 +461,12 @@ public class TVService extends Service implements TVConfig.Update{
 			Message msg = handler.obtainMessage(MSG_UPDATECTRL, cmd, param, str);
 			handler.sendMessage(msg);
 		}
-		
+
+		@Override
+		public void controlBackground(int id, int cmd, String param){
+			Message msg = handler.obtainMessage(MSG_BACKGROUNDCTRL, id, cmd, param);
+			handler.sendMessage(msg);
+		}
 	};
 
 	/*Message handler*/
@@ -578,6 +585,10 @@ public class TVService extends Service implements TVConfig.Update{
 				case MSG_UPDATECTRL:
 					resolveUpdateCtl(msg.arg1, msg.arg2, (String)msg.obj);
 					break;
+				case MSG_BACKGROUNDCTRL:
+					resolveBackgroundCtl(msg.arg1, msg.arg2, (String)msg.obj);
+					break;
+
 			}
 		}
 	};
@@ -3424,6 +3435,28 @@ public class TVService extends Service implements TVConfig.Update{
 				startUpdateSearch();
 
 				break;
+			default:
+				break;
+		}
+	}
+
+	private void resolveBackgroundCtl(int id, int cmd, String param){
+		Log.d(TAG, "BackgroundCtl id["+id+"] cmd["+cmd+"] ("+param+")");
+
+		switch(id){
+			case 0:
+				Log.d(TAG, "epgCtl cmd "+cmd);
+
+				if (epgScanner == null || channelID == -1)
+					break;
+
+				if (cmd == 0)
+					epgScanner.leaveChannel();
+				else
+					epgScanner.enterChannel(channelID);
+
+				break;
+
 			default:
 				break;
 		}
