@@ -244,6 +244,24 @@ public class TVScanParams implements Parcelable {
 	}
 
 	/**
+	 *创建自动搜索参数
+	 *@param fendID 前端设备参数
+	 *@param tsSourceID frontend type
+	 *@param mainParams main frequency contains NIT
+	 *@return 返回新创建的搜索参数
+	 */
+	public static TVScanParams dtvAutoScanParams(int fendID, int tsSourceID, TVChannelParams mainParams){
+		TVScanParams sp = new TVScanParams(TV_MODE_DTV);
+
+		sp.dtvMode = DTV_MODE_AUTO;
+		sp.fendID = fendID;
+		sp.tsSourceID  = tsSourceID;
+		sp.startParams = mainParams;
+
+		return sp;
+	}
+
+	/**
 	 *创建盲搜参数
 	 *@param fendID 前端设备参数
 	 *@param sat_id Tp属于的卫星id	 
