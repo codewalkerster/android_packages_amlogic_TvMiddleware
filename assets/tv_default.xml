@@ -959,6 +959,68 @@
         <channel_entry frequency="791143000" bandwidth="6"/>
         <channel_entry frequency="797143000" bandwidth="6"/>
         <channel_entry frequency="803143000" bandwidth="6"/>
-    </channel_list>
+	</channel_list>
+	<channel_list name="China,DTMB" fe_type="dtmb">
+		<channel_entry frequency="52500000" modulation="qam64"/>
+		<channel_entry frequency="60500000" modulation="qam64"/>
+		<channel_entry frequency="68500000" modulation="qam64"/>
+		<channel_entry frequency="80000000" modulation="qam64"/>
+		<channel_entry frequency="88000000" modulation="qam64"/>
+		<channel_entry frequency="171000000" modulation="qam64"/>
+		<channel_entry frequency="179000000" modulation="qam64"/>
+		<channel_entry frequency="187000000" modulation="qam64"/>
+		<channel_entry frequency="195000000" modulation="qam64"/>
+		<channel_entry frequency="203000000" modulation="qam64"/>
+		<channel_entry frequency="203000000" modulation="qam64"/>
+		<channel_entry frequency="211000000" modulation="qam64"/>
+		<channel_entry frequency="219000000" modulation="qam64"/>
+		<channel_entry frequency="474000000" modulation="qam64"/>
+		<channel_entry frequency="482000000" modulation="qam64"/>
+		<channel_entry frequency="490000000" modulation="qam64"/>
+		<channel_entry frequency="498000000" modulation="qam64"/>
+		<channel_entry frequency="506000000" modulation="qam64"/>
+		<channel_entry frequency="514000000" modulation="qam64"/>
+		<channel_entry frequency="522000000" modulation="qam64"/>
+		<channel_entry frequency="530000000" modulation="qam64"/>
+		<channel_entry frequency="538000000" modulation="qam64"/>
+		<channel_entry frequency="546000000" modulation="qam64"/>
+		<channel_entry frequency="554000000" modulation="qam64"/>
+		<channel_entry frequency="562000000" modulation="qam64"/>
+		<channel_entry frequency="610000000" modulation="qam64"/>
+		<channel_entry frequency="618000000" modulation="qam64"/>
+		<channel_entry frequency="626000000" modulation="qam64"/>
+		<channel_entry frequency="634000000" modulation="qam64"/>
+		<channel_entry frequency="642000000" modulation="qam64"/>
+		<channel_entry frequency="650000000" modulation="qam64"/>
+		<channel_entry frequency="658000000" modulation="qam64"/>
+		<channel_entry frequency="666000000" modulation="qam64"/>
+		<channel_entry frequency="674000000" modulation="qam64"/>
+		<channel_entry frequency="682000000" modulation="qam64"/>
+		<channel_entry frequency="690000000" modulation="qam64"/>
+		<channel_entry frequency="698000000" modulation="qam64"/>
+		<channel_entry frequency="706000000" modulation="qam64"/>
+		<channel_entry frequency="714000000" modulation="qam64"/>
+		<channel_entry frequency="722000000" modulation="qam64"/>
+		<channel_entry frequency="730000000" modulation="qam64"/>
+		<channel_entry frequency="738000000" modulation="qam64"/>
+		<channel_entry frequency="746000000" modulation="qam64"/>
+		<channel_entry frequency="754000000" modulation="qam64"/>
+		<channel_entry frequency="762000000" modulation="qam64"/>
+		<channel_entry frequency="770000000" modulation="qam64"/>
+		<channel_entry frequency="778000000" modulation="qam64"/>
+		<channel_entry frequency="786000000" modulation="qam64"/>
+		<channel_entry frequency="794000000" modulation="qam64"/>
+		<channel_entry frequency="802000000" modulation="qam64"/>
+		<channel_entry frequency="810000000" modulation="qam64"/>
+		<channel_entry frequency="818000000" modulation="qam64"/>
+		<channel_entry frequency="826000000" modulation="qam64"/>
+		<channel_entry frequency="834000000" modulation="qam64"/>
+		<channel_entry frequency="842000000" modulation="qam64"/>
+		<channel_entry frequency="850000000" modulation="qam64"/>
+		<channel_entry frequency="858000000" modulation="qam64"/>
+		<channel_entry frequency="866000000" modulation="qam64"/>
+		<channel_entry frequency="874000000" modulation="qam64"/>
+		<channel_entry frequency="882000000" modulation="qam64"/>
+	</channel_list>
 </db>
 

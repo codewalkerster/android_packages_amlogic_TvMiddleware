@@ -179,7 +179,8 @@ public class TVScanParams implements Parcelable {
 		return sat_id;
 	}	
 
-	public TVChannelParams[] getCnannelChooseList() {
+	public TVChannelParams[] getChannelChooseList() {
+        Log.d("", "ChooseList");
 		return chooseListParams;
 	}
 
@@ -362,7 +363,7 @@ public class TVScanParams implements Parcelable {
 				channelParaList[i].sat_polarisation= channelList.get(i).sat_polarisation;	
 				channelParaList[i].tv_satparams = channelList.get(i).tv_satparams;
 			}
-			
+	        Log.d("", "channelParaList length is " + channelParaList.length);
 			sp.chooseListParams = channelParaList;
 
 			if(tsSourceID == TVChannelParams.MODE_QPSK){

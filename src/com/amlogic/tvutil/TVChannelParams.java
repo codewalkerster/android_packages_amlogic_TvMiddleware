@@ -184,7 +184,7 @@ public class TVChannelParams  implements Parcelable {
 	public static final int STD_PAL_DK    = STD_PAL_D|STD_PAL_D1|STD_PAL_K;
 	/**PAL*/
 	public static final int STD_PAL       = STD_PAL_BG|STD_PAL_DK|STD_PAL_H|STD_PAL_I;
-	
+
 	public static final int TUNER_STD_MN  =STD_PAL_M|STD_PAL_N|STD_PAL_Nc| STD_NTSC;
     public static final int STD_B         = STD_PAL_B    |STD_PAL_B1   |STD_SECAM_B;
     public static final int STD_GH        = STD_PAL_G    | STD_PAL_H   |STD_SECAM_G  |STD_SECAM_H;
@@ -198,9 +198,9 @@ public class TVChannelParams  implements Parcelable {
     public static final int COLOR_SECAM =0x10000000;
 
 	/**水平极性*/
-	public static final int SAT_POLARISATION_H = 0; 
+	public static final int SAT_POLARISATION_H = 0;
 	/**垂直极限*/
-	public static final int SAT_POLARISATION_V = 1;	
+	public static final int SAT_POLARISATION_V = 1;
 
 	/**ISDBT LAYER全输出*/
 	public static final int ISDBT_LAYER_ALL = 0;
@@ -211,7 +211,7 @@ public class TVChannelParams  implements Parcelable {
 	/**ISDBT LAYER C*/
 	public static final int ISDBT_LAYER_C = 0;
 
-    
+
 	public int mode;
 	public int frequency;
 	public int symbolRate;
@@ -245,7 +245,7 @@ public class TVChannelParams  implements Parcelable {
 		}
 		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			bandwidth = in.readInt();
-			ofdm_mode = in.readInt(); 
+			ofdm_mode = in.readInt();
 		}
 		if(mode == MODE_ANALOG){
 			audio = in.readInt();
@@ -258,7 +258,7 @@ public class TVChannelParams  implements Parcelable {
 			if(satparams_notnull == 1)
 				tv_satparams = new TVSatelliteParams(in);
 			sat_polarisation = in.readInt();
-		}		
+		}
 		if (mode == MODE_ISDBT){
 			isdbtLayer = in.readInt();
 		}
@@ -274,7 +274,7 @@ public class TVChannelParams  implements Parcelable {
 		if(mode == MODE_OFDM || mode == MODE_DTMB){
 			dest.writeInt(bandwidth);
 			dest.writeInt(ofdm_mode);
-		}	
+		}
 		if(mode == MODE_ANALOG){
 			dest.writeInt(audio);
 			dest.writeInt(standard);
@@ -287,11 +287,11 @@ public class TVChannelParams  implements Parcelable {
 				satparams_notnull = 1;
 			}else{
 				satparams_notnull = 0;
-			}				
+			}
 			dest.writeInt(satparams_notnull);
 			if(satparams_notnull == 1)
 				tv_satparams.writeToParcel(dest, flags);
-			dest.writeInt(sat_polarisation);	
+			dest.writeInt(sat_polarisation);
 		}
 		if (mode == MODE_ISDBT){
 			dest.writeInt(isdbtLayer);
@@ -330,11 +330,11 @@ public class TVChannelParams  implements Parcelable {
 	 *@return 返回新创建的参数
 	 */
 	public static TVChannelParams dvbtParams(int frequency, int bandwidth){
-		TVChannelParams tp = new TVChannelParams(MODE_OFDM);	
+		TVChannelParams tp = new TVChannelParams(MODE_OFDM);
 		tp.frequency = frequency;
 		tp.bandwidth = bandwidth;
 		tp.ofdm_mode = OFDM_MODE_DVBT;
-	
+
 		return tp;
 	}
 
@@ -356,9 +356,9 @@ public class TVChannelParams  implements Parcelable {
 	/**
 	 *创建DVBS参数
 	 *@param frequency 频率Hz为单位
-	 *@param symbolRate 符号率 
+	 *@param symbolRate 符号率
 	 *@param sat_id Tp属于的卫星id
-	 *@param sat_polarisation Tp极性	 
+	 *@param sat_polarisation Tp极性
 	 *@return 返回新创建的参数
 	 */
 	public static TVChannelParams dvbsParams(Context context, int frequency, int symbolRate, int sat_id, int sat_polarisation){
@@ -387,7 +387,7 @@ public class TVChannelParams  implements Parcelable {
 		tp.frequency  = frequency;
 		tp.modulation = modulation;
 		return tp;
-	}	
+	}
 
 	/**
 	 *创建模拟参数
@@ -412,11 +412,10 @@ public class TVChannelParams  implements Parcelable {
 	 *@param bandwidth 带宽
 	 *@return 返回新创建的参数
 	 */
-	public static TVChannelParams dtmbParams(int frequency, int bandwidth){
+	public static TVChannelParams dtmbParams(int frequency, int modulation){
 		TVChannelParams tp = new TVChannelParams(MODE_DTMB);
-
 		tp.frequency = frequency;
-		tp.bandwidth = bandwidth;
+		tp.modulation = modulation;
 
 		return tp;
 	}

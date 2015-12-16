@@ -104,9 +104,6 @@ abstract public class TVScanner{
 	};
 
 	public void scan(TVScannerParams params){
-		
-		
-		
 		hScan = native_tv_scan_start(params);
 	}
 

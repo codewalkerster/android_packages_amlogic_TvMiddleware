@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import android.database.Cursor;
 import android.content.Context;
+import android.util.Log;
 import com.amlogic.tvdataprovider.TVDataProvider;
 
 /**
@@ -76,7 +77,8 @@ public class TVRegion{
 							channels[channelCount++] = TVChannelParams.analogParams(frequency, 0, 0, 0);
 							break;
 						case TVChannelParams.MODE_DTMB:
-							channels[channelCount++] = TVChannelParams.dtmbParams(frequency,bandwidth);
+							channels[channelCount++] = TVChannelParams.dtmbParams(frequency,modulation);
+                            Log.d("", "found dtmb");
 							break;
 						case TVChannelParams.MODE_ISDBT:
 							channels[channelCount++] = TVChannelParams.isdbtParams(frequency,bandwidth);
@@ -358,6 +360,7 @@ public class TVRegion{
 	 *@return 返回信号源频率参数列表
 	 */
 	public TVChannelParams[] getChannelParams(){
+        Log.d("", "TVRigion get channel params");
 		return channels;
 	}
 
