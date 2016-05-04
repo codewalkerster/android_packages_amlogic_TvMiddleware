@@ -109,6 +109,13 @@ public class TVService extends Service implements TVConfig.Update{
     /*Restore flags*/
     private static final int RESTORE_FL_DATABASE  = 0x1;
     private static final int RESTORE_FL_CONFIG    = 0x2;
+    //add update type,update apk and update system throw recovery system 
+    private enum TVUpdateType{
+        UPDATE_APK,
+        UPDATE_RECOVERY,
+    }
+
+    private static final TVUpdateType UPDATE_TYPE = TVUpdateType.UPDATE_RECOVERY;//
 
     final RemoteCallbackList<ITVCallback> callbacks
             = new RemoteCallbackList<ITVCallback>();
@@ -155,9 +162,9 @@ public class TVService extends Service implements TVConfig.Update{
             return ret;
         }
 
+
         public int getFrontendSignalStrength(){
             int ret;
-
             synchronized(TVService.this){
                 if(isScanning)
                     ret = scanner.getFrontendSignalStrength();
@@ -437,6 +444,31 @@ public class TVService extends Service implements TVConfig.Update{
 
         public void switch_video_blackout(int val){
             device.switch_video_blackout(val);
+        }
+
+        //add sys file read api
+        public String am_read_sysfile(String name){
+            if(name!=null)
+            {
+              return device.am_read_sysfile(name);  
+            }
+            else
+            {
+                Log.d(TAG, "am_read_sysfile name is null failed");
+                return "";
+            }
+        }
+        //add sys file write api
+        public void am_write_sysfile(String name,String value){
+            if(name!=null&&value!=null)
+            {
+                if(device!=null)
+                   device.am_write_sysfile(name,value); 
+            }
+            else
+            {
+                Log.d(TAG, "am_write_sysfile name or value is null failed");
+            }
         }
 
         public void lock(TVChannelParams curParams){
@@ -990,20 +1022,25 @@ public class TVService extends Service implements TVConfig.Update{
                 value="c";
                 break;
         }
-
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amaudio/audio_channels_mask"));
-            try {
-                writer.write(value);
-            } finally {
-                writer.close();
-            }
-        }catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }catch (Exception e) {
-            Log.e(TAG,"set audio track ERROR!",e);
-            return;
+        //hualing add ,change app write sys file,use dvb lib api to write sys file  value
+        if(device!=null)
+        {
+           device.am_write_sysfile("/sys/class/amaudio/audio_channels_mask",value); 
         }
+        
+        // try {
+        //     BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amaudio/audio_channels_mask"));
+        //     try {
+        //         writer.write(value);
+        //     } finally {
+        //         writer.close();
+        //     }
+        // }catch (FileNotFoundException e) {
+        //     e.printStackTrace();
+        // }catch (Exception e) {
+        //     Log.e(TAG,"set audio track ERROR!",e);
+        //     return;
+        // }
 
     }
 
@@ -1380,11 +1417,12 @@ public class TVService extends Service implements TVConfig.Update{
 
                 if(!checkProgramBlock()){
                     Log.d(TAG, "play dtv "+programID+" video "+vpid+" format "+vfmt+" audio "+apid+" format "+afmt+" pcr "+pcr);
+                    sendMessage(TVMessage.programStart(programID));
                     device.playDTV(vpid, vfmt, apid, afmt, pcr);
                     switchAudTrack(p.getAudTrack());
                 }
 
-                sendMessage(TVMessage.programStart(programID));
+                //sendMessage(TVMessage.programStart(programID));
 
                 status = TVRunningStatus.STATUS_PLAY_DTV;
             }
@@ -2622,30 +2660,41 @@ public class TVService extends Service implements TVConfig.Update{
             e.printStackTrace();
             Log.d(TAG, "Cannot read dynamic info !!!");
         }
-
-        try{
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/dmx/aml_dmx_dynamic_config"));
-            try {
-                writer.write(valuedmx);
-            } finally {
-                writer.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.d(TAG, "Cannot config dmx !!!");
+        //hualing add ,change app write sys file,use dvb lib api to write sys file  value
+       String con_path="/sys/class/dmx/aml_dmx_dynamic_config";
+       if(valuedmx!=null)
+       {
+         device.am_write_sysfile(con_path,valuedmx);
+       }
+       
+        // try{
+        //     BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/dmx/aml_dmx_dynamic_config"));
+        //     try {
+        //         writer.write(valuedmx);
+        //     } finally {
+        //         writer.close();
+        //     }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     Log.d(TAG, "Cannot config dmx !!!");
+        // }
+        //hualing add ,change app write sys file,use dvb lib api to write sys file  value
+        String fe_path="/sys/class/amlfe/aml_fe_dynamic_config";
+        if(valuefe!=null)
+        {
+           device.am_write_sysfile("/sys/class/amlfe/aml_fe_dynamic_config",valuefe); 
         }
-
-        try{
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/aml_fe_dynamic_config"));
-            try {
-                writer.write(valuefe);
-            } finally {
-                writer.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.d(TAG, "Cannot config fe !!!");
-        }
+        // try{
+        //     BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/aml_fe_dynamic_config"));
+        //     try {
+        //         writer.write(valuefe);
+        //     } finally {
+        //         writer.close();
+        //     }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     Log.d(TAG, "Cannot config fe !!!");
+        // }
 
         int i = 0;
         do{
@@ -2669,7 +2718,7 @@ public class TVService extends Service implements TVConfig.Update{
         String valuefe = null;
         String valuedmx = null;
 
-        Log.d(TAG, "dynamicConfigFeAndDmx !!!");
+        Log.d(TAG, "dynamicConfigDemodAndFe !!!");
 
         try{
             valuefe = config.getString("tv:dtv:config_demod_fe");
@@ -2683,46 +2732,62 @@ public class TVService extends Service implements TVConfig.Update{
         }
 
         String[] valuefe_array =valuefe.split("\\|");
+        // //hualing add ,change app write sys file,use dvb lib api to write sys file  value
 
-        try{
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));
-            try {
-                writer.write("disable 0");
-            } finally {
-                writer.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.d(TAG, "Cannot config fe !!!");
+        if(device!=null)
+        {
+            device.am_write_sysfile("/sys/class/amlfe/setting","disable 0");
         }
-
+        // Log.d(TAG, "end write setting info !!!");
+        // try{
+        //     BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));
+        //     try {
+        //         writer.write("disable 0");
+        //     } finally {
+        //         writer.close();
+        //     }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     Log.d(TAG, "Cannot config fe !!!");
+        // }
         for(int i=0;i<valuefe_array.length;i++){
-            try{
-                BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));
-                try {
 
-                    writer.write(valuefe_array[i]);
-
-                } finally {
-                    writer.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                Log.d(TAG, "Cannot config fe !!!");
+            // //hualing add ,change app write sys file,use dvb lib api to write sys file  value
+            if(device!=null&&valuefe_array[i]!=null)
+            {
+                device.am_write_sysfile("/sys/class/amlfe/setting",valuefe_array[i]);
             }
-        }
+            
+            // try{
+            //     BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/amlfe/setting"));
+            //     try {
 
-        try{
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/stb/hw_setting"));
-            try {
-                writer.write(valuedmx);
-            } finally {
-                writer.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.d(TAG, "Cannot config dmx !!!");
+            //         writer.write(valuefe_array[i]);
+
+            //     } finally {
+            //         writer.close();
+            //     }
+            // } catch (Exception e) {
+            //     e.printStackTrace();
+            //     Log.d(TAG, "Cannot config fe !!!");
+            // }
         }
+        // //hualing add ,change app write sys file,use dvb lib api to write sys file  value
+        if(device!=null&&valuedmx!=null)
+        {
+            device.am_write_sysfile("/sys/class/stb/hw_setting",valuedmx);
+        }
+        // try{
+        //     BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/stb/hw_setting"));
+        //     try {
+        //         writer.write(valuedmx);
+        //     } finally {
+        //         writer.close();
+        //     }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     Log.d(TAG, "Cannot config dmx !!!");
+        // }
     }
 
 
@@ -2735,7 +2800,6 @@ public class TVService extends Service implements TVConfig.Update{
 
         config = new TVConfig(this);
 
-        //dynamicConfigFeAndDmx();
         dynamicConfigDemodAndFe();
 
         device = new TVDeviceImpl( this.getMainLooper()){
@@ -2751,7 +2815,9 @@ public class TVService extends Service implements TVConfig.Update{
                 handler.sendMessage(msg);
             }
         };
-
+        //dynamicConfigFeAndDmx();
+        //this is after device ,because dynamicConfigDemodAndFe used device obj
+        
         recorder.open(device);
 
         TVDataProvider.openDatabase(this, config);
@@ -2924,7 +2990,7 @@ public class TVService extends Service implements TVConfig.Update{
     private String UpdClientVersion = "0.0.0";
 
     private void openUpdater(String version){
-        Log.d(TAG, "openUpdater("+version+")");
+        Log.d(TAG, "--openUpdater("+version+")");
 
         if(Updater!=null)
             return;
@@ -3064,10 +3130,11 @@ public class TVService extends Service implements TVConfig.Update{
         private ArrayList<String> dvbapks;
         private ZipUtils zip;
 
+
         public DVBApkUpdate(File updateFile){
             dvbapks = new ArrayList<String>();
-            dvbapks.add("DTVPlayer.*\\.apk$");
-            dvbapks.add("TVService.*\\.apk$");
+            dvbapks.add(".*DTVPlayer.*\\.apk$");
+            dvbapks.add(".*TVService.*\\.apk$");
 
             zip = new ZipUtils();
 
@@ -3078,13 +3145,12 @@ public class TVService extends Service implements TVConfig.Update{
             try{
                 apks = zip.getEntriesNames(updateFile);
                 for(String apk:apks)
-                    Log.d(TAG, "Zip:item:"+apk);
+                    Log.d(TAG, "Zip:matches:"+apk);
             }catch(ZipException e){
                 return false;
             }catch(IOException e){
                 return false;
             }
-
             int got=0;
             ArrayList<String> newdvbapks = new ArrayList<String>();
             for(String dvbapk:dvbapks) {
@@ -3092,11 +3158,15 @@ public class TVService extends Service implements TVConfig.Update{
                     if(apk.matches(dvbapk)){
                         newdvbapks.add(apk);
                         got=got+1;
+                    }else{
+                        Log.d(TAG, "Zip:matches:error"+apk+"  "+dvbapk);
                     }
                 }
             }
             if(got==0)
+            {
                 return false;
+            }
 
             dvbapks = newdvbapks;
             return true;
@@ -3106,7 +3176,6 @@ public class TVService extends Service implements TVConfig.Update{
         public boolean update(Context context)throws Exception {
 
             clean();
-
             try {
                 zip.unZipFile(updateFile, unzipPath.getPath());
             }catch(ZipException e){
@@ -3118,7 +3187,9 @@ public class TVService extends Service implements TVConfig.Update{
             for(String dvbapk:dvbapks) {
                 File apk = new File(unzipPath, dvbapk);
                 if(apk.exists())
+                {
                     install(context, apk);
+                }
                 else {
                     throw new Exception("apk["+apk+"] not found.");
                 }
@@ -3166,8 +3237,21 @@ public class TVService extends Service implements TVConfig.Update{
         return false;
     }
     private boolean RunUpdate(File updateFile){
-        return RunApkUpdate(updateFile);
-        //return RunRecoveryUpdate(updatefile);
+        if(UPDATE_TYPE==TVUpdateType.UPDATE_APK)
+        {
+            Log.d(TAG, "UPDATE_APK update");
+            return RunApkUpdate(updateFile);
+        }
+        else if(UPDATE_TYPE==TVUpdateType.UPDATE_RECOVERY)
+        {
+            Log.d(TAG, "UPDATE_RECOVERY update");
+            return RunUpdateReboot(updateFile);
+        }
+        else
+        {
+            Log.d(TAG, "error update type: "+UPDATE_TYPE);
+            return false;
+        }   
     }
 
     private void closeUpdateDownloadDialog(){

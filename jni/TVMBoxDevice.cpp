@@ -1829,13 +1829,75 @@ static void dev_setSecRequest(JNIEnv *env, jobject obj, jint secType, jobject se
 	}
 }
 
-
 static void dev_switch_video_blackout(JNIEnv *env, jobject obj, jint v)
 {
-	if(v==0)
-		AM_AV_DisableVideoBlackout(AV_DEV_NO);
+      if(v==0)
+          AM_AV_DisableVideoBlackout(AV_DEV_NO);
+      else
+     	  AM_AV_EnableVideoBlackout(AV_DEV_NO);
+}
+
+static jstring am_read_sysfile(JNIEnv *env, jobject obj, jstring name)
+{
+	char buf[256];
+	const char* path_name;
+
+	jstring jstr;
+	if(name==NULL)
+	{
+		return NULL;
+	}
+	memset(buf, 0, sizeof(buf));
+	path_name = env->GetStringUTFChars(name, NULL);
+	if(path_name)
+	{
+		AM_FileRead(path_name, buf, sizeof(buf));
+	}
 	else
-		AM_AV_EnableVideoBlackout(AV_DEV_NO);
+	{
+		LOGE("@am_read_sysfile: path is null  error ");
+	}
+
+	if(path_name)
+	{
+		env->ReleaseStringUTFChars(name, path_name);
+	}
+
+	jstr = env->NewStringUTF(buf);
+	return jstr;
+}
+
+static jint am_write_sysfile(JNIEnv *env, jobject obj, jstring name, jstring value)
+{
+	const char* path_name;
+	const char* wr_value;
+
+	if(name==NULL||value==NULL)
+	{
+		return -1;
+	}
+	path_name = env->GetStringUTFChars(name, NULL);
+	wr_value = env->GetStringUTFChars(value, NULL);
+	if(path_name)
+	{
+		AM_FileEcho(path_name, wr_value);
+	}
+	else
+	{
+		LOGE("@am_write_sysfile: path is null  error ");
+		return -1;
+	}
+
+	if(path_name)
+	{
+		env->ReleaseStringUTFChars(name, path_name);
+	}
+
+	if(wr_value)
+	{
+		env->ReleaseStringUTFChars(value, wr_value);
+	}
+	return 0;
 }
 
 static JNINativeMethod gMethods[] = {
@@ -1875,7 +1937,9 @@ static JNINativeMethod gMethods[] = {
 	{"native_resume", "()V", (void*)dev_resume},
 	{"native_seek_to", "(I)V", (void*)dev_seek_to},
 	{"native_setSecRequest", "(ILcom/amlogic/tvutil/TVChannelParams;I)V", (void*)dev_setSecRequest},
-	{"native_switch_video_blackout","(I)V",(void*)dev_switch_video_blackout}
+	{"native_switch_video_blackout","(I)V",(void*)dev_switch_video_blackout},
+	{"native_am_read_sysfile", "(Ljava/lang/String;)Ljava/lang/String;", (void*)am_read_sysfile},
+	{"native_am_write_sysfile", "(Ljava/lang/String;Ljava/lang/String;)I", (void*)am_write_sysfile}
 };
 
 JNIEXPORT jint

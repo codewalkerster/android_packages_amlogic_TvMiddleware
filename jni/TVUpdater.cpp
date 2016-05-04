@@ -68,7 +68,8 @@ OUI[] = {
 	{"amlogic", 0x01}
 },
 HW[] = {
-	{"K200", 0x01}
+	{"K200", 0x01},
+	{"AOSP on p200", 0x03}
 };
 
 #define FUNC_get_code(what) \

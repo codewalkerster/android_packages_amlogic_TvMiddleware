@@ -166,6 +166,10 @@ interface ITVService{
 	void secRequest(in TVMessage sec_msg);
 
 	void switch_video_blackout(int val);
+
+	String  am_read_sysfile(String name);
+
+	void  am_write_sysfile(String name,String value);
     
 	void importDatabase(String inputXmlPath);
 

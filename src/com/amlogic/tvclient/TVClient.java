@@ -1027,6 +1027,38 @@ abstract public class TVClient
             }
         }
    }	
+    /**
+     *add sys file read api
+     *@param name :read file name
+     *return String : file info value
+     */
+    public String am_read_sysfile(String name){
+        if(service != null&&name!=null) {
+            try {
+                return service.am_read_sysfile(name);
+            } catch(RemoteException e) {
+            }
+        }
+        return "";
+    }
+    /**
+     *add sys file write api
+     *@param name :write file name
+     *@param value :write to file info
+     */
+
+    public void am_write_sysfile(String name,String value){
+        if(service != null) {
+            try {
+                if(name!=null&&name!=null)
+                {
+                  service.am_write_sysfile(name,value);    
+                }
+                
+            } catch(RemoteException e) {
+            }
+        }
+    }
 
 	/**
 	 *将指定xml文件导入到当前数据库

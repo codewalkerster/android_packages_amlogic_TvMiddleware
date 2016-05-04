@@ -129,6 +129,11 @@ abstract public class TVDevice  implements TVConfig.Update,TVConfig.Read{
 	abstract public void setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit);
 
 	abstract public void  switch_video_blackout(int val);
+
+	abstract public String  am_read_sysfile(String name);
+
+	abstract public void  am_write_sysfile(String name,String value);
+
     public int GetSrcInputType()
     {
         return 0;

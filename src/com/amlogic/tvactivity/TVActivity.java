@@ -1511,20 +1511,21 @@ abstract public class TVActivity extends Activity
 		***************************************/
 	
 		String value=String.valueOf(mode);
-
-		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/screen_mode"));
-			try {
-				writer.write(value);
-			} finally {
-				writer.close();
-			}
-		}catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}catch (Exception e) {
-		        Log.e(TAG,"set screen_mode ERROR!",e);
-			return;
-		} 
+		//hualing add ,change app write sys file,use dvb lib api to write sys file  value
+		am_write_sysfile("/sys/class/video/screen_mode",value);
+		// try {
+		// 	BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/screen_mode"));
+		// 	try {
+		// 		writer.write(value);
+		// 	} finally {
+		// 		writer.close();
+		// 	}
+		// }catch (FileNotFoundException e) {
+		// 	e.printStackTrace();
+		// }catch (Exception e) {
+		//         Log.e(TAG,"set screen_mode ERROR!",e);
+		// 	return;
+		// } 
 
 	}
 	
@@ -1538,18 +1539,19 @@ abstract public class TVActivity extends Activity
 		if (!file.exists()) {        	
 			return 0;
 		}
-
+		//hualing add ,change app read sys file,use dvb lib api to read sys file  value
+		val = am_read_sysfile("/sys/class/video/screen_mode");
 		//read
-		try {
-			BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/screen_mode"), 1);
-			try {
-				val=in.readLine();
-			} finally {
-				in.close();
-    			}
-		} catch (Exception e) {
-			Log.e(TAG, "IOException when read screen_mode");
-		}
+		// try {
+		// 	BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/screen_mode"), 1);
+		// 	try {
+		// 		val=in.readLine();
+		// 	} finally {
+		// 		in.close();
+  //   			}
+		// } catch (Exception e) {
+		// 	Log.e(TAG, "IOException when read screen_mode");
+		// }
 
 		if(val!=null){
 			Log.d(TAG,"---"+val);
@@ -1593,18 +1595,18 @@ abstract public class TVActivity extends Activity
 		if (!file.exists()) {        	
 			return val;
 		}
-
-		//read
-		try {
-			BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/screen_mode"), 1);
-			try {
-				val=in.readLine();
-			} finally {
-				in.close();
-    			}
-		} catch (Exception e) {
-			Log.e(TAG, "IOException when read screen_mode");
-		}
+		val = am_read_sysfile("/sys/class/video/screen_mode");
+		// //read
+		// try {
+		// 	BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/screen_mode"), 1);
+		// 	try {
+		// 		val=in.readLine();
+		// 	} finally {
+		// 		in.close();
+  //   			}
+		// } catch (Exception e) {
+		// 	Log.e(TAG, "IOException when read screen_mode");
+		// }
 		
 		return val;
 	}
@@ -1617,18 +1619,18 @@ abstract public class TVActivity extends Activity
 		if (!file.exists()) {        	
 			return "0 0 0 0";
 		}
-
-		//read
-		try {
-			BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/axis"), 1);
-			try {
-				val=in.readLine();
-			} finally {
-				in.close();
-    			}
-		} catch (Exception e) {
-			Log.e(TAG, "IOException when read screen_mode");
-		}
+		val = am_read_sysfile("/sys/class/video/axis");
+		// //read
+		// try {
+		// 	BufferedReader in = new BufferedReader(new FileReader("/sys/class/video/axis"), 1);
+		// 	try {
+		// 		val=in.readLine();
+		// 	} finally {
+		// 		in.close();
+  //   			}
+		// } catch (Exception e) {
+		// 	Log.e(TAG, "IOException when read screen_mode");
+		// }
 
 		if(val!=null){
 			return val;
@@ -1639,23 +1641,35 @@ abstract public class TVActivity extends Activity
 
 	public void setVideoWindowSize(String val){
 		
-		try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/axis"));
-            try {
-                writer.write(val);
-                } finally {
-                    writer.close();
-                }
-        }catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }catch (Exception e) {
-                Log.e(TAG,"setVideoWindowSize ERROR!",e);
-				return;
-        } 
+		//hualing add ,change app write sys file,use dvb lib api to write sys file  value
+		am_write_sysfile("/sys/class/video/axis",val);
+
+		// try {
+  //           BufferedWriter writer = new BufferedWriter(new FileWriter("/sys/class/video/axis"));
+  //           try {
+  //               writer.write(val);
+  //               } finally {
+  //                   writer.close();
+  //               }
+  //       }catch (FileNotFoundException e) {
+  //           e.printStackTrace();
+  //       }catch (Exception e) {
+  //               Log.e(TAG,"setVideoWindowSize ERROR!",e);
+		// 		return;
+  //       } 
 	}
 
 	public void setBlackoutPolicy(int val){
 		client.switch_video_blackout(val);
+	}
+
+	//add sys file read api
+	public String am_read_sysfile(String name){
+		return client.am_read_sysfile(name);
+	}
+	//add sys file write api
+	public void am_write_sysfile(String name,String value){
+		client.am_write_sysfile(name,value);
 	}
 
 	public void FeConfigAndDmxConfig(){

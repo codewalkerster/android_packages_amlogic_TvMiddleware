@@ -86,6 +86,10 @@ LOCAL_CERTIFICATE := platform
 LOCAL_PACKAGE_NAME := TVService
 LOCAL_JNI_SHARED_LIBRARIES := libam_adp libam_mw libjnitvmboxdevice libjnitvdatabase libjnitvdbcheck libjnitvscanner libjnitvsubtitle libjnitvepgscanner libzvbi libjnitvupdater
 
+ifeq (1,$(strip $(shell expr $(PLATFORM_SDK_VERSION) \>= 22)))
+LOCAL_JNI_SHARED_LIBRARIES += libam_sysfs
+endif
+
 LOCAL_MODULE :=
 LOCAL_MODULE_CLASS :=
 LOCAL_MODULE_TAGS := samples

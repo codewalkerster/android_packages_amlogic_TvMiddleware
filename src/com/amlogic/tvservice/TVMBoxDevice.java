@@ -52,6 +52,10 @@ abstract public class TVDeviceImpl extends TVDevice{
 	private native void native_seek_to(int pos);
 	private native void native_setSecRequest(int secType, TVChannelParams secCurParams, int secPositionerMoveUnit);
 	private native void native_switch_video_blackout(int val);
+	private native String native_am_read_sysfile(String name);
+	private native int native_am_write_sysfile(String name,String value);
+
+	
 
 	static{
 		System.loadLibrary("am_adp");
@@ -214,6 +218,15 @@ abstract public class TVDeviceImpl extends TVDevice{
 
 	public void switch_video_blackout(int val){
 		native_switch_video_blackout(val);
+	}
+
+	//add sys file read api
+	public String am_read_sysfile(String name){
+		return native_am_read_sysfile(name);
+	}
+	//add sys file write api
+	public void am_write_sysfile(String name,String value){
+		native_am_write_sysfile(name,value);
 	}
 
 	public void dispose(){
