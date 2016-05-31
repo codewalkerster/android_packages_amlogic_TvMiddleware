@@ -54,7 +54,7 @@ static ProgressData* get_progress_data(JNIEnv *env, jobject obj)
 {
     ProgressData *pd = NULL;
 
-    AM_SCAN_Handle_t hScan = (AM_SCAN_Handle_t)((*env)->GetLongField(env, obj, gHandleID));
+    AM_SCAN_Handle_t hScan = (AM_SCAN_Handle_t)(long)((*env)->GetLongField(env, obj, gHandleID));
     AM_SCAN_GetUserData(hScan, (void**)&pd);
     return pd;
 }
@@ -838,7 +838,7 @@ create_end:
         }
     }
     log_info("return create handle %p", handle);
-    return (jlong)handle;
+    return (jlong)(long)handle;
 }
 
 /**\brief 销毁搜索*/
@@ -847,7 +847,7 @@ static jint tv_scan_destroy(JNIEnv *env, jobject obj, jlong hScan, jboolean stor
     ProgressData *prog = NULL;
     AM_Bool_t bstore = store ? AM_TRUE : AM_FALSE;
     int ret = -1;
-    AM_SCAN_Handle_t hscan = (AM_SCAN_Handle_t)hScan;
+    AM_SCAN_Handle_t hscan = (AM_SCAN_Handle_t)(long)hScan;
 
     if(hscan != 0) {
         AM_SCAN_GetUserData(hscan, (void**)&prog);

@@ -6,6 +6,7 @@
 #include <cutils/properties.h>
 
 #include <am_debug.h>
+#include <errno.h>
 #include "am_time.h"
 
 #include "am_dmx.h"

@@ -179,7 +179,7 @@ static void epg_destroy(JNIEnv* env, jobject obj)
 {
 	EPGData *data;
 
-	data = (EPGData*)((*env)->GetLongField(env, obj, gHandleID));
+	data = (EPGData*)(long)((*env)->GetLongField(env, obj, gHandleID));
 
 	/*反注册EIT通知事件*/
 	if (data) {
@@ -204,7 +204,7 @@ static void epg_change_mode(JNIEnv* env, jobject obj, jint op, jint mode)
 	EPGData *data;
 	AM_ErrorCode_t ret;
 
-	data = (EPGData*)((*env)->GetLongField(env, obj, gHandleID));
+	data = (EPGData*)(long)((*env)->GetLongField(env, obj, gHandleID));
 
 	ret = AM_EPG_ChangeMode(data->handle, op, mode);
 	if(ret != AM_SUCCESS)
@@ -216,7 +216,7 @@ static void epg_monitor_service(JNIEnv* env, jobject obj, jint srv_id)
 	EPGData *data;
 	AM_ErrorCode_t ret;
 
-	data = (EPGData*)((*env)->GetLongField(env, obj, gHandleID));
+	data = (EPGData*)(long)((*env)->GetLongField(env, obj, gHandleID));
 
 	ret = AM_EPG_MonitorService(data->handle, srv_id);
 	if(ret != AM_SUCCESS)

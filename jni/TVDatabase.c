@@ -27,7 +27,7 @@ static void db_setup(JNIEnv *env, jobject obj, jstring name, jboolean create, jo
 			(*env)->ExceptionClear(env);
 			handle = NULL;
 		}else{
-			handle = (sqlite3*) (*env)->GetLongField(env, db, native_handle_id);
+			handle = (sqlite3*) (long)(*env)->GetLongField(env, db, native_handle_id);
 		}
 
 		log_info("setup database %p", handle);
