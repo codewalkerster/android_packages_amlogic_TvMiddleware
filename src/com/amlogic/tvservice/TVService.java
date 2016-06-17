@@ -985,6 +985,10 @@ public class TVService extends Service implements TVConfig.Update{
     private void stopScan(boolean store){
         if(status == TVRunningStatus.STATUS_SCAN ||
                 status == TVRunningStatus.STATUS_ANALYZE_CHANNEL){
+            //set isScanning false,avoid box get front info from scan obj
+            synchronized(this){
+                isScanning = false;
+            }
             scanner.stop(store);
 
             if(store){
@@ -1950,11 +1954,13 @@ public class TVService extends Service implements TVConfig.Update{
         channelParams = null;
         synchronized(this){
             device.freeFrontend();
-            isScanning = true;
         }
-
         scanner.scan(tsp);
         status = TVRunningStatus.STATUS_SCAN;
+        //when started scan pro,set isScanning true,avoid when front no open,box get front info
+        synchronized(this){
+            isScanning = true;
+        }
     }
 
     /*Stop scanning process.*/
@@ -1965,9 +1971,9 @@ public class TVService extends Service implements TVConfig.Update{
 
         stopScan(store);
 
-        synchronized(this){
-            isScanning = false;
-        }
+        // synchronized(this){
+        //     isScanning = false;
+        // }
         //temp cancel playCurrentProgram();
         //playCurrentProgram();
     }
